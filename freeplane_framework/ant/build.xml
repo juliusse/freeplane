@@ -128,6 +128,15 @@
 			<param name="pluginname" value="org.freeplane.plugin.bugreport"/>
 		</antcall>
 	</target>
+	
+	<target name="build_webservice" unless="skip_webservice">
+		<antcall target="makePlugin" inheritall="false">
+			<param name="anttarget" value="dist"/>
+			<param name="targetdir" value="plugins"/>
+			<param name="plugindir" value="freeplane_plugin_webservice"/>
+			<param name="pluginname" value="org.freeplane.plugin.webservice"/>
+		</antcall>
+	</target>
 
 	<target name="build_launcher" depends="build_core">
 		<mkdir dir="${launcher_build}" />
@@ -150,7 +159,7 @@
 		<chmod file="${build}/freeplane.sh" perm="ugo+rx" />
 	</target>
 
-	<target name="build" depends="build_core, build_latex, build_svg, build_script, build_formula, build_bugreport, build_launcher, git_version_info">
+	<target name="build" depends="build_core, build_latex, build_svg, build_script, build_formula, build_bugreport, build_webservice, build_launcher, git_version_info">
 		<mkdir dir="${build.resources}" />
 		<copy todir="${build.resources}">
 			<fileset dir="${workspace}/freeplane/dist/resources" />

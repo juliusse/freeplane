@@ -201,7 +201,7 @@
 		</jar>
 	</target>
 	
-	<target name="check-translation">
+	<target name="check-translation" depends="format-translation">
 		<check-translation dir="${root}/resources/translations" includes="*.properties" eolstyle="${eolstyle}" />
 		<check-translation dir="${root}/viewer-resources/translations" includes="*.properties" eolstyle="${eolstyle}" />
 	</target>

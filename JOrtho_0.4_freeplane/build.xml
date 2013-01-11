@@ -50,7 +50,7 @@
 		</jar>
 	</target>
 
-	<target name="check-translation">
+	<target name="check-translation" depends="format-translation">
 		<check-translation dir="${src}/com/inet/jortho/i18n" includes="*.properties" eolstyle="${eolstyle}" />
 	</target>
 	<target name="format-translation">
