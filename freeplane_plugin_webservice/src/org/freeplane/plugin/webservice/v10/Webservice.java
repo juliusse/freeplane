@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -64,10 +67,10 @@ public class Webservice {
 	 * @return a map model
 	 */
 	@GET
-	@Path("map/{id}/json")
+	@Path("map/{mapId}/json")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getMapModel(
-			@PathParam("id") String id, 
+			@PathParam("mapId") String mapId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) 
 					throws MapNotFoundException {
 
@@ -75,10 +78,10 @@ public class Webservice {
 		ModeController modeController = getModeController();
 
 		try {
-			if(!WebserviceHelper.selectMap(id)) {
-				if(id.startsWith("test_")) { //FOR DEBUGING
-					openTestMap(id);
-					if(!WebserviceHelper.selectMap(id)) {
+			if(!WebserviceHelper.selectMap(mapId)) {
+				if(mapId.startsWith("test_")) { //FOR DEBUGING
+					openTestMap(mapId);
+					if(!WebserviceHelper.selectMap(mapId)) {
 						return Response.status(Status.NOT_FOUND).entity("Map not found!\n"+
 								"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'").build();
 					}
@@ -145,20 +148,16 @@ public class Webservice {
 	 * @throws IOException 
 	 */
 	@GET
-	@Path("map/{id}/xml")
+	@Path("map/{mapId}/xml")
 	@Produces(MediaType.APPLICATION_XML)
 	public Response getMapModelXml(
-			@PathParam("id") String id) {
-		ModeController modeController = getModeController();
-
-		try {
-			if(!WebserviceHelper.selectMap(id)) {
-				return Response.status(Status.NOT_FOUND).entity("Map not found").build();
-			}
-		} catch(Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
+			@PathParam("mapId") String mapId) {
+		Response selectMapResponse = selectMap(mapId);
+		if (selectMapResponse != null){
+			return selectMapResponse;
 		}
-
+		
+		ModeController modeController = getModeController();
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
 			return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
@@ -180,11 +179,10 @@ public class Webservice {
 	 * @return
 	 */
 	@DELETE
-	@Path("map/{id}")
-	public Response closeMap(@PathParam("id") String id) {
-
+	@Path("map/{mapId}")
+	public Response closeMap(@PathParam("mapId") String mapId) {
 		try {
-			WebserviceHelper.closeMap(id);
+			WebserviceHelper.closeMap(mapId);
 			return Response.ok().build();
 		} catch (Exception e) {
 			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
@@ -267,19 +265,27 @@ public class Webservice {
 	 * @return a node model
 	 */
 	@GET
-	@Path("map/{mapId}/node/{id}")
+	@Path("map/{mapId}/node/{nodeId}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getNode(
-			@PathParam("id") String id, 
+			@PathParam("mapId") String mapId,
+			@PathParam("nodeId") String nodeId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) {
+		
+		Response selectMapResponse = selectMap(mapId);
+		if (selectMapResponse != null){
+			return selectMapResponse;
+		}
+		
 		ModeController modeController = getModeController();
 		boolean loadAllNodes = nodeCount == -1;
 
+		
+		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(nodeId);
 
-		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(id);
 		if(freeplaneNode == null) {
 			return Response.status(Status.BAD_REQUEST)
-					.entity(new NodeNotFoundException("Node with id '"+id+"' not found.")).build();
+					.entity(new NodeNotFoundException("Node with id '"+nodeId+"' not found.")).build();
 		}
 
 		DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
@@ -296,7 +302,12 @@ public class Webservice {
 	@Path("map/{mapId}/node/create")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	public Response addNode(String parentNodeId) { 
+	public Response addNode(@PathParam("mapId") String mapId, String parentNodeId) { 
+		Response selectMapResponse = selectMap(mapId);
+		if (selectMapResponse != null){
+			return selectMapResponse;
+		}
+		
 		// TODO correct method handling
 		// TODO how to call method correctly?
 
@@ -401,18 +412,39 @@ public class Webservice {
 		}
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
-		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
+
+		//node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
+		refreshLockAccessTime(node);
+		
 
 		return Response.ok().build();
 	}
 
 	@GET
-	@Path("map/{id}/unlockExpired/{sinceInMs}")
-	public Response getExpiredLocks(@PathParam("id") String id, @PathParam("sinceInMs") int sinceInMs) {
-		//TODO find expirec nodes
-		//TODO unlock nodes
-		//TODO create array [changedNode1, changedNode2,...]
-		return Response.status(Status.NOT_IMPLEMENTED).build();
+	@Path("map/{mapId}/unlockExpired/{sinceInMs}")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
+		if (!lockedNodes.containsKey(mapId)){
+			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
+		}
+		Set<NodeModel> nodes = lockedNodes.get(mapId);
+		Set<NodeModel> newNodes = new HashSet<NodeModel>();
+		List<NodeModel> expiredNodes = new ArrayList<NodeModel>(); 
+		
+		for (NodeModel node : nodes){
+			LockModel lock = node.getExtension(LockModel.class);
+			long timeDiff = System.currentTimeMillis() - lock.getLastAccess();  
+			if (timeDiff < sinceInMs){
+				//Lock not expired
+				newNodes.add(node);
+			} else {
+				//Lock expired
+				node.removeExtension(LockModel.class);
+				expiredNodes.add(node);
+			}
+		}
+		nodes = newNodes;
+		return Response.ok(expiredNodes.toArray()).build();
 	}
 
 	static ModeController getModeController() {
@@ -424,11 +456,25 @@ public class Webservice {
 		return modeController.getMapController().getRootNode().getMap();
 	}
 
-	private Response selectMap(String id){
-		if(!WebserviceHelper.selectMap(id)) {
+	
+	/**
+	 * Select Map so getMapController() has right map. 
+	 * @param mapId Id of Map
+	 * @return
+	 */
+	private Response selectMap(String mapId){
+		if(!WebserviceHelper.selectMap(mapId)) {
 			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
 		}
 		return null;
+	}
+	
+	/**
+	 * refresh lastAccesTime of node lock  
+	 * @param node Node with lock
+	 */
+	private void refreshLockAccessTime(NodeModel node){
+		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
 	}
 
 	private void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
