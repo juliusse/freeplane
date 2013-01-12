@@ -100,14 +100,42 @@ public class RestApiTest {
 //	}
 	
 	@Test
+	public void changeNode() throws URISyntaxException {
+		WebResource wr = client.resource("http://localhost:8080/rest/v1");
+		
+		sendMindMapToServer(5);
+		
+		WebResource sendNode = wr.path("map/5/node");
+		
+		String httpBody = "{\"id\":\"ID_1\",\"nodeText\":\"This is the new NodeText\"}";
+		
+		ClientResponse cr = sendNode.type(MediaType.APPLICATION_JSON_TYPE).entity(httpBody).put(ClientResponse.class);
+		assertThat(cr.getStatus()).isEqualTo(200);
+	}
+	
+	@Test
 	public void sendMindmapToApplicationAndGetMindmapAsJson() throws URISyntaxException {
 		WebResource wr = client.resource("http://localhost:8080/rest/v1");
+		
+		
+		sendMindMapToServer(1);
+//		String nodeId = wr.path("addNodeToRootNode").accept(MediaType.APPLICATION_JSON_TYPE).get(String.class);
+//		assertThat(nodeId).startsWith("ID_");
+//		
+		MapModel model = wr.path("map/1/json").accept(MediaType.APPLICATION_JSON_TYPE).get(MapModel.class);
+		assertThat(model).isNotNull();
+		assertThat(model.root.nodeText).isEqualTo("foo2");
+		
+	}
+	
+	public void sendMindMapToServer(int id) throws URISyntaxException {
+		WebResource wr = client.resource("http://localhost:8080/rest/v1");
 		WebResource sendMapResource = wr.path("map");
-		InputStream in = Webservice.class.getResourceAsStream("/files/mindmaps/1.mm");
-		URL pathURL = Webservice.class.getResource("/files/mindmaps/1.mm");
+		InputStream in = Webservice.class.getResourceAsStream("/files/mindmaps/"+id+".mm");
+		URL pathURL = Webservice.class.getResource("/files/mindmaps/"+id+".mm");
 		File f = new File( pathURL.toURI());
 		
-		String contentDeposition = "attachement; filename=\"1.mm\"";
+		String contentDeposition = "attachement; filename=\""+id+".mm\"";
 		assertThat(f).isNotNull();
 		
 //		MultivaluedMap formData = new MultivaluedMapImpl();
@@ -117,14 +145,6 @@ public class RestApiTest {
 				.put(ClientResponse.class, in);
 		
 		assertThat(response.getStatus()).isEqualTo(200);
-		
-//		String nodeId = wr.path("addNodeToRootNode").accept(MediaType.APPLICATION_JSON_TYPE).get(String.class);
-//		assertThat(nodeId).startsWith("ID_");
-//		
-		MapModel model = wr.path("map/1/json").accept(MediaType.APPLICATION_JSON_TYPE).get(MapModel.class);
-		assertThat(model).isNotNull();
-		
-		
 	}
 	
 //	@Test

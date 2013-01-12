@@ -32,6 +32,7 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
+import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.WebserviceController;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
@@ -44,12 +45,12 @@ import com.sun.jersey.api.client.ClientResponse.Status;
 @Path("/v1")
 @Produces(MediaType.APPLICATION_JSON)
 public class Webservice {
-	
+
 	//TODO add lock mechanism to Freeplane Node and our Node (discuss with dimitry?)
 
 	static final Map<String, URL> openMapUrls = new HashMap<String, URL>();
 	static final Map<String, Set<NodeModel>> lockedNodes = new HashMap<String, Set<NodeModel>>();
-	
+
 	@GET
 	@Path("status")
 	public Response getStatus() {
@@ -79,7 +80,7 @@ public class Webservice {
 					openTestMap(id);
 					if(!WebserviceHelper.selectMap(id)) {
 						return Response.status(Status.NOT_FOUND).entity("Map not found!\n"+
-										"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'").build();
+								"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'").build();
 					}
 				} else {
 					return Response.status(Status.NOT_FOUND).entity("Map not found").build();
@@ -104,7 +105,7 @@ public class Webservice {
 
 		return Response.ok(mm).build();
 	}
-	
+
 	private void openTestMap(String id) {
 		try {
 			//create file
@@ -127,7 +128,7 @@ public class Webservice {
 			//put map in openMap Collection
 			URL pathURL = file.toURI().toURL();
 			openMapUrls.put(id, pathURL);
-			
+
 			//open map
 			ModeController modeController = getModeController();
 
@@ -216,7 +217,7 @@ public class Webservice {
 			String id = WebserviceHelper.getMapIdFromFile(file);
 			URL pathURL = file.toURI().toURL();
 			openMapUrls.put(id, pathURL);
-			
+
 			//open map
 			ModeController modeController = getModeController();
 
@@ -232,16 +233,16 @@ public class Webservice {
 	@GET
 	@Path("shutdown")
 	public Response closeServer() {
-		
+
 		Set<String> ids = openMapUrls.keySet(); 
 		for(String mapId : ids) {
 			try {
 				WebserviceHelper.closeMap(mapId);
 			} catch (Exception e) {
-				
+
 			}
 		}
-		
+
 		new Thread(new Runnable() {
 
 			@Override
@@ -274,7 +275,7 @@ public class Webservice {
 		ModeController modeController = getModeController();
 		boolean loadAllNodes = nodeCount == -1;
 
-		
+
 		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(id);
 		if(freeplaneNode == null) {
 			return Response.status(Status.BAD_REQUEST)
@@ -298,7 +299,7 @@ public class Webservice {
 	public Response addNode(String parentNodeId) { 
 		// TODO correct method handling
 		// TODO how to call method correctly?
-		
+
 		ModeController modeController = getModeController();
 		MapController mapController = modeController.getMapController();
 		//get map
@@ -325,14 +326,50 @@ public class Webservice {
 	@Path("map/{mapId}/node")
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({ MediaType.APPLICATION_JSON })
-	public Response changeNode(DefaultNodeModel node) {
+	public Response changeNode(@PathParam("mapId") String mapId, DefaultNodeModel node) {
+		Response response = selectMap(mapId);
+		if(response != null) 
+			return response;
+
 		//get map
 		ModeController modeController = getModeController();
 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
+
 		//get node
 		NodeModel freeplaneNode = mm.getNodeForID(node.id);
 		if(freeplaneNode == null)
 			return Response.status(Status.BAD_REQUEST).entity("Node with id '"+node.id+"' not found").build();
+
+		if(node.folded != null) {
+			freeplaneNode.setFolded(node.folded);
+		}
+		if(node.isHtml != null) {
+			freeplaneNode.setXmlText(node.nodeText);
+		}
+		if(node.attributes != null) {
+			//TODO set attributes right
+		}
+		if(node.hGap != null) {
+			updateLocationModel(freeplaneNode, node.hGap, null);
+		}
+		if(node.icons != null) {
+			//TODO handle
+		}
+		if(node.image != null) {
+			//TODO handle
+		}
+		if(node.link != null) {
+			//TODO handle
+		}
+		if(node.nodeText != null) {
+			freeplaneNode.setText(node.nodeText);
+		}
+		if(node.shiftY != null) {
+			updateLocationModel(freeplaneNode, null, node.shiftY);
+		}
+
+		freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
+		//refreshLockAccessTime(NodeModel node);
 
 		//TODO make changes according to data send with node
 		//TODO add LockExtension if lock is in node
@@ -354,7 +391,7 @@ public class Webservice {
 		node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
 		return Response.ok(new Boolean(true).toString()).build();
 	}
-	
+
 	@PUT
 	@Path("map/{mapId}/node/{nodeId}/refreshLock") 
 	public Response refreshLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
@@ -365,10 +402,10 @@ public class Webservice {
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
 		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
-		
+
 		return Response.ok().build();
 	}
-	
+
 	@GET
 	@Path("map/{id}/unlockExpired/{sinceInMs}")
 	public Response getExpiredLocks(@PathParam("id") String id, @PathParam("sinceInMs") int sinceInMs) {
@@ -386,12 +423,27 @@ public class Webservice {
 		ModeController modeController = getModeController();
 		return modeController.getMapController().getRootNode().getMap();
 	}
-	
+
 	private Response selectMap(String id){
 		if(!WebserviceHelper.selectMap(id)) {
 			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
 		}
 		return null;
+	}
+
+	private void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
+		LocationModel lm = freeplaneNode.getExtension(LocationModel.class);
+		if(lm == null) {
+			lm = new LocationModel();
+			freeplaneNode.addExtension(lm);
+		}
+
+		if(hGap != null) {
+			lm.setHGap(hGap);
+		}
+		if(Shifty != null) {
+			lm.setShiftY(Shifty);
+		}
 	}
 
 }
