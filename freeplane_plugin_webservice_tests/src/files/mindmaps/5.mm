@@ -1,4 +1,4 @@
-<map version="docear 1.0" dcr_id="test_5" dcr_uri="workspace:/../../../../D:/HTW/docear/5.mm">
+<map version="docear 1.0" dcr_id="5" dcr_uri="workspace:/../../../../D:/HTW/docear/5.mm">
 <!--To view this file, download Docear - The Academic Literature Suite from http://www.docear.org -->
 <node TEXT="test_5 = MapID ; 5.mm = Title" LOCALIZED_STYLE_REF="AutomaticLayout.level.root" FOLDED="false" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1355080206394"><hook NAME="MapStyle" zoom="0.751">
     <properties show_icon_for_attributes="true" show_note_icons="true"/>
@@ -53,7 +53,7 @@
 <hook NAME="AutomaticEdgeColor" COUNTER="3"/>
 <node TEXT="right_L1P0_Links" POSITION="right" ID="ID_767081088" CREATED="1354627639897" MODIFIED="1355079961660" HGAP="70" VSHIFT="-160">
 <edge COLOR="#ff0000" WIDTH="3"/>
-<node TEXT="right_L2P00_URL http://www.google.com" ID="ID_559224261" CREATED="1355078409315" MODIFIED="1355078623889" LINK="http://www.google.com"/>
+<node TEXT="right_L2P00_URL http://www.google.com" ID="ID_1" CREATED="1355078409315" MODIFIED="1355078623889" LINK="http://www.google.com"/>
 <node TEXT="right_L2P01_NodeLink_ToParent" ID="ID_1773571247" CREATED="1355078483151" MODIFIED="1355078614023" LINK="#ID_767081088"/>
 </node>
 <node TEXT="right_L1P1_EdgeStyle" POSITION="right" ID="ID_261056359" CREATED="1354627675027" MODIFIED="1355078698526">

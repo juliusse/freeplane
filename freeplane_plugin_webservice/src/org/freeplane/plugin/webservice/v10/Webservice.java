@@ -42,6 +42,7 @@ import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
+import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
 
@@ -49,10 +50,7 @@ import com.sun.jersey.api.client.ClientResponse.Status;
 @Produces(MediaType.APPLICATION_JSON)
 public class Webservice {
 
-	//TODO add lock mechanism to Freeplane Node and our Node (discuss with dimitry?)
-
-	static final Map<String, URL> openMapUrls = new HashMap<String, URL>();
-	static final Map<String, Set<NodeModel>> lockedNodes = new HashMap<String, Set<NodeModel>>();
+	static final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
 
 	@GET
 	@Path("status")
@@ -130,7 +128,7 @@ public class Webservice {
 
 			//put map in openMap Collection
 			URL pathURL = file.toURI().toURL();
-			openMapUrls.put(id, pathURL);
+			mapIdInfoMap.put(id, new OpenMindmapInfo(pathURL));
 
 			//open map
 			ModeController modeController = getModeController();
@@ -156,7 +154,7 @@ public class Webservice {
 		if (selectMapResponse != null){
 			return selectMapResponse;
 		}
-		
+
 		ModeController modeController = getModeController();
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
@@ -212,9 +210,9 @@ public class Webservice {
 			out.close();
 
 			//put map in openMap Collection
-			String id = WebserviceHelper.getMapIdFromFile(file);
+			String mapId = WebserviceHelper.getMapIdFromFile(file);
 			URL pathURL = file.toURI().toURL();
-			openMapUrls.put(id, pathURL);
+			mapIdInfoMap.put(mapId, new OpenMindmapInfo(pathURL));
 
 			//open map
 			ModeController modeController = getModeController();
@@ -232,7 +230,7 @@ public class Webservice {
 	@Path("shutdown")
 	public Response closeServer() {
 
-		Set<String> ids = openMapUrls.keySet(); 
+		Set<String> ids = mapIdInfoMap.keySet(); 
 		for(String mapId : ids) {
 			try {
 				WebserviceHelper.closeMap(mapId);
@@ -271,16 +269,16 @@ public class Webservice {
 			@PathParam("mapId") String mapId,
 			@PathParam("nodeId") String nodeId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) {
-		
+
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
 			return selectMapResponse;
 		}
-		
+
 		ModeController modeController = getModeController();
 		boolean loadAllNodes = nodeCount == -1;
 
-		
+
 		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(nodeId);
 
 		if(freeplaneNode == null) {
@@ -307,7 +305,7 @@ public class Webservice {
 		if (selectMapResponse != null){
 			return selectMapResponse;
 		}
-		
+
 		// TODO correct method handling
 		// TODO how to call method correctly?
 
@@ -379,13 +377,13 @@ public class Webservice {
 			updateLocationModel(freeplaneNode, null, node.shiftY);
 		}
 
-		freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
-		//refreshLockAccessTime(NodeModel node);
+		//only for gui
+		//freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
 
-		//TODO make changes according to data send with node
-		//TODO add LockExtension if lock is in node
+		refreshLockAccessTime(freeplaneNode);
+
 		//Response.ok(new DefaultNodeModel(node)).
-		return Response.ok(new DefaultNodeModel(freeplaneNode,false)).build();	
+		return Response.ok().build();	
 	}
 
 	@DELETE
@@ -415,22 +413,83 @@ public class Webservice {
 
 		//node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
 		refreshLockAccessTime(node);
-		
+
 
 		return Response.ok().build();
 	}
 
-	@GET
+	@PUT
+	@Path("map/{mapId}/node/{nodeId}/requestLock") 
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response requestLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId, String username){
+		Response selectMapResponse = selectMap(mapId);
+		if (selectMapResponse != null){
+			return selectMapResponse;
+		}
+
+
+		ModeController modeController = getModeController();
+		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
+
+
+		LockModel lm = node.getExtension(LockModel.class);//.setLastAccess(System.currentTimeMillis());
+		if(lm != null) { //lock exists
+			if(lm.getUsername().equals(username)) {
+				return Response.ok().build();
+			} else {
+				return Response.status(Status.FORBIDDEN).entity("Node already locked.").build();
+			}
+		}
+		//create lock
+		lm = new LockModel(node,username,System.currentTimeMillis());
+		node.addExtension(lm);
+
+
+		//add to lock list
+
+		getOpenMindMapInfo(mapId).getLockedNodes().add(node);
+
+		return Response.ok().build();
+	}
+
+	@DELETE
+	@Path("map/{mapId}/node/{nodeId}/releaseLock") 
+	public Response releaseLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
+		Response selectMapResponse = selectMap(mapId);
+		if (selectMapResponse != null){
+			return selectMapResponse;
+		}
+
+
+		ModeController modeController = getModeController();
+		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
+
+
+		LockModel lm = node.getExtension(LockModel.class);//.setLastAccess(System.currentTimeMillis());
+		if(lm == null) { //lock exists
+			return Response.status(Status.BAD_REQUEST).entity("No lock present.").build();
+		}
+		//release lock
+		node.removeExtension(LockModel.class);
+
+
+		//remove form to lock list
+		getOpenMindMapInfo(mapId).getLockedNodes().remove(node);
+
+		return Response.ok().build();
+	}
+
+	@POST
 	@Path("map/{mapId}/unlockExpired/{sinceInMs}")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
-		if (!lockedNodes.containsKey(mapId)){
+		if (!mapIdInfoMap.containsKey(mapId)){
 			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
 		}
-		Set<NodeModel> nodes = lockedNodes.get(mapId);
+		Set<NodeModel> nodes = getOpenMindMapInfo(mapId).getLockedNodes();
 		Set<NodeModel> newNodes = new HashSet<NodeModel>();
 		List<NodeModel> expiredNodes = new ArrayList<NodeModel>(); 
-		
+
 		for (NodeModel node : nodes){
 			LockModel lock = node.getExtension(LockModel.class);
 			long timeDiff = System.currentTimeMillis() - lock.getLastAccess();  
@@ -446,6 +505,12 @@ public class Webservice {
 		nodes = newNodes;
 		return Response.ok(expiredNodes.toArray()).build();
 	}
+	
+	@POST
+	@Path("map/closeUnused/{thresholdInMs}")
+	public Response closeUnusesMaps() {
+		return null;
+	}
 
 	static ModeController getModeController() {
 		return WebserviceController.getInstance().getModeController();
@@ -456,7 +521,7 @@ public class Webservice {
 		return modeController.getMapController().getRootNode().getMap();
 	}
 
-	
+
 	/**
 	 * Select Map so getMapController() has right map. 
 	 * @param mapId Id of Map
@@ -468,13 +533,16 @@ public class Webservice {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * refresh lastAccesTime of node lock  
 	 * @param node Node with lock
 	 */
 	private void refreshLockAccessTime(NodeModel node){
-		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
+		LockModel lm = node.getExtension(LockModel.class);
+		if(lm != null) {
+			lm.setLastAccess(System.currentTimeMillis());
+		}
 	}
 
 	private void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
@@ -490,6 +558,13 @@ public class Webservice {
 		if(Shifty != null) {
 			lm.setShiftY(Shifty);
 		}
+	}
+	
+	static OpenMindmapInfo getOpenMindMapInfo(String mapId) {
+		if(!mapIdInfoMap.containsKey(mapId)) {
+			return null;
+		}
+		return mapIdInfoMap.get(mapId);
 	}
 
 }

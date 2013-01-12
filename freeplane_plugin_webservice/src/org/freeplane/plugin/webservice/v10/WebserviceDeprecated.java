@@ -79,7 +79,7 @@ public class WebserviceDeprecated {
 	@PUT
 	@Path("selectMindmap/{id}")
 	public Response selectMindmap(@PathParam("id") String id) {
-		URL mapUrl = Webservice.openMapUrls.get(id);
+		URL mapUrl = Webservice.getOpenMindMapInfo(id).getMapUrl();
 		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
 		try {
 			mio.newMap(mapUrl);

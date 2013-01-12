@@ -45,11 +45,11 @@ public final class WebserviceHelper {
 	}
 
 	public static boolean selectMap(String id) {
-		if(!Webservice.openMapUrls.containsKey(id)) {
+		if(!Webservice.mapIdInfoMap.containsKey(id)) {
 			return false;
 		}
 
-		URL pathURL = Webservice.openMapUrls.get(id);
+		URL pathURL = Webservice.getOpenMindMapInfo(id).getMapUrl();
 
 		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
 		try{
@@ -65,11 +65,11 @@ public final class WebserviceHelper {
 		ModeController modeController = Webservice.getModeController();
 		//select map
 		MapIO mio = modeController.getExtension(MapIO.class);
-		mio.newMap(Webservice.openMapUrls.get(id));
+		mio.newMap(Webservice.getOpenMindMapInfo(id).getMapUrl());
 		
 		//close and remove map
 		modeController.getController().close(true);
-		Webservice.openMapUrls.remove(id);
+		Webservice.mapIdInfoMap.remove(id);
 
 		return true;
 	}

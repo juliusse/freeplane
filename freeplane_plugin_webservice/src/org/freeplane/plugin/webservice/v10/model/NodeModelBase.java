@@ -57,8 +57,8 @@ abstract public class NodeModelBase {
 		URI uri = NodeLinks.getValidLink(freeplaneNode);
 		this.link = uri != null ? uri.toString() : null;
 		
-		// TODO real locking
-		this.locked = null;
+		LockModel lm = freeplaneNode.getExtension(LockModel.class);
+		this.locked = lm != null ? lm.getUsername() : null;
 
 		saveChildrenIds(freeplaneNode);
 
