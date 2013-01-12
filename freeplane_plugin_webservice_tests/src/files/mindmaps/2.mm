@@ -1,4 +1,4 @@
-<map version="docear 1.0" dcr_id="1354749515869_7ciwttqrqrtr1nt4vecv2196u" dcr_uri="workspace:/../../Temp/Docear/2.mm">
+<map version="docear 1.0" dcr_id="2" dcr_uri="workspace:/../../Temp/Docear/2.mm">
 <!--To view this file, download Docear - The Academic Literature Suite from http://www.docear.org -->
 <node TEXT="New Mindmap" FOLDED="false" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1352906250241"><hook NAME="MapStyle" zoom="0.91">
     <properties show_icon_for_attributes="true" show_note_icons="true"/>
