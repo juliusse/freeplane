@@ -9,8 +9,6 @@ import java.net.URL;
 import javax.ws.rs.core.MediaType;
 
 import org.freeplane.plugin.webservice.v10.Webservice;
-import org.freeplane.plugin.webservice.v10.WebserviceHelper;
-import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.junit.After;
 import org.junit.Before;
@@ -27,11 +25,11 @@ import com.sun.jersey.api.json.JSONConfiguration;
 public class RestApiTest {
 
 	private static final String hostAddress = "http://localhost:8080/rest/v1";
-	
+
 	private Client client;
 	private WebResource baseResource;
-	
-	
+
+
 
 
 	@Before
@@ -51,7 +49,7 @@ public class RestApiTest {
 	@Test
 	public void getMapAsJsonTest() throws URISyntaxException {
 		sendMindMapToServer(1);
-		
+
 		WebResource getMapResource = baseResource.path("map").path("1").path("json").queryParam("nodeCount", "5");
 		ClientResponse cr = getMapResource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
 
@@ -70,7 +68,7 @@ public class RestApiTest {
 
 		assertThat(map).isInstanceOf(MapModel.class);
 		assertThat(map.root.nodeText).isEqualTo("foo2");
-		
+
 		closeMindMapOnServer(1);
 	}
 
@@ -104,21 +102,19 @@ public class RestApiTest {
 		//String entity = "{\"username\":\"Jon Doe\"}";
 		String entity = "Jon Doe";
 
-		WebResource requestLock = baseResource.path("map/5/node/ID_1/requestLock");
-		cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(entity).put(ClientResponse.class);
+		cr = requestLock(5+"", "ID_1", entity);
 		assertThat(cr.getStatus()).isEqualTo(200);
 
+		
 		WebResource sendNode = baseResource.path("map/5/node");
-
 		String httpBody = "{\"id\":\"ID_1\",\"nodeText\":\"This is the new NodeText\"}";
 
 		cr = sendNode.type(MediaType.APPLICATION_JSON_TYPE).entity(httpBody).put(ClientResponse.class);
 		assertThat(cr.getStatus()).isEqualTo(200);
 
-		WebResource releaseLock = baseResource.path("map/5/node/ID_1/releaseLock");
-		cr = releaseLock.delete(ClientResponse.class);
+		cr = releaseLock(5+"", "ID_1");
 		assertThat(cr.getStatus()).isEqualTo(200);
-		
+
 		closeMindMapOnServer(5);
 	}
 
@@ -132,45 +128,40 @@ public class RestApiTest {
 		String name2 = "Jonathan";
 
 		//Jon Doe gets lock
-		WebResource requestLock = baseResource.path("map/5/node/ID_1/requestLock");
-		cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(name1).put(ClientResponse.class);
+		cr = requestLock(5+"", "ID_1", name1);
 		assertThat(cr.getStatus()).isEqualTo(200);
 
 		//request with other user, should fail
-		cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(name2).put(ClientResponse.class);
+		cr = requestLock(5+"", "ID_1", name2);
 		assertThat(cr.getStatus()).isEqualTo(403);
 
 		//Jon Does second request, should still work
-		cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(name1).put(ClientResponse.class);
+		cr = requestLock(5+"", "ID_1", name1);
 		assertThat(cr.getStatus()).isEqualTo(200);
-		
+
 		closeMindMapOnServer(5);
 	}
 
 	@Test
 	public void LockThenUnlockThenLockWithOtherUser() throws URISyntaxException {
-		WebResource wr = client.resource("http://localhost:8080/rest/v1");
 		ClientResponse cr;
-
 		sendMindMapToServer(5);
 
 		String name1 = "Jon Doe";
 		String name2 = "Jonathan";
 
 		//Jon Doe gets lock
-		WebResource requestLock = wr.path("map/5/node/ID_1/requestLock");
-		cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(name1).put(ClientResponse.class);
+		cr = requestLock(5+"", "ID_1", name1);
 		assertThat(cr.getStatus()).isEqualTo(200);
-		
+
 		//Jon releases lock, should work
-		WebResource releaseLock = wr.path("map/5/node/ID_1/releaseLock");
-		cr = releaseLock.delete(ClientResponse.class);
+		releaseLock(5+"", "ID_1");
 		assertThat(cr.getStatus()).isEqualTo(200);
-		
+
 		//Jonathan request, should get
-		cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(name2).put(ClientResponse.class);
+		requestLock(5+"", "ID_1", name2);
 		assertThat(cr.getStatus()).isEqualTo(200);
-		
+
 		closeMindMapOnServer(5);
 	}
 
@@ -183,15 +174,28 @@ public class RestApiTest {
 		MapModel model = baseResource.path("map/1/json").accept(MediaType.APPLICATION_JSON_TYPE).get(MapModel.class);
 		assertThat(model).isNotNull();
 		assertThat(model.root.nodeText).isEqualTo("foo2");
-		
+
 		closeMindMapOnServer(1);
 	}
 
-	public void sendMindMapToServer(int id) throws URISyntaxException {
+	@Test
+	public void lockNodeAndRefreshLockAndLetReleaseDueToExpiration() {
+		sendMindMapToServer(5);
+
+
+
+		closeMindMapOnServer(5);
+	}
+
+	public void sendMindMapToServer(int id) {
 		WebResource sendMapResource = baseResource.path("map");
 		InputStream in = Webservice.class.getResourceAsStream("/files/mindmaps/"+id+".mm");
 		URL pathURL = Webservice.class.getResource("/files/mindmaps/"+id+".mm");
-		File f = new File( pathURL.toURI());
+		File f = null;
+		try {
+			f = new File(pathURL.toURI());
+		} catch (URISyntaxException e) {}
+
 
 		String contentDeposition = "attachement; filename=\""+id+".mm\"";
 		assertThat(f).isNotNull();
@@ -204,11 +208,23 @@ public class RestApiTest {
 
 		assertThat(response.getStatus()).isEqualTo(200);
 	}
-	
+
 	public void closeMindMapOnServer(int id) {
 		WebResource closeMap = baseResource.path("/map/"+id);
 		ClientResponse cr = closeMap.delete(ClientResponse.class);
 		assertThat(cr.getStatus()).isEqualTo(200);
+	}
+
+	public ClientResponse requestLock(String mapId, String nodeId, String username) {
+		WebResource requestLock = baseResource.path("map/5/node/ID_1/requestLock");
+		ClientResponse cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(username).put(ClientResponse.class);
+		return cr;
+	}
+
+	public ClientResponse releaseLock(String mapId, String nodeId) {
+		WebResource releaseLock = baseResource.path("map/"+mapId+"/node/"+nodeId+"/releaseLock");
+		ClientResponse cr = releaseLock.delete(ClientResponse.class);
+		return cr;
 	}
 
 	//	@Test
