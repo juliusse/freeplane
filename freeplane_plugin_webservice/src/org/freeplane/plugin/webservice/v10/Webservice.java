@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -371,18 +374,36 @@ public class Webservice {
 		}
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
-		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
+		refreshLockAccessTime(node);
 		
 		return Response.ok().build();
 	}
 	
 	@GET
 	@Path("map/{mapId}/unlockExpired/{sinceInMs}")
+	@Produces({ MediaType.APPLICATION_JSON })
 	public Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
-		//TODO find expirec nodes
-		//TODO unlock nodes
-		//TODO create array [changedNode1, changedNode2,...]
-		return Response.status(Status.NOT_IMPLEMENTED).build();
+		if (!lockedNodes.containsKey(mapId)){
+			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
+		}
+		Set<NodeModel> nodes = lockedNodes.get(mapId);
+		Set<NodeModel> newNodes = new HashSet<NodeModel>();
+		List<NodeModel> expiredNodes = new ArrayList<NodeModel>(); 
+		
+		for (NodeModel node : nodes){
+			LockModel lock = node.getExtension(LockModel.class);
+			long timeDiff = System.currentTimeMillis() - lock.getLastAccess();  
+			if (timeDiff < sinceInMs){
+				//Lock not expired
+				newNodes.add(node);
+			} else {
+				//Lock expired
+				node.removeExtension(LockModel.class);
+				expiredNodes.add(node);
+			}
+		}
+		nodes = newNodes;
+		return Response.ok(expiredNodes.toArray()).build();
 	}
 
 	static ModeController getModeController() {
@@ -404,6 +425,14 @@ public class Webservice {
 			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
 		}
 		return null;
+	}
+	
+	/**
+	 * refresh lastAccesTime of node lock  
+	 * @param node Node with lock
+	 */
+	private void refreshLockAccessTime(NodeModel node){
+		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
 	}
 
 }
