@@ -44,7 +44,7 @@ public final class WebserviceHelper {
 		return null;
 	}
 
-	public static boolean selectMap(String id) throws Exception {
+	public static boolean selectMap(String id) {
 		if(!Webservice.openMapUrls.containsKey(id)) {
 			return false;
 		}
@@ -52,7 +52,11 @@ public final class WebserviceHelper {
 		URL pathURL = Webservice.openMapUrls.get(id);
 
 		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
-		mio.newMap(pathURL);
+		try{
+			mio.newMap(pathURL);
+		} catch (Exception e){
+			return false;
+		}
 
 		return true;
 	}

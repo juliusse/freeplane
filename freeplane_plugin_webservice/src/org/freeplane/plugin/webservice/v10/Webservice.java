@@ -36,6 +36,7 @@ import org.freeplane.plugin.webservice.WebserviceController;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
+import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
@@ -357,8 +358,15 @@ public class Webservice {
 	@PUT
 	@Path("map/{mapId}/node/{nodeId}/refreshLock") 
 	public Response refreshLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
-		//TODO refresh lock
-		return Response.status(Status.NOT_IMPLEMENTED).build();
+		Response selectMapResponse = selectMap(mapId);
+		if (selectMapResponse != null){
+			return selectMapResponse;
+		}
+		ModeController modeController = getModeController();
+		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
+		node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
+		
+		return Response.ok().build();
 	}
 	
 	@GET
@@ -378,6 +386,12 @@ public class Webservice {
 		ModeController modeController = getModeController();
 		return modeController.getMapController().getRootNode().getMap();
 	}
-
+	
+	private Response selectMap(String id){
+		if(!WebserviceHelper.selectMap(id)) {
+			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
+		}
+		return null;
+	}
 
 }
