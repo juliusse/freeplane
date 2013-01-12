@@ -43,16 +43,16 @@ import com.sun.jersey.api.client.ClientResponse.Status;
 @Path("/v1")
 @Produces(MediaType.APPLICATION_JSON)
 public class Webservice {
+	
+	//TODO add lock mechanism to Freeplane Node and our Node (discuss with dimitry?)
 
-	static final Map<String, URL> openMapUrls;
-	static {
-		openMapUrls = new HashMap<String, URL>();
-	}
+	static final Map<String, URL> openMapUrls = new HashMap<String, URL>();
+	static final Map<String, Set<NodeModel>> lockedNodes = new HashMap<String, Set<NodeModel>>();
 	
 	@GET
 	@Path("status")
 	public Response getStatus() {
-		return Response.ok("Webservice V0.01").build();
+		return Response.ok("Webservice V0.05").build();
 	}
 
 	/**
@@ -62,7 +62,7 @@ public class Webservice {
 	 * @return a map model
 	 */
 	@GET
-	@Path("map/json/{id}")
+	@Path("map/{id}/json")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getMapModel(
 			@PathParam("id") String id, 
@@ -143,7 +143,7 @@ public class Webservice {
 	 * @throws IOException 
 	 */
 	@GET
-	@Path("map/xml/{id}")
+	@Path("map/{id}/xml")
 	@Produces(MediaType.APPLICATION_XML)
 	public Response getMapModelXml(
 			@PathParam("id") String id) {
@@ -229,7 +229,7 @@ public class Webservice {
 	}
 
 	@GET
-	@Path("close")
+	@Path("shutdown")
 	public Response closeServer() {
 		
 		Set<String> ids = openMapUrls.keySet(); 
@@ -265,7 +265,7 @@ public class Webservice {
 	 * @return a node model
 	 */
 	@GET
-	@Path("node/{id}")
+	@Path("map/{mapId}/node/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getNode(
 			@PathParam("id") String id, 
@@ -289,13 +289,15 @@ public class Webservice {
 		return Response.ok(node).build();
 	}
 
-	@POST
-	@Path("node/{parentNodeId}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public DefaultNodeModel addNode(@PathParam("parentNodeId") String parentNodeId,
-			@QueryParam("nodeText") @DefaultValue("new Node") String nodeText, 
-			@QueryParam("isHtml") @DefaultValue("false") Boolean isHtml) throws NodeNotFoundException {
 
+	@POST
+	@Path("map/{mapId}/node/create")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	public Response addNode(String parentNodeId) { 
+		// TODO correct method handling
+		// TODO how to call method correctly?
+		
 		ModeController modeController = getModeController();
 		MapController mapController = modeController.getMapController();
 		//get map
@@ -305,50 +307,67 @@ public class Webservice {
 		NodeModel parentNode = mapController.getNodeFromID(parentNodeId);
 
 		if(parentNode == null)
-			throw new NodeNotFoundException("Node with id '"+parentNodeId+"' not found");
+			return Response.status(Status.BAD_REQUEST).entity("Node with id '"+parentNodeId+"' not found").build();
 
 		//create new node
-		NodeModel node = modeController.getMapController().newNode(nodeText, mm);
+		NodeModel node = modeController.getMapController().newNode("", mm);
 
 		//insert node
 		mapController.insertNodeIntoWithoutUndo(node, parentNode);
 		mapController.fireMapChanged(new MapChangeEvent(this, "node", "", ""));
 
 		node.createID();
-		return new DefaultNodeModel(node, false);	
+		return Response.ok(new DefaultNodeModel(node, false)).build();	
 	}
 
-	@POST
-	@Path("node/{nodeId}")
+	@PUT
+	@Path("map/{mapId}/node")
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({ MediaType.APPLICATION_JSON })
-	public DefaultNodeModel changeNode(DefaultNodeModel node) throws NodeNotFoundException {
+	public Response changeNode(DefaultNodeModel node) {
 		//get map
 		ModeController modeController = getModeController();
 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
 		//get node
 		NodeModel freeplaneNode = mm.getNodeForID(node.id);
 		if(freeplaneNode == null)
-			throw new NodeNotFoundException("Node with id '"+node.id+"' not found");
+			return Response.status(Status.BAD_REQUEST).entity("Node with id '"+node.id+"' not found").build();
 
-		//TODO do stuff
+		//TODO make changes according to data send with node
+		//TODO add LockExtension if lock is in node
 		//Response.ok(new DefaultNodeModel(node)).
-		return new DefaultNodeModel(freeplaneNode,false);	
+		return Response.ok(new DefaultNodeModel(freeplaneNode,false)).build();	
 	}
 
-
 	@DELETE
-	@Path("removeNode/{id}")
+	@Path("map/{mapId}/node")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String removeNode(@PathParam("id")String id) throws NodeNotFoundException {
+	public Response removeNode(String id) throws NodeNotFoundException {
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(id);
 		if(node == null)
 			throw new NodeNotFoundException("Node with id '"+id+"' not found");
 
+		//TODO works correct?
 		node.removeFromParent();
 		node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
-		return new Boolean(true).toString();
+		return Response.ok(new Boolean(true).toString()).build();
+	}
+	
+	@PUT
+	@Path("map/{mapId}/node/{nodeId}/refreshLock") 
+	public Response refreshLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
+		//TODO refresh lock
+		return Response.status(Status.NOT_IMPLEMENTED).build();
+	}
+	
+	@GET
+	@Path("map/{id}/unlockExpired/{sinceInMs}")
+	public Response getExpiredLocks(@PathParam("id") String id, @PathParam("sinceInMs") int sinceInMs) {
+		//TODO find expirec nodes
+		//TODO unlock nodes
+		//TODO create array [changedNode1, changedNode2,...]
+		return Response.status(Status.NOT_IMPLEMENTED).build();
 	}
 
 	static ModeController getModeController() {

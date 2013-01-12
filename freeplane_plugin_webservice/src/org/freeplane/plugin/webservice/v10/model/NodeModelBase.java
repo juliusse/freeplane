@@ -23,6 +23,7 @@ abstract public class NodeModelBase {
 	public final String[] icons;
 	public final ImageModel image;
 	public final String link;
+	public final String locked;
 
 	//@XmlTransient
 	//protected final NodeModel freeplaneNode;
@@ -40,6 +41,7 @@ abstract public class NodeModelBase {
 		icons = null;
 		image = null;
 		link = null;
+		locked = null;
 		//freeplaneNode = null;
 	}
 
@@ -51,14 +53,12 @@ abstract public class NodeModelBase {
 		this.folded = freeplaneNode.isFolded();
 		this.icons = getIconArray(freeplaneNode);
 		this.image = getImage(freeplaneNode);
-		//this.freeplaneNode = freeplaneNode;
 
-
-		//NodeLinks nl = freeplaneNode.getExtension(NodeLinks.class);
-		
-		//get link
 		URI uri = NodeLinks.getValidLink(freeplaneNode);
 		this.link = uri != null ? uri.toString() : null;
+		
+		// TODO real locking
+		this.locked = null;
 
 		saveChildrenIds(freeplaneNode);
 
