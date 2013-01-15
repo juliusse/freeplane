@@ -50,6 +50,7 @@ import com.sun.jersey.api.client.ClientResponse.Status;
 @Produces(MediaType.APPLICATION_JSON)
 public class Webservice {
 
+	static final Object lock = new Object();
 	static final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
 
 	@GET
@@ -67,7 +68,7 @@ public class Webservice {
 	@GET
 	@Path("map/{mapId}/json")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response getMapModel(
+	public synchronized Response getMapModel(
 			@PathParam("mapId") String mapId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) 
 					throws MapNotFoundException {
@@ -148,7 +149,7 @@ public class Webservice {
 	@GET
 	@Path("map/{mapId}/xml")
 	@Produces(MediaType.APPLICATION_XML)
-	public Response getMapModelXml(
+	public synchronized Response getMapModelXml(
 			@PathParam("mapId") String mapId) {
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
@@ -178,7 +179,7 @@ public class Webservice {
 	 */
 	@DELETE
 	@Path("map/{mapId}")
-	public Response closeMap(@PathParam("mapId") String mapId) {
+	public synchronized Response closeMap(@PathParam("mapId") String mapId) {
 		try {
 			WebserviceHelper.closeMap(mapId);
 			return Response.ok().build();
@@ -190,7 +191,7 @@ public class Webservice {
 	@PUT
 	@Path("map")
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
-	public Response openMindmap(InputStream uploadedInputStream) {
+	public synchronized Response openMindmap(InputStream uploadedInputStream) {
 
 		try {
 			//create file
@@ -228,7 +229,7 @@ public class Webservice {
 
 	@GET
 	@Path("shutdown")
-	public Response closeServer() {
+	public synchronized Response closeServer() {
 
 		Set<String> ids = mapIdInfoMap.keySet(); 
 		for(String mapId : ids) {
@@ -265,7 +266,7 @@ public class Webservice {
 	@GET
 	@Path("map/{mapId}/node/{nodeId}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response getNode(
+	public synchronized Response getNode(
 			@PathParam("mapId") String mapId,
 			@PathParam("nodeId") String nodeId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) {
@@ -300,7 +301,7 @@ public class Webservice {
 	@Path("map/{mapId}/node/create")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	public Response addNode(@PathParam("mapId") String mapId, String parentNodeId) { 
+	public synchronized Response addNode(@PathParam("mapId") String mapId, String parentNodeId) { 
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
 			return selectMapResponse;
@@ -335,7 +336,7 @@ public class Webservice {
 	@Path("map/{mapId}/node")
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({ MediaType.APPLICATION_JSON })
-	public Response changeNode(@PathParam("mapId") String mapId, DefaultNodeModel node) {
+	public synchronized Response changeNode(@PathParam("mapId") String mapId, DefaultNodeModel node) {
 		Response response = selectMap(mapId);
 		if(response != null) 
 			return response;
@@ -389,7 +390,7 @@ public class Webservice {
 	@DELETE
 	@Path("map/{mapId}/node")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public Response removeNode(String id) throws NodeNotFoundException {
+	public synchronized Response removeNode(String id) throws NodeNotFoundException {
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(id);
 		if(node == null)
@@ -403,7 +404,7 @@ public class Webservice {
 
 	@PUT
 	@Path("map/{mapId}/node/{nodeId}/refreshLock") 
-	public Response refreshLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
+	public synchronized Response refreshLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
 			return selectMapResponse;
@@ -421,7 +422,7 @@ public class Webservice {
 	@PUT
 	@Path("map/{mapId}/node/{nodeId}/requestLock") 
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response requestLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId, String username){
+	public synchronized Response requestLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId, String username){
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
 			return selectMapResponse;
@@ -454,7 +455,7 @@ public class Webservice {
 
 	@DELETE
 	@Path("map/{mapId}/node/{nodeId}/releaseLock") 
-	public Response releaseLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
+	public synchronized Response releaseLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
 			return selectMapResponse;
@@ -482,7 +483,7 @@ public class Webservice {
 	@POST
 	@Path("map/{mapId}/unlockExpired/{sinceInMs}")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
+	public synchronized Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
 		if (!mapIdInfoMap.containsKey(mapId)){
 			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
 		}
@@ -508,7 +509,7 @@ public class Webservice {
 	
 	@POST
 	@Path("map/closeUnused/{thresholdInMs}")
-	public Response closeUnusesMaps() {
+	public synchronized Response closeUnusesMaps() {
 		return null;
 	}
 

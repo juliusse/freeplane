@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 
 import org.freeplane.core.util.LogUtils;
-import org.freeplane.features.map.mindmapmode.MMapController;
-import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;

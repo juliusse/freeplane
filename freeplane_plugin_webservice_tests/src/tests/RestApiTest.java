@@ -24,7 +24,7 @@ import com.sun.jersey.api.json.JSONConfiguration;
 
 public class RestApiTest {
 
-	private static final String hostAddress = "http://localhost:8080/rest/v1";
+	private static final String hostAddress = "http://localhost:8081/rest/v1";
 
 	private Client client;
 	private WebResource baseResource;
