@@ -7,11 +7,12 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import akka.actor.*;
+import akka.osgi.ActorSystemActivator;
 
 
 
-
-public class Activator implements BundleActivator {
+public class Activator extends ActorSystemActivator {
 
 	//private ServiceTracker httpServiceTracker;
 
@@ -25,12 +26,7 @@ public class Activator implements BundleActivator {
 //	}
 
 	@Override
-	public void start(BundleContext context) throws Exception {
-//		context.registerService(IControllerExtensionProvider.class.getName(), new IControllerExtensionProvider() {
-//			public void installExtension(Controller controller) {
-//				new WebserviceController();
-//			}
-//		}, null);
+	public void start(BundleContext context) {
 		
 		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
 		props.put("mode", new String[] { MModeController.MODENAME });
@@ -55,6 +51,6 @@ public class Activator implements BundleActivator {
 //	}
 
 	@Override
-	public void stop(BundleContext arg0) throws Exception {		
+	public void configure(BundleContext arg0, ActorSystem arg1) {		
 	}
 }

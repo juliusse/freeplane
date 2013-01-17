@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.concurrent.Semaphore;
 
 import javax.ws.rs.core.MediaType;
 
@@ -118,6 +119,31 @@ public class RestApiTest {
 		closeMindMapOnServer(5);
 	}
 
+	@Test
+	public void simulateMultipleUser() {
+		final Semaphore finishSemaphore = new Semaphore(-3);
+		for(int i = 1; i <= 4; i++) {
+			final int mapId = i == 4 ? 5 : i;
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					sendMindMapToServer(mapId);
+					
+					
+					WebResource getMapResource = baseResource.path("map").path(mapId+"").path("json").queryParam("nodeCount", "5");
+					ClientResponse cr = getMapResource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+					assertThat(cr.getStatus()).isEqualTo(200);
+					
+					closeMindMapOnServer(mapId);
+					
+					finishSemaphore.release();
+				}
+			}).start();
+		}
+		
+		finishSemaphore.acquireUninterruptibly();
+	}
 	@Test
 	public void requestLockTwoTimes() throws URISyntaxException {
 		ClientResponse cr;
