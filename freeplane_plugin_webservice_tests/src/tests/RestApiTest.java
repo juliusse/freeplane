@@ -7,12 +7,14 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.Semaphore;
 
+import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 
 import org.freeplane.plugin.webservice.v10.Webservice;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.sun.jersey.api.client.Client;
@@ -95,12 +97,25 @@ public class RestApiTest {
 	//		assertThat(deleted).isTrue();
 	//		
 	//	}
+	
+	@Test
+	public void changeNodeWithoutLock() throws URISyntaxException {
+		ClientResponse cr;
+		sendMindMapToServer(5);
+	
+		WebResource sendNode = baseResource.path("map/5/node");
+		String httpBody = "{\"id\":\"ID_1\",\"nodeText\":\"I wrote this without a lock!\"}";
+
+		cr = sendNode.type(MediaType.APPLICATION_JSON_TYPE).entity(httpBody).put(ClientResponse.class);
+		assertThat(cr.getStatus()).isNotEqualTo(200);
+
+		closeMindMapOnServer(5);
+	}
 
 	@Test
 	public void changeNode() throws URISyntaxException {
 		ClientResponse cr;
 		sendMindMapToServer(5);
-		//String entity = "{\"username\":\"Jon Doe\"}";
 		String entity = "Jon Doe";
 
 		cr = requestLock(5+"", "ID_1", entity);
@@ -120,7 +135,98 @@ public class RestApiTest {
 	}
 
 	@Test
-	public void simulateMultipleUser() {
+	public void multipleUserGetSameMap() {
+		final Semaphore finishSemaphore = new Semaphore(-3);
+		final int mapId = 5;
+		sendMindMapToServer(mapId);
+		for(int i = 1; i < 5; i++) {
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					WebResource getMapResource = baseResource.path("map").path(mapId+"").path("json").queryParam("nodeCount", "5");
+					ClientResponse cr = getMapResource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
+					assertThat(cr.getStatus()).isEqualTo(200);
+
+					finishSemaphore.release();
+				}
+			}).start();
+		}
+		
+		closeMindMapOnServer(mapId);
+		
+		finishSemaphore.acquireUninterruptibly();
+	}
+	
+	@Test
+	public void multipleUserValidChangeNodesDifferentMap() {
+		final Semaphore finishSemaphore = new Semaphore(-3);
+		for(int i = 1; i < 5; i++) {
+			final int mapId = i == 4 ? 5 : i;
+			final String entity = "Jon Doe " + i;
+			final String nodeId = "ID_0";
+			sendMindMapToServer(mapId);
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					ClientResponse cr = requestLock("" + mapId, nodeId, entity);
+					assertThat(cr.getStatus()).isEqualTo(200);
+					
+					WebResource sendNode = baseResource.path("map/"+ mapId + "/node");
+					String httpBody = "{\"id\":\"" + nodeId + "\",\"nodeText\":\"This is the new NodeText by " + entity + "\"}";
+
+					cr = sendNode.type(MediaType.APPLICATION_JSON_TYPE).entity(httpBody).put(ClientResponse.class);
+					assertThat(cr.getStatus()).isEqualTo(200);
+
+					cr = releaseLock("" + mapId, nodeId);
+					assertThat(cr.getStatus()).isEqualTo(200);
+		
+					closeMindMapOnServer(mapId);
+					
+					finishSemaphore.release();
+				}
+			}).start();
+		}
+		finishSemaphore.acquireUninterruptibly();
+	}
+	
+	@Test
+	public void multipleUserValidChangeDifferentNodesSameMap() {
+		final Semaphore finishSemaphore = new Semaphore(-3);
+		final int mapId = 5;
+		sendMindMapToServer(mapId);
+		for(int i = 1; i < 5; i++) {
+			final String entity = "Jon Doe " + i;
+			final String nodeId = "ID_" + i;
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					ClientResponse cr = requestLock("" + mapId, nodeId, entity);
+					assertThat(cr.getStatus()).isEqualTo(200);
+					
+					WebResource sendNode = baseResource.path("map/"+ mapId + "/node");
+					String httpBody = "{\"id\":\"" + nodeId + "\",\"nodeText\":\"This is the new NodeText by " + entity + "\"}";
+
+					cr = sendNode.type(MediaType.APPLICATION_JSON_TYPE).entity(httpBody).put(ClientResponse.class);
+					assertThat(cr.getStatus()).isEqualTo(200);
+
+					cr = releaseLock("" + mapId, nodeId);
+					assertThat(cr.getStatus()).isEqualTo(200);
+					
+					finishSemaphore.release();
+				}
+			}).start();
+		}
+		
+		closeMindMapOnServer(mapId);
+		
+		finishSemaphore.acquireUninterruptibly();
+	}
+	
+	@Test
+	public void multipleUserGetMultipleMaps() {
 		final Semaphore finishSemaphore = new Semaphore(-3);
 		for(int i = 1; i <= 4; i++) {
 			final int mapId = i == 4 ? 5 : i;
@@ -129,7 +235,6 @@ public class RestApiTest {
 				@Override
 				public void run() {
 					sendMindMapToServer(mapId);
-					
 					
 					WebResource getMapResource = baseResource.path("map").path(mapId+"").path("json").queryParam("nodeCount", "5");
 					ClientResponse cr = getMapResource.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
@@ -144,6 +249,7 @@ public class RestApiTest {
 		
 		finishSemaphore.acquireUninterruptibly();
 	}
+	
 	@Test
 	public void requestLockTwoTimes() throws URISyntaxException {
 		ClientResponse cr;
@@ -169,6 +275,53 @@ public class RestApiTest {
 	}
 
 	@Test
+	public void refreshUnlockedNode() throws URISyntaxException {
+		ClientResponse cr;
+		sendMindMapToServer(5);
+
+		// Release unlocked node. shouldn't work
+		cr = releaseLock("" + 5, "ID_1");
+		assertThat(cr.getStatus()).isEqualTo(400);
+		
+		closeMindMapOnServer(5);
+	}
+
+	@Test
+	public void lockUnlockRefreshLock() throws URISyntaxException {
+		ClientResponse cr;
+
+		sendMindMapToServer(5);
+
+		String name1 = "Jon Doe";
+
+		//Jon Doe gets lock
+		cr = requestLock(5+"", "ID_1", name1);
+		assertThat(cr.getStatus()).isEqualTo(200);
+
+		// release Lock
+		cr = releaseLock(5+"", "ID_1");
+		assertThat(cr.getStatus()).isEqualTo(200);
+
+		// refresh lock, shouldn't work
+		cr = refreshLock(5+"", "ID_1");
+		assertThat(cr.getStatus()).isEqualTo(400);
+
+		closeMindMapOnServer(5);
+	}
+	
+	@Test
+	public void unlockUnlockedNode() throws URISyntaxException {
+		ClientResponse cr;
+		sendMindMapToServer(5);
+
+		// Refresh unlocked node. shouldn't work
+		cr = refreshLock("" + 5, "ID_1");
+		assertThat(cr.getStatus()).isEqualTo(400);
+		
+		closeMindMapOnServer(5);
+	}
+	
+	@Test
 	public void LockThenUnlockThenLockWithOtherUser() throws URISyntaxException {
 		ClientResponse cr;
 		sendMindMapToServer(5);
@@ -181,11 +334,11 @@ public class RestApiTest {
 		assertThat(cr.getStatus()).isEqualTo(200);
 
 		//Jon releases lock, should work
-		releaseLock(5+"", "ID_1");
+		cr = releaseLock(5+"", "ID_1");
 		assertThat(cr.getStatus()).isEqualTo(200);
 
 		//Jonathan request, should get
-		requestLock(5+"", "ID_1", name2);
+		cr = requestLock(5+"", "ID_1", name2);
 		assertThat(cr.getStatus()).isEqualTo(200);
 
 		closeMindMapOnServer(5);
@@ -204,13 +357,35 @@ public class RestApiTest {
 		closeMindMapOnServer(1);
 	}
 
-	@Test
+	@Ignore("Ignored") @Test
 	public void lockNodeAndRefreshLockAndLetReleaseDueToExpiration() {
+		throw new UnsupportedOperationException("Not yet implemented");
+		/*
 		sendMindMapToServer(5);
 
+		final Semaphore finishSemaphore = new Semaphore(-3);
+		final int mapId = 5;
+		final String nodeId = "ID_0";
+		final String entity = "Jon Doe";
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				ClientResponse cr = requestLock("" + mapId, nodeId, entity);
+				assertThat(cr.getStatus()).isEqualTo(200);
 
+				wait(100);
+				
+				cr = refreshLock("" + mapId, nodeId);
+				assertThat(cr.getStatus()).isEqualTo(200);
+				
+				finishSemaphore.release();
+			}
+		}).start();
+		
+		finishSemaphore.acquireUninterruptibly();
 
-		closeMindMapOnServer(5);
+		closeMindMapOnServer(5);*/
 	}
 
 	public void sendMindMapToServer(int id) {
@@ -235,14 +410,14 @@ public class RestApiTest {
 		assertThat(response.getStatus()).isEqualTo(200);
 	}
 
-	public void closeMindMapOnServer(int id) {
-		WebResource closeMap = baseResource.path("/map/"+id);
+	public void closeMindMapOnServer(int mapId) {
+		WebResource closeMap = baseResource.path("/map/"+mapId);
 		ClientResponse cr = closeMap.delete(ClientResponse.class);
 		assertThat(cr.getStatus()).isEqualTo(200);
 	}
 
 	public ClientResponse requestLock(String mapId, String nodeId, String username) {
-		WebResource requestLock = baseResource.path("map/5/node/ID_1/requestLock");
+		WebResource requestLock = baseResource.path("map/" + mapId +"/node/" + nodeId + "/requestLock");
 		ClientResponse cr = requestLock.type(MediaType.APPLICATION_JSON_TYPE).entity(username).put(ClientResponse.class);
 		return cr;
 	}
@@ -253,6 +428,12 @@ public class RestApiTest {
 		return cr;
 	}
 
+	public ClientResponse refreshLock(String mapId, String nodeId) {
+		WebResource refreshLock = baseResource.path("map/"+mapId+"/node/"+nodeId+"/refreshLock");
+		ClientResponse cr = refreshLock.delete(ClientResponse.class);
+		return cr;
+	}
+	
 	//	@Test
 	//	public void selectOpenedMapTest() throws URISyntaxException {
 	//		WebResource wr = client.resource("http://localhost:8080/rest/v1");

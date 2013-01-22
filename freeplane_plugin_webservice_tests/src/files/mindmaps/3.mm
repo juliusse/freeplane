@@ -1,6 +1,6 @@
 <map version="0.9.0" dcr_id="3" dialect="docear 1.0" docear_map_version="1.0" software_name="SciPlore_MindMapping" software_version="0.14" private="1" mapID="88c560da-0c67-49c7-870a-fa7c1b63bc38">
 <!--To view this file, download Docear - The Academic Literature Suite from http://www.docear.org -->
-<node TEXT="Welcome" FOLDED="false" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1322910607046" COLOR="#ffffff" BACKGROUND_COLOR="#0099cc">
+<node TEXT="Welcome" FOLDED="false" ID="ID_0" CREATED="1283093380553" MODIFIED="1322910607046" COLOR="#ffffff" BACKGROUND_COLOR="#0099cc">
 <font SIZE="16" BOLD="true" ITALIC="false"/>
 <hook NAME="MapStyle" zoom="1.21">
     <properties show_icon_for_attributes="true" show_note_icons="true" show_notes_in_map="false"/>

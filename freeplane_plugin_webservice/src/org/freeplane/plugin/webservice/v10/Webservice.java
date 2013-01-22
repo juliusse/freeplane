@@ -412,10 +412,12 @@ public class Webservice {
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
 
-		//node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
+		if (!getOpenMindMapInfo(mapId).getLockedNodes().contains(node)){
+			return Response.status(Status.BAD_REQUEST).entity("No Lock for Node available.").build();
+		}
+		
 		refreshLockAccessTime(node);
-
-
+		
 		return Response.ok().build();
 	}
 
@@ -427,7 +429,6 @@ public class Webservice {
 		if (selectMapResponse != null){
 			return selectMapResponse;
 		}
-
 
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
@@ -509,7 +510,7 @@ public class Webservice {
 	
 	@POST
 	@Path("map/closeUnused/{thresholdInMs}")
-	public synchronized Response closeUnusesMaps() {
+	public synchronized Response closeUnusedMaps() {
 		return null;
 	}
 
@@ -539,7 +540,7 @@ public class Webservice {
 	 * refresh lastAccesTime of node lock  
 	 * @param node Node with lock
 	 */
-	private void refreshLockAccessTime(NodeModel node){
+	private void refreshLockAccessTime(NodeModel node) {
 		LockModel lm = node.getExtension(LockModel.class);
 		if(lm != null) {
 			lm.setLastAccess(System.currentTimeMillis());
