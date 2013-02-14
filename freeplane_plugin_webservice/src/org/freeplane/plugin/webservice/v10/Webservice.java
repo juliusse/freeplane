@@ -45,7 +45,9 @@ import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
+import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
@@ -386,20 +388,17 @@ public class Webservice {
 		refreshLockAccessTime(freeplaneNode);
 
 	}
-
-	@DELETE
-	@Path("map/{mapId}/node")
-	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response removeNode(String id) throws NodeNotFoundException {
+	
+	public static void removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
+		selectMap(request.getMapId());
 		ModeController modeController = getModeController();
-		NodeModel node = modeController.getMapController().getNodeFromID(id);
+		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
 		if(node == null)
-			throw new NodeNotFoundException("Node with id '"+id+"' not found");
+			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
 
 		//TODO works correct?
 		node.removeFromParent();
 		node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
-		return Response.ok(new Boolean(true).toString()).build();
 	}
 
 	public static void refreshLock (String mapId, String nodeId) throws MapNotFoundException{

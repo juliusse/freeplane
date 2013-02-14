@@ -7,7 +7,6 @@ import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 public class Messages {
 
 	public static class MindmapAsJsonRequest implements Serializable {
-
 		private final String id;
 		private final int nodeCount;
 
@@ -40,7 +39,24 @@ public class Messages {
 		public String getJsonString() {
 			return jsonString;
 		}
+	}
+	
+	public static class RemoveNodeRequest implements Serializable {
+		private final String mapId; 
+		private final String nodeId;
+
+		public RemoveNodeRequest(String mapId, String nodeId) {
+			this.mapId = mapId;
+			this.nodeId = nodeId;
+		}
+
+		public String getMapId() {
+			return mapId;
+		}		
 		
+		public String getNodeId(){
+			return nodeId;
+		}
 	}
 	
 	public static class AddNodeRequest implements Serializable {
