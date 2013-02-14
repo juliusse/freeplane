@@ -37,7 +37,7 @@ public class AkkaTests {
 	@Test
 	public void test() {
 		
-		remoteActor.tell(new MindmapAsJsonRequest("10"), localActor);
+		remoteActor.tell(new MindmapAsJsonRequest("test_1"), localActor);
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {

@@ -27,6 +27,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapWriter;
@@ -68,7 +71,7 @@ public class Webservice {
 	@GET
 	@Path("map/{mapId}/json")
 	@Produces(MediaType.APPLICATION_JSON)
-	public synchronized Response getMapModel(
+	public static String getMapModel(
 			@PathParam("mapId") String mapId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) 
 					throws MapNotFoundException {
@@ -81,21 +84,25 @@ public class Webservice {
 				if(mapId.startsWith("test_")) { //FOR DEBUGING
 					openTestMap(mapId);
 					if(!WebserviceHelper.selectMap(mapId)) {
-						return Response.status(Status.NOT_FOUND).entity("Map not found!\n"+
-								"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'").build();
+						throw new MapNotFoundException("Map not found!\n"+
+								"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'");
 					}
 				} else {
-					return Response.status(Status.NOT_FOUND).entity("Map not found").build();
+					throw new MapNotFoundException("Map not found");
+					//return Response.status(Status.NOT_FOUND).entity("Map not found").build();
 				}
 			}
 		} catch(Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
+			//TODO real handling
+			throw new RuntimeException();
+			//return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
 
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
+			throw new AssertionError("Current mode not MapMode");
+			//return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
 		}
 
 		//create the MapModel for JSON
@@ -105,10 +112,25 @@ public class Webservice {
 			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
-		return Response.ok(mm).build();
+		ObjectMapper mapper = new ObjectMapper();
+		String result = "";
+		try {
+			result = mapper.writeValueAsString(mm);
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return result;
+	//	return Response.ok(mm).build();
 	}
 
-	private void openTestMap(String id) {
+	private static void openTestMap(String id) {
 		try {
 			//create file
 			Random ran = new Random();
@@ -116,7 +138,7 @@ public class Webservice {
 			File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
-			InputStream in = this.getClass().getResourceAsStream("/mindmaps/"+id+".mm");
+			InputStream in = Webservice.class.getResourceAsStream("/mindmaps/"+id+".mm");
 			//fill file from inputstream
 			FileOutputStream out = new FileOutputStream(file);
 			byte[] buffer = new byte[1024];
