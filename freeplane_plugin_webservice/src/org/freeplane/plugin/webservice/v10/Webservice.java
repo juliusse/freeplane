@@ -501,9 +501,9 @@ public class Webservice {
 	@POST
 	@Path("map/{mapId}/unlockExpired/{sinceInMs}")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
+	public static String getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
 		if (!mapIdInfoMap.containsKey(mapId)){
-			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
+			throw new AssertionError("Map not found.");
 		}
 		Set<NodeModel> nodes = getOpenMindMapInfo(mapId).getLockedNodes();
 		Set<NodeModel> newNodes = new HashSet<NodeModel>();
@@ -522,12 +522,11 @@ public class Webservice {
 			}
 		}
 		nodes = newNodes;
+		
 		return Response.ok(expiredNodes.toArray()).build();
 	}
 	
-	@POST
-	@Path("map/closeUnused/{thresholdInMs}")
-	public synchronized Response closeUnusesMaps() {
+	public static Response closeUnusesMaps() {
 		return null;
 	}
 
@@ -584,6 +583,19 @@ public class Webservice {
 			return null;
 		}
 		return mapIdInfoMap.get(mapId);
+	}
+	
+	private static String buildJSON(Object object){
+		ObjectMapper mapper = new ObjectMapper();
+		String result = null;
+		
+		try {
+			result = mapper.writeValueAsString(object);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}		
+		
+		return result;
 	}
 
 }
