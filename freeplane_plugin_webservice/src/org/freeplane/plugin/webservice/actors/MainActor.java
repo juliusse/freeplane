@@ -2,13 +2,18 @@ package org.freeplane.plugin.webservice.actors;
 
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
+import org.freeplane.plugin.webservice.Messages.CloseServerRequest;
 import org.freeplane.plugin.webservice.Messages.ErrorMessage;
 import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
 import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
 import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.v10.Webservice;
+
+import akka.actor.ActorRef;
+import akka.actor.UntypedActor;
 
 public class MainActor extends UntypedActor {
 
@@ -27,7 +32,12 @@ public class MainActor extends UntypedActor {
 			//get map as json
 			if(message instanceof MindmapAsJsonRequest) {
 				MindmapAsJsonRequest request = (MindmapAsJsonRequest) message;
-				response = Webservice.getMapModel(request);
+				response = Webservice.getMapModelJson(request);
+			}
+			
+			//get map as xml
+			if(message instanceof MindmapAsXmlRequest) {
+				response = Webservice.getMapModelXml((MindmapAsXmlRequest)message);
 			}
 
 			//add node to map
@@ -53,6 +63,16 @@ public class MainActor extends UntypedActor {
 			
 			if (message instanceof OpenMindMapRequest){
 				Webservice.openMindmap((OpenMindMapRequest)message);
+			}
+			
+			//close map
+			if(message instanceof CloseMapRequest) {
+				Webservice.closeMap((CloseMapRequest)message);
+			}
+			
+			//close server
+			if(message instanceof CloseServerRequest) {
+				Webservice.closeServer();
 			}
 
 			if(response != null)

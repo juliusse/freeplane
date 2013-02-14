@@ -15,14 +15,10 @@ import java.util.Random;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -41,10 +37,13 @@ import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlResponse;
 import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
 import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
@@ -54,8 +53,6 @@ import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
-
-import com.sun.jersey.api.client.ClientResponse.Status;
 
 @Path("/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -77,7 +74,7 @@ public class Webservice {
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a map model
 	 */
-	public static MindmapAsJsonReponse getMapModel(MindmapAsJsonRequest request) throws MapNotFoundException {
+	public static MindmapAsJsonReponse getMapModelJson(MindmapAsJsonRequest request) throws MapNotFoundException {
 
 		final int nodeCount = request.getNodeCount();
 		final String mapId = request.getId();
@@ -162,24 +159,23 @@ public class Webservice {
 	@GET
 	@Path("map/{mapId}/xml")
 	@Produces(MediaType.APPLICATION_XML)
-	public synchronized Response getMapModelXml(
-			@PathParam("mapId") String mapId) throws MapNotFoundException {
+	public static MindmapAsXmlResponse getMapModelXml( MindmapAsXmlRequest request) throws MapNotFoundException, IOException {
+		final String mapId = request.getMapId();
+		
 		selectMap(mapId);
 
 		ModeController modeController = getModeController();
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
+			throw new AssertionError("Current mode not MapMode");
 		}
 
 		StringWriter writer = new StringWriter();
-		try {
-			modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
-		} catch (IOException e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
-		}
+		
+		modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
 
-		return Response.ok(writer.toString()).build();
+
+		return new MindmapAsXmlResponse(writer.toString());
 	}
 
 	/**
@@ -187,15 +183,8 @@ public class Webservice {
 	 * @param id
 	 * @return
 	 */
-	@DELETE
-	@Path("map/{mapId}")
-	public synchronized Response closeMap(@PathParam("mapId") String mapId) {
-		try {
-			WebserviceHelper.closeMap(mapId);
-			return Response.ok().build();
-		} catch (Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
-		}
+	public static void closeMap(CloseMapRequest request) throws Exception{
+		WebserviceHelper.closeMap(request.getMapId());
 	}
 
 	public static void openMindmap(OpenMindMapRequest request) {
@@ -232,9 +221,8 @@ public class Webservice {
 		}
 	}
 
-	@GET
-	@Path("shutdown")
-	public synchronized Response closeServer() {
+	
+	public static void closeServer() {
 
 		Set<String> ids = mapIdInfoMap.keySet(); 
 		for(String mapId : ids) {
@@ -259,7 +247,6 @@ public class Webservice {
 			}
 		}).start();
 
-		return Response.ok().build();
 	}
 
 	/**
@@ -295,7 +282,7 @@ public class Webservice {
 	public static AddNodeResponse addNode(AddNodeRequest request) throws MapNotFoundException, NodeNotFoundException {
 		final String mapId = request.getMapId();
 		final String parentNodeId = request.getParentNodeId(); 
-		
+
 		selectMap(mapId);
 
 		ModeController modeController = getModeController();
@@ -317,7 +304,7 @@ public class Webservice {
 		mapController.fireMapChanged(new MapChangeEvent(null, "node", "", ""));
 
 		node.createID();
-		
+
 		return new AddNodeResponse(new DefaultNodeModel(node, false));
 		//return Response.ok(new DefaultNodeModel(node, false)).build();	
 	}
@@ -328,9 +315,9 @@ public class Webservice {
 	@Produces({ MediaType.APPLICATION_JSON })
 	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException {
 		final String mapId = request.getMapId();
-		
+
 		final DefaultNodeModel node = objectMapper.readValue(request.getNodeAsJsonString(), DefaultNodeModel.class);
-		
+
 		selectMap(mapId);
 
 		//get map
@@ -376,7 +363,7 @@ public class Webservice {
 		refreshLockAccessTime(freeplaneNode);
 
 	}
-	
+
 	public static void removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
 		selectMap(request.getMapId());
 		ModeController modeController = getModeController();
