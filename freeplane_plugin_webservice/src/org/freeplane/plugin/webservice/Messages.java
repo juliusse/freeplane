@@ -2,6 +2,8 @@ package org.freeplane.plugin.webservice;
 
 import java.io.Serializable;
 
+import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
+
 public class Messages {
 
 	public static class MindmapAsJsonRequest implements Serializable {
@@ -32,7 +34,6 @@ public class Messages {
 		private final String jsonString;
 
 		public MindmapAsJsonReponse(String jsonString) {
-			super();
 			this.jsonString = jsonString;
 		}
 
@@ -40,5 +41,38 @@ public class Messages {
 			return jsonString;
 		}
 		
+	}
+	
+	public static class AddNodeRequest implements Serializable {
+		private final String mapId;
+		private final String parentNodeId;
+		
+		public AddNodeRequest(String mapId, String parentNodeId) {
+			super();
+			this.mapId = mapId;
+			this.parentNodeId = parentNodeId;
+		}
+
+		public String getMapId() {
+			return mapId;
+		}
+
+		public String getParentNodeId() {
+			return parentNodeId;
+		}
+		
+	}
+	
+	public static class AddNodeResponse implements Serializable {
+		private final DefaultNodeModel node;
+
+		public AddNodeResponse(DefaultNodeModel node) {
+			super();
+			this.node = node;
+		}
+
+		public DefaultNodeModel getNode() {
+			return node;
+		}
 	}
 }

@@ -39,6 +39,7 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
+import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
@@ -69,8 +70,7 @@ public class Webservice {
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a map model
 	 */
-	public static String getMapModel(MindmapAsJsonRequest request) 
-					throws MapNotFoundException {
+	public static String getMapModel(MindmapAsJsonRequest request) throws MapNotFoundException {
 
 		final int nodeCount = request.getNodeCount();
 		final String mapId = request.getId();
@@ -109,21 +109,11 @@ public class Webservice {
 			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
-		ObjectMapper mapper = new ObjectMapper();
-		String result = "";
-		try {
-			result = mapper.writeValueAsString(mm);
-		} catch (JsonGenerationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return result;
+		String result = buildJSON(mm);
+		if(result != null) 
+			return result;
+		else
+			throw new AssertionError("buildJSON");
 	}
 
 	private static void openTestMap(String id) {
@@ -157,7 +147,7 @@ public class Webservice {
 		} catch (Exception e) {}
 	}
 
-	/**
+	/** 
 	 * returns a map as a JSON-Object
 	 * @param id ID of map
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
@@ -319,7 +309,11 @@ public class Webservice {
 	@Path("map/{mapId}/node/create")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	public synchronized Response addNode(@PathParam("mapId") String mapId, String parentNodeId) { 
+	public static String addNode(AddNodeRequest request) {
+		final String mapId = request.getMapId();
+		final String parentNodeId = request.getParentNodeId();
+		
+		
 		Response selectMapResponse = selectMap(mapId);
 		if (selectMapResponse != null){
 			return selectMapResponse;
@@ -523,11 +517,12 @@ public class Webservice {
 		}
 		nodes = newNodes;
 		
-		return Response.ok(expiredNodes.toArray()).build();
+		return "";
+		//return Response.ok(expiredNodes.toArray()).build();
 	}
 	
-	public static Response closeUnusesMaps() {
-		return null;
+	public static void closeUnusedMaps() {
+		//TODO close maps and tell ZooKeeper
 	}
 
 	static ModeController getModeController() {
@@ -585,7 +580,7 @@ public class Webservice {
 		return mapIdInfoMap.get(mapId);
 	}
 	
-	private static String buildJSON(Object object){
+	private static String buildJSON(Object object) {
 		ObjectMapper mapper = new ObjectMapper();
 		String result = null;
 		
