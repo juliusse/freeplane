@@ -3,10 +3,13 @@ package org.freeplane.plugin.webservice.v10;
 import java.io.File;
 import java.net.URL;
 import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.plugin.webservice.WebserviceController;
@@ -48,7 +51,7 @@ public final class WebserviceHelper {
 		if(!Webservice.mapIdInfoMap.containsKey(id)) {
 			return false;
 		}
-
+		LogUtils.getLogger().log(Level.INFO, "changing map to "+id);
 		URL pathURL = Webservice.getOpenMindMapInfo(id).getMapUrl();
 
 		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);

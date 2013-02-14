@@ -51,6 +51,7 @@ public class Activator extends ActorSystemActivator {
 //	}
 
 	@Override
-	public void configure(BundleContext arg0, ActorSystem arg1) {		
+	public void configure(BundleContext arg0, ActorSystem arg1) {
+		
 	}
 }

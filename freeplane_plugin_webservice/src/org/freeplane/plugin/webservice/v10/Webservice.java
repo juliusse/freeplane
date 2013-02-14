@@ -72,6 +72,9 @@ public class Webservice {
 			@PathParam("mapId") String mapId, 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) 
 					throws MapNotFoundException {
+		MapModel mm;
+synchronized (lock) {
+	
 
 		boolean loadAllNodes = nodeCount == -1;
 		ModeController modeController = getModeController();
@@ -99,12 +102,12 @@ public class Webservice {
 		}
 
 		//create the MapModel for JSON
-		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
+		mm = new MapModel(freeplaneMap,loadAllNodes);
 
 		if(!loadAllNodes) {
 			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
 		}
-
+}
 		return Response.ok(mm).build();
 	}
 
@@ -192,6 +195,8 @@ public class Webservice {
 	@Path("map")
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
 	public synchronized Response openMindmap(InputStream uploadedInputStream) {
+synchronized (lock) {
+	
 
 		try {
 			//create file
@@ -223,8 +228,9 @@ public class Webservice {
 		} catch (Exception e) {
 			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
-
+}
 		return Response.status(200).entity("File uploaded succesfully").build();
+		
 	}
 
 	@GET
