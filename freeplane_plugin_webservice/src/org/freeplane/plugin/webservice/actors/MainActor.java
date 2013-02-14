@@ -3,6 +3,7 @@ package org.freeplane.plugin.webservice.actors;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.ErrorMessage;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.v10.Webservice;
 
 import akka.actor.ActorRef;
@@ -34,11 +35,16 @@ public class MainActor extends UntypedActor {
 			response = Webservice.addNode(request);			
 		}
 		
+		//add node to map
+		if(message instanceof RemoveNodeRequest) {
+			RemoveNodeRequest request = (RemoveNodeRequest) message;
+			Webservice.removeNode(request);			
+		}
+		
 		sender.tell(response, getSelf());
 		}
 		catch(Exception e) {
 			sender.tell(new ErrorMessage(e),getSelf());
-			
 		}
 	}
 

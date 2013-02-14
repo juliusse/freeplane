@@ -45,13 +45,18 @@ public class Messages {
 		private final String mapId; 
 		private final String nodeId;
 
-		public MindmapAsJsonRequest(String mapId) {
+		public RemoveNodeRequest(String mapId, String nodeId) {
 			this.mapId = mapId;
+			this.nodeId = nodeId;
 		}
 
-		public String getId() {
+		public String getMapId() {
 			return mapId;
 		}		
+		
+		public String getNodeId(){
+			return nodeId;
+		}
 	}
 	
 	public static class AddNodeRequest implements Serializable {
