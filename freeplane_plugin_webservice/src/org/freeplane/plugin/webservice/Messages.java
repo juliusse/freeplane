@@ -1,11 +1,8 @@
 package org.freeplane.plugin.webservice;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
-
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 
@@ -133,7 +130,7 @@ public class Messages {
 			this.e = e;
 		}
 
-		public Exception getE() {
+		public Exception getException() {
 			return e;
 		}
 	}
@@ -207,15 +204,17 @@ public class Messages {
 	}
 
 	public static class OpenMindMapRequest implements Serializable {
-		final private InputStream uploadedInputStream;
+		final private File mindmapFile;
 
-		public OpenMindMapRequest(InputStream uploadedInputStream) {
-			this.uploadedInputStream = uploadedInputStream;
+		public OpenMindMapRequest(File mindmapFile) {
+			super();
+			this.mindmapFile = mindmapFile;
 		}
 
-		public InputStream getUploadedInputStream() {
-			return uploadedInputStream;
+		public File getMindmapFile() {
+			return mindmapFile;
 		}
+
 	}
 
 	public static class CloseServerRequest implements Serializable {

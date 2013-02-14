@@ -26,54 +26,36 @@ import com.typesafe.config.ConfigFactory;
 public class WebserviceController {
 
 	private final ActorSystem system;
-	
 	private static WebserviceController webserviceController;
-	//private final ModeController modeController;
-	private HttpServer server = null;
-	
+
 	public static WebserviceController getInstance() {
-		
 		return webserviceController;
 	}
 
 	WebserviceController() {
 		webserviceController = this;
-		//this.modeController = modeController;
+
 		LogUtils.info("starting Webservice Plugin...");
-		
-		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
-        ActorRef actor = system.actorOf(new Props(MainActor.class), "main");
-        System.out.println("path=" + actor.path());
-		
+
 		int port = 8080;
 		try {
 			port = Integer.parseInt(System.getenv("webservice_port"));
 		} catch (Exception e) {}
-	    
+
 		this.registerListeners();
-		
+
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(WebserviceController.class.getClassLoader());
-		
-		try {
-			ResourceConfig rc = new ClassNamesResourceConfig(
-					Webservice.class
-					);
-			
-			
-			LogUtils.getLogger().log(Level.INFO, "Webservice address: http://localhost:"+port+"/rest");
-			server = HttpServerFactory.create( "http://localhost:"+port+"/rest",rc );
-			server.start();
-			
-		} catch (IOException e) {
-			LogUtils.getLogger().log(Level.SEVERE, "Webservice could not be started.",e);
-		} 
-		finally {
-			//set back to original class loader
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
-		}
 
+
+
+		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
+		ActorRef actor = system.actorOf(new Props(MainActor.class), "main");
+		System.out.println("path=" + actor.path());
+
+		//set back to original class loader
+		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
 
 	/**

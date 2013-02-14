@@ -196,15 +196,17 @@ public class Webservice {
 			File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
-			//fill file from inputstream
-			FileOutputStream out = new FileOutputStream(file);
-			byte[] buffer = new byte[1024];
-			int length;
-			while((length = request.getUploadedInputStream().read(buffer, 0, buffer.length)) != -1) {
-				out.write(buffer, 0, length);
-			}
-			out.flush();
-			out.close();
+			File received = request.getMindmapFile();
+			file = received;
+//			//fill file from inputstream
+//			FileOutputStream out = new FileOutputStream(file);
+//			byte[] buffer = new byte[1024];
+//			int length;
+//			while((length = request.getUploadedInputStream().read(buffer, 0, buffer.length)) != -1) {
+//				out.write(buffer, 0, length);
+//			}
+//			out.flush();
+//			out.close();
 
 			//put map in openMap Collection
 			String mapId = WebserviceHelper.getMapIdFromFile(file);
