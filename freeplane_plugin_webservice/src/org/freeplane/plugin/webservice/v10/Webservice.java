@@ -18,7 +18,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -27,7 +26,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -43,11 +41,13 @@ import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
+import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
 import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
@@ -198,10 +198,7 @@ public class Webservice {
 		}
 	}
 
-	@PUT
-	@Path("map")
-	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
-	public synchronized Response openMindmap(InputStream uploadedInputStream) {
+	public static void openMindmap(OpenMindMapRequest request) {
 
 		try {
 			//create file
@@ -214,7 +211,7 @@ public class Webservice {
 			FileOutputStream out = new FileOutputStream(file);
 			byte[] buffer = new byte[1024];
 			int length;
-			while((length = uploadedInputStream.read(buffer, 0, buffer.length)) != -1) {
+			while((length = request.getUploadedInputStream().read(buffer, 0, buffer.length)) != -1) {
 				out.write(buffer, 0, length);
 			}
 			out.flush();
@@ -231,10 +228,8 @@ public class Webservice {
 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
 			mio.newMap(pathURL);
 		} catch (Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
+			throw new AssertionError(e);
 		}
-
-		return Response.status(200).entity("File uploaded succesfully").build();
 	}
 
 	@GET
@@ -273,35 +268,28 @@ public class Webservice {
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a node model
 	 * @throws MapNotFoundException 
+	 * @throws NodeNotFoundException 
 	 */
-	@GET
-	@Path("map/{mapId}/node/{nodeId}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public synchronized Response getNode(
-			@PathParam("mapId") String mapId,
-			@PathParam("nodeId") String nodeId, 
-			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) throws MapNotFoundException {
-
-		selectMap(mapId);
+	public static GetNodeResponse getNode(GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException {
+		selectMap(request.getMapId());
 
 		ModeController modeController = getModeController();
-		boolean loadAllNodes = nodeCount == -1;
+		boolean loadAllNodes = request.getNodeCount() == -1;
 
 
-		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(nodeId);
+		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(request.getNodeId());
 
 		if(freeplaneNode == null) {
-			return Response.status(Status.BAD_REQUEST)
-					.entity(new NodeNotFoundException("Node with id '"+nodeId+"' not found.")).build();
+			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found.");
 		}
 
 		DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
 
 		if(!loadAllNodes) {
-			WebserviceHelper.loadNodesIntoModel(node, nodeCount);
+			WebserviceHelper.loadNodesIntoModel(node, request.getNodeCount());
 		}
 
-		return Response.ok(node).build();
+		return new GetNodeResponse(node);
 	}
 
 	public static AddNodeResponse addNode(AddNodeRequest request) throws MapNotFoundException, NodeNotFoundException {

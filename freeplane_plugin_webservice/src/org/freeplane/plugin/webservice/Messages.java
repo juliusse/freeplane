@@ -1,6 +1,11 @@
 package org.freeplane.plugin.webservice;
 
+import java.io.InputStream;
 import java.io.Serializable;
+
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 
@@ -120,6 +125,56 @@ public class Messages {
 
 		public String getNodeAsJsonString() {
 			return nodeAsJsonString;
+		}
+	}
+	
+	public static class GetNodeRequest implements Serializable {
+		private final String mapId;
+		private final String nodeId;
+		private final int nodeCount;
+		
+		public GetNodeRequest(String mapId, String nodeId, int nodeCount) {
+			this.mapId = mapId;
+			this.nodeId = nodeId;
+			this.nodeCount = nodeCount;
+		}
+
+		public String getMapId() {
+			return mapId;
+		}
+		
+		public String getNodeId() {
+			return nodeId;
+		}
+
+		public int getNodeCount() {
+			return nodeCount;
+		}
+	}
+	
+	public static class GetNodeResponse implements Serializable {
+		private final DefaultNodeModel node;
+
+		public GetNodeResponse(DefaultNodeModel node) {
+			super();
+			this.node = node;
+		}
+
+		public DefaultNodeModel getNode() {
+			return node;
+		}
+	}
+
+	
+	public static class OpenMindMapRequest implements Serializable {
+		final private InputStream uploadedInputStream ;
+		
+		public OpenMindMapRequest(InputStream uploadedInputStream ) {
+			this.uploadedInputStream = uploadedInputStream;
+		}
+
+		public InputStream getUploadedInputStream() {
+			return uploadedInputStream;
 		}
 	}
 }
