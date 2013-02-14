@@ -8,22 +8,31 @@ import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
+import org.freeplane.plugin.webservice.actors.MainActor;
 import org.freeplane.plugin.webservice.v10.Webservice;
+
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 
 import com.sun.jersey.api.container.httpserver.HttpServerFactory;
 import com.sun.jersey.api.core.ClassNamesResourceConfig;
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.net.httpserver.HttpServer;
+import com.typesafe.config.ConfigFactory;
 
 
 
 public class WebserviceController {
 
-	private static WebserviceController webserviceController;	
+	private final ActorSystem system;
+	
+	private static WebserviceController webserviceController;
 	//private final ModeController modeController;
 	private HttpServer server = null;
 	
 	public static WebserviceController getInstance() {
+		
 		return webserviceController;
 	}
 
@@ -31,6 +40,10 @@ public class WebserviceController {
 		webserviceController = this;
 		//this.modeController = modeController;
 		LogUtils.info("starting Webservice Plugin...");
+		
+		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
+        ActorRef actor = system.actorOf(new Props(MainActor.class), "main");
+        System.out.println("path=" + actor.path());
 		
 		int port = 8080;
 		try {
