@@ -28,6 +28,34 @@ public class Messages {
 		}
 		
 	}
+	
+	public static class MindmapAsXmlRequest implements Serializable {
+		private final String mapId;
+
+		public MindmapAsXmlRequest(String mapId) {
+			super();
+			this.mapId = mapId;
+		}
+
+		public String getMapId() {
+			return mapId;
+		}
+		
+	}
+	
+	public static class MindmapAsXmlResponse implements Serializable  {
+		private final String xmlString;
+
+		public MindmapAsXmlResponse(String xmlString) {
+			super();
+			this.xmlString = xmlString;
+		}
+
+		public String getXmlString() {
+			return xmlString;
+		}
+		
+	}
 
 	public static class MindmapAsJsonReponse implements Serializable {
 		private final String jsonString;
@@ -121,5 +149,22 @@ public class Messages {
 		public String getNodeAsJsonString() {
 			return nodeAsJsonString;
 		}
+	}
+	
+	public static class CloseMapRequest implements Serializable {
+		final private String mapId;
+
+		public CloseMapRequest(String mapId) {
+			super();
+			this.mapId = mapId;
+		}
+
+		public String getMapId() {
+			return mapId;
+		}
+	}
+	
+	public static class CloseServerRequest implements Serializable {
+		public CloseServerRequest() {}
 	}
 }
