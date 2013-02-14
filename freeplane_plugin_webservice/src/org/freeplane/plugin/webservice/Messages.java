@@ -88,4 +88,22 @@ public class Messages {
 			return e;
 		}
 	}
+	
+	public static class ChangeNodeRequest implements Serializable {
+		final private String mapId;
+		final private String nodeAsJsonString;
+		
+		public ChangeNodeRequest(String mapId, String nodeAsJsonString) {
+			this.mapId = mapId;
+			this.nodeAsJsonString = nodeAsJsonString;
+		}
+
+		public String getMapId() {
+			return mapId;
+		}
+
+		public String getNodeAsJsonString() {
+			return nodeAsJsonString;
+		}
+	}
 }

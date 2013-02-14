@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.freeplane.features.map.MapChangeEvent;
@@ -41,6 +42,8 @@ import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
+import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
@@ -58,6 +61,7 @@ public class Webservice {
 
 	static final Object lock = new Object();
 	static final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
+	static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@GET
 	@Path("status")
@@ -71,7 +75,7 @@ public class Webservice {
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a map model
 	 */
-	public static String getMapModel(MindmapAsJsonRequest request) throws MapNotFoundException {
+	public static MindmapAsJsonReponse getMapModel(MindmapAsJsonRequest request) throws MapNotFoundException {
 
 		final int nodeCount = request.getNodeCount();
 		final String mapId = request.getId();
@@ -110,11 +114,8 @@ public class Webservice {
 			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
-		String result = buildJSON(mm);
-		if(result != null) 
-			return result;
-		else
-			throw new AssertionError("buildJSON");
+		String result = buildJSON(mm); 
+		return new MindmapAsJsonReponse(result);
 	}
 
 	private static void openTestMap(String id) {
@@ -335,7 +336,11 @@ public class Webservice {
 	@Path("map/{mapId}/node")
 	@Consumes({MediaType.APPLICATION_JSON})
 	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response changeNode(@PathParam("mapId") String mapId, DefaultNodeModel node) throws MapNotFoundException {
+	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException {
+		final String mapId = request.getMapId();
+		
+		final DefaultNodeModel node = objectMapper.readValue(request.getNodeAsJsonString(), DefaultNodeModel.class);
+		
 		selectMap(mapId);
 
 		//get map
@@ -345,7 +350,7 @@ public class Webservice {
 		//get node
 		NodeModel freeplaneNode = mm.getNodeForID(node.id);
 		if(freeplaneNode == null)
-			return Response.status(Status.BAD_REQUEST).entity("Node with id '"+node.id+"' not found").build();
+			throw new NodeNotFoundException("Node with id '"+node.id+"' not found");
 
 		if(node.folded != null) {
 			freeplaneNode.setFolded(node.folded);
@@ -380,8 +385,6 @@ public class Webservice {
 
 		refreshLockAccessTime(freeplaneNode);
 
-		//Response.ok(new DefaultNodeModel(node)).
-		return Response.ok().build();	
 	}
 
 	@DELETE
@@ -514,7 +517,7 @@ public class Webservice {
 		}
 	}
 
-	private void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
+	private static void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
 		LocationModel lm = freeplaneNode.getExtension(LocationModel.class);
 		if(lm == null) {
 			lm = new LocationModel();
@@ -537,13 +540,13 @@ public class Webservice {
 	}
 
 	private static String buildJSON(Object object) {
-		ObjectMapper mapper = new ObjectMapper();
 		String result = null;
 
 		try {
-			result = mapper.writeValueAsString(object);
+			result = objectMapper.writeValueAsString(object);
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new AssertionError(e);
 		}		
 
 		return result;
