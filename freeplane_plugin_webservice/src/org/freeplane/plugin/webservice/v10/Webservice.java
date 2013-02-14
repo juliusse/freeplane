@@ -39,6 +39,7 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
+import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
@@ -68,14 +69,12 @@ public class Webservice {
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a map model
 	 */
-	@GET
-	@Path("map/{mapId}/json")
-	@Produces(MediaType.APPLICATION_JSON)
-	public static String getMapModel(
-			@PathParam("mapId") String mapId, 
-			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) 
+	public static String getMapModel(MindmapAsJsonRequest request) 
 					throws MapNotFoundException {
 
+		final int nodeCount = request.getNodeCount();
+		final String mapId = request.getId();
+		
 		boolean loadAllNodes = nodeCount == -1;
 		ModeController modeController = getModeController();
 
@@ -89,7 +88,6 @@ public class Webservice {
 					}
 				} else {
 					throw new MapNotFoundException("Map not found");
-					//return Response.status(Status.NOT_FOUND).entity("Map not found").build();
 				}
 			}
 		} catch(Exception e) {
@@ -102,7 +100,6 @@ public class Webservice {
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
 			throw new AssertionError("Current mode not MapMode");
-			//return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
 		}
 
 		//create the MapModel for JSON
@@ -127,7 +124,6 @@ public class Webservice {
 			e.printStackTrace();
 		}
 		return result;
-	//	return Response.ok(mm).build();
 	}
 
 	private static void openTestMap(String id) {
