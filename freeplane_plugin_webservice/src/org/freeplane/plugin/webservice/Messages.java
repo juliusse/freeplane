@@ -5,7 +5,6 @@ import java.io.Serializable;
 public class Messages {
 
 	public static class MindmapAsJsonRequest implements Serializable {
-
 		private final String id;
 
 		public MindmapAsJsonRequest(String id) {
@@ -28,6 +27,18 @@ public class Messages {
 		public String getJsonString() {
 			return jsonString;
 		}
-		
+	}
+	
+	public static class RemoveNodeRequest implements Serializable {
+		private final String mapId; 
+		private final String nodeId;
+
+		public MindmapAsJsonRequest(String mapId) {
+			this.mapId = mapId;
+		}
+
+		public String getId() {
+			return mapId;
+		}		
 	}
 }

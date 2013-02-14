@@ -40,6 +40,7 @@ import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.WebserviceController;
+import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
@@ -403,7 +404,8 @@ public class Webservice {
 	@DELETE
 	@Path("map/{mapId}/node")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response removeNode(String id) throws NodeNotFoundException {
+	public synchronized Response removeNode(RemoveNodeRequest request) throws NodeNotFoundException {
+		selectMap(reqeust.getMapId);
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(id);
 		if(node == null)
