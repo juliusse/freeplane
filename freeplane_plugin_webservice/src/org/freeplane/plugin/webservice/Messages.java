@@ -75,4 +75,17 @@ public class Messages {
 			return node;
 		}
 	}
+	
+	public static class ErrorMessage implements Serializable {
+		private final Exception e;
+
+		public ErrorMessage(Exception e) {
+			super();
+			this.e = e;
+		}
+
+		public Exception getE() {
+			return e;
+		}
+	}
 }
