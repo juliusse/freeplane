@@ -14,14 +14,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -54,18 +46,14 @@ import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
 
-@Path("/v1")
-@Produces(MediaType.APPLICATION_JSON)
 public class Webservice {
 
 	static final Object lock = new Object();
 	static final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
 	static final ObjectMapper objectMapper = new ObjectMapper();
 
-	@GET
-	@Path("status")
-	public Response getStatus() {
-		return Response.ok("Webservice V0.05").build();
+	public static String getStatus() {
+		return "Webservice V0.1";
 	}
 
 	/**
@@ -156,9 +144,6 @@ public class Webservice {
 	 * @throws MapNotFoundException 
 	 * @throws IOException 
 	 */
-	@GET
-	@Path("map/{mapId}/xml")
-	@Produces(MediaType.APPLICATION_XML)
 	public static MindmapAsXmlResponse getMapModelXml( MindmapAsXmlRequest request) throws MapNotFoundException, IOException {
 		final String mapId = request.getMapId();
 		
@@ -318,10 +303,6 @@ public class Webservice {
 		//return Response.ok(new DefaultNodeModel(node, false)).build();	
 	}
 
-	@PUT
-	@Path("map/{mapId}/node")
-	@Consumes({MediaType.APPLICATION_JSON})
-	@Produces({ MediaType.APPLICATION_JSON })
 	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException {
 		final String mapId = request.getMapId();
 

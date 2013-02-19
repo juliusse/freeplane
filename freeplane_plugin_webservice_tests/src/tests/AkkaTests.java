@@ -13,9 +13,13 @@ import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
+import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
+import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
+import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
 import org.freeplane.plugin.webservice.actors.MainActor;
 import org.freeplane.plugin.webservice.v10.Webservice;
+import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -44,7 +48,7 @@ public class AkkaTests {
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
 		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-		localActor = system.actorOf(new Props(MainActor.class), "localActor");
+		localActor = system.actorOf(new Props(), "localActor");
 	}
 
 	@AfterClass
@@ -58,7 +62,7 @@ public class AkkaTests {
 			{
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						remoteActor.tell(new MindmapAsJsonRequest("test_1"), getRef());
+						remoteActor.tell(new MindmapAsJsonRequest("5"), getRef());
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
@@ -75,12 +79,55 @@ public class AkkaTests {
 			{
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						sendMindMapToServer(1);
-						remoteActor.tell(new AddNodeRequest("1.mm", "ID_1723255651"), getRef());
+						sendMindMapToServer(5);
+						remoteActor.tell(new AddNodeRequest("5.mm", "ID_1"), getRef());
 
 						AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
 						System.out.println(response.getNode().nodeText);
 						Assert.assertEquals("",response.getNode().nodeText);
+					}
+				};
+			}
+		};
+	}
+	
+	@Test
+	public void testGetNodeRequest() {
+		new JavaTestKit(system) {
+			{
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						remoteActor.tell(new GetNodeRequest("5.mm", "ID_1", 1), getRef());
+
+						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
+						System.out.println(response.getNode().nodeText);
+						Assert.assertEquals("right_L1P0_Links",response.getNode().nodeText);
+						Assert.assertEquals("70",response.getNode().hGap);
+					}
+				};
+			}
+		};
+	}
+
+	@Test
+	public void testChangeNodeRequest() {
+		new JavaTestKit(system) {
+			{
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						String newNodeText = "This is a new nodeText";
+						String nodeAsJSON = "{\"id\":\"ID_1\",\"nodeText\":\"" + newNodeText + "\"}";
+						remoteActor.tell(new ChangeNodeRequest("5.mm", nodeAsJSON), getRef());
+
+						expectNoMsg();
+						
+						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), getRef());
+						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
+						Assert.assertEquals(newNodeText, response.getNode().nodeText);
+						
+						closeMindMapOnServer(5);
 					}
 				};
 			}
@@ -128,7 +175,7 @@ public class AkkaTests {
 					localActor.tell(new MindmapAsJsonRequest(mapId + "", 5),
 							localActor);
 
-					closeMindMapOnServer("" + mapId);
+					closeMindMapOnServer(mapId);
 
 					finishSemaphore.release();
 				}
@@ -156,7 +203,7 @@ public class AkkaTests {
 		remoteActor.tell(request, localActor);
 	}
 
-	public void closeMindMapOnServer(String id) {
+	public void closeMindMapOnServer(int id) {
 		remoteActor.tell(new CloseMapRequest(id + ""), localActor);
 
 	}
