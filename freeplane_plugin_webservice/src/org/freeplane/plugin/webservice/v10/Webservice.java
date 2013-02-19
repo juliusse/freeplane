@@ -22,6 +22,7 @@ import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
@@ -277,7 +278,7 @@ public class Webservice {
 		System.out.println("Map selected.");
 
 		ModeController modeController = getModeController();
-		MapController mapController = modeController.getMapController();
+		MMapController mapController = (MMapController) modeController.getMapController();
 		//get map
 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
 
@@ -293,8 +294,8 @@ public class Webservice {
 		NodeModel node = modeController.getMapController().newNode("", mm);
 
 		//insert node
-		mapController.insertNodeIntoWithoutUndo(node, parentNode);
-		mapController.fireMapChanged(new MapChangeEvent(null, "node", "", ""));
+		mapController.insertNode(node, parentNode);
+		//mapController.fireMapChanged(new MapChangeEvent(new Object(), "node", "", ""));
 
 		node.createID();
 		System.out.println("created node." + node.getID() + " with text: \"" + node.getText() + "\"");

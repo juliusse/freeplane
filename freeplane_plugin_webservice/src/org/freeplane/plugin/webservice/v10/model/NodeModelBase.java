@@ -1,5 +1,6 @@
 package org.freeplane.plugin.webservice.v10.model;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,7 @@ import org.freeplane.features.map.NodeModel;
 
 @XmlTransient
 @XmlSeeAlso(value={DefaultNodeModel.class,RootNodeModel.class})
-abstract public class NodeModelBase {
+abstract public class NodeModelBase implements Serializable {
 
 	public final String id;
 	public final String nodeText;

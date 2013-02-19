@@ -1,12 +1,13 @@
 package org.freeplane.plugin.webservice.v10.model;
 
+import java.io.Serializable;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.freeplane.features.map.NodeModel;
 
-public class OpenMindmapInfo {
+public class OpenMindmapInfo implements Serializable {
 
 	private final URL mapUrl;
 	private final Set<NodeModel> lockedNodes;

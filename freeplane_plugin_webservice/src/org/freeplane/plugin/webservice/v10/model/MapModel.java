@@ -1,5 +1,7 @@
 package org.freeplane.plugin.webservice.v10.model;
 
+import java.io.Serializable;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -8,7 +10,7 @@ import org.freeplane.features.map.NodeModel;
 
 @XmlRootElement(name = "mapModel")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class MapModel {
+public class MapModel implements Serializable {
 	public String id;
 	public Boolean isReadonly;
 	public RootNodeModel root;

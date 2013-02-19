@@ -1,9 +1,11 @@
 package org.freeplane.plugin.webservice.v10.model;
 
+import java.io.Serializable;
+
 import org.freeplane.core.extension.IExtension;
 import org.freeplane.features.map.NodeModel;
 
-public class LockModel implements IExtension {
+public class LockModel implements IExtension, Serializable {
 
 	private NodeModel nodeId;
 	private String username;
