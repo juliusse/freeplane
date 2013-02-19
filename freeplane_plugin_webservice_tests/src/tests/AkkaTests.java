@@ -9,14 +9,15 @@ import java.util.concurrent.Semaphore;
 
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
+import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
+import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
 import org.freeplane.plugin.webservice.Messages.ErrorMessage;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
-import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.actors.MainActor;
 import org.freeplane.plugin.webservice.v10.Webservice;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -57,7 +58,7 @@ public class AkkaTests {
 			{
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						remoteActor.tell(new MindmapAsJsonRequest("5"), localActor);
+						remoteActor.tell(new MindmapAsJsonRequest("test_1"), getRef());
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
@@ -74,8 +75,8 @@ public class AkkaTests {
 			{
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						sendMindMapToServer(5);
-						remoteActor.tell(new AddNodeRequest("5.mm", "ID_1"), localActor);
+						sendMindMapToServer(1);
+						remoteActor.tell(new AddNodeRequest("1", "ID_1723255651"), localActor);
 
 						AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
 						System.out.println(response.getNode().nodeText);
@@ -93,7 +94,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new GetNodeRequest("5.mm", "ID_1", 1), getRef());
+						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
 						System.out.println(response.getNode().nodeText);
@@ -114,11 +115,11 @@ public class AkkaTests {
 						sendMindMapToServer(5);
 						String newNodeText = "This is a new nodeText";
 						String nodeAsJSON = "{\"id\":\"ID_1\",\"nodeText\":\"" + newNodeText + "\"}";
-						remoteActor.tell(new ChangeNodeRequest("5.mm", nodeAsJSON), getRef());
+						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
 
 						expectNoMsg();
 						
-						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), getRef());
+						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
 						Assert.assertEquals(newNodeText, response.getNode().nodeText);
 						
@@ -129,6 +130,7 @@ public class AkkaTests {
 		};
 	}
 
+
 	@Test
 	public void sendMapGetAsJsonAndCloseOnServerTest() {
 		new JavaTestKit(system) {
@@ -137,11 +139,11 @@ public class AkkaTests {
 					public void run() {
 						sendMindMapToServer(1);
 
-						remoteActor.tell(new MindmapAsJsonRequest("1"), getRef());
+						remoteActor.tell(new MindmapAsJsonRequest("5"), getRef());
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
-						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\""));
+						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
 
 
 						closeMindMapOnServer(1);
@@ -272,10 +274,13 @@ public class AkkaTests {
 				new Within(duration("2 seconds")) {
 					public void run() {
 						remoteActor.tell(new CloseMapRequest(id+""), localActor);
+						//expectNoMsg();
 					}
 				};
 			}
 		};
+
+
 	}
 
 	public static class TheActor extends UntypedActor {
