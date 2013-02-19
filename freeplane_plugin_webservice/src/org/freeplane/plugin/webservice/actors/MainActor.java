@@ -26,6 +26,7 @@ public class MainActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
+		System.out.println(message.getClass().getName()+" received.");
 		ActorRef sender = getSender();
 		Object response = null;
 		try {
