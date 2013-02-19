@@ -347,7 +347,6 @@ public class Webservice {
 		if(node.shiftY != null) {
 			updateLocationModel(freeplaneNode, null, node.shiftY);
 		}
-
 		//only for gui
 		//freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
 
@@ -358,13 +357,16 @@ public class Webservice {
 	public static void removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
 		selectMap(request.getMapId());
 		ModeController modeController = getModeController();
+		MMapController mapController = (MMapController) modeController.getMapController();
 		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
 		if(node == null)
 			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
 
 		//TODO works correct?
-		node.removeFromParent();
-		node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
+		mapController.deleteNode(node);
+		//node.removeFromParent();
+		
+		//node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
 	}
 
 	public static void refreshLock (String mapId, String nodeId) throws MapNotFoundException{
