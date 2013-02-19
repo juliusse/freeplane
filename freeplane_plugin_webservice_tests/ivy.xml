@@ -21,6 +21,5 @@
 		<dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.9.12"/>
 		<dependency org="org.easytesting" name="fest-assert" rev="1.4"/>
 		
-		
 	</dependencies>
 </ivy-module>
