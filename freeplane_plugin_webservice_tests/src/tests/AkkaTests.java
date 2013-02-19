@@ -1,6 +1,7 @@
 package tests;
 
 import static org.fest.assertions.Assertions.assertThat;
+import static org.freeplane.plugin.webservice.Messages.*;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -45,20 +46,29 @@ public class AkkaTests {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
-//		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-//		localActor = system.actorOf(new Props(TheActor.class), "localActor");
+		//		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
+		//		localActor = system.actorOf(new Props(TheActor.class), "localActor");
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		system.shutdown();
 	}
-	
+
 	@Before
 	public  void setUp() throws Exception {
 		//system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
 		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 		localActor = system.actorOf(new Props(TheActor.class), "localActor_"+System.currentTimeMillis());
+	}
+
+	public void testSkeleton() {
+		new JavaTestKit(system) {
+			{
+				//need to register to the localActor
+				localActor.tell(getRef(), getRef());
+			}
+		};
 	}
 
 	@Test
@@ -75,6 +85,23 @@ public class AkkaTests {
 						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
 					}
 				};
+			}
+		};
+	}
+
+	@Test
+	public void testMindMapAsXml() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
+				sendMindMapToServer(5);
+
+				remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
+
+				MindmapAsXmlResponse response = expectMsgClass(MindmapAsXmlResponse.class);
+				assertThat(response.getXmlString()).contains("<node TEXT=\"right_L1P0_Links\" COLOR=\"#000000\" STYLE=\"as_parent\" MAX_WIDTH=\"600\" MIN_WIDTH=\"1\" POSITION=\"right\" ID=\"ID_1\" CREATED=\"1354627639897\" MODIFIED=\"1355079961660\" HGAP=\"70\" VSHIFT=\"-160\">");
+
+				closeMindMapOnServer(5);
 			}
 		};
 	}
@@ -98,7 +125,7 @@ public class AkkaTests {
 			}
 		};
 	}
-	
+
 	@Test
 	public void testGetNodeRequest() {
 		new JavaTestKit(system) {
@@ -113,14 +140,14 @@ public class AkkaTests {
 						System.out.println(response.getNode().nodeText);
 						assertThat(response.getNode().nodeText).isEqualTo("right_L1P0_Links");
 						assertThat(response.getNode().hGap).isEqualTo(70);
-						
+
 						closeMindMapOnServer(5);
 					}
 				};
 			}
 		};
 	}
-	
+
 	@Test
 	public void testRemoveNodeRequest() {
 		new JavaTestKit(system) {
@@ -132,11 +159,11 @@ public class AkkaTests {
 						remoteActor.tell(new RemoveNodeRequest("5", "ID_5"), localActor);
 
 						//expectNoMsg();
-						
+
 						remoteActor.tell(new GetNodeRequest("5", "ID_5", 1), localActor);
 						ErrorMessage response = expectMsgClass(ErrorMessage.class);
 						assertThat(response.getException().getMessage()).contains("Node with id 'ID_5' not found");
-						
+
 						closeMindMapOnServer(5);
 					}
 				};
@@ -157,11 +184,11 @@ public class AkkaTests {
 						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
 
 						//expectNoMsg();
-						
+
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
 						Assert.assertEquals(newNodeText, response.getNode().nodeText);
-						
+
 						closeMindMapOnServer(5);
 					}
 				};
@@ -194,91 +221,56 @@ public class AkkaTests {
 	}
 
 	@Test
-	@Ignore
-	public void simulateMultipleUser() {
-		//new JavaTestKit(system) {{
+	public void simulateMultipleUserAkka() {
+		//final ActorRef remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 
-		finishSemaphore = new Semaphore(-3);
+		final Semaphore finishSemaphore = new Semaphore(-3);
 
 		for (int i = 1; i <= 4; i++) {
 			final int mapId = i == 4 ? 5 : i;
-			new Thread(new Runnable() {
+			final ActorRef local = system.actorOf(new Props(TheActor.class), "multiactor"+mapId);
 
+			new Thread( new Runnable() {
 
 				@Override
 				public void run() {
-					//						new Within(duration("5 seconds")) {
-					//							public void run() {
-					sendMindMapToServer(mapId);
+					new JavaTestKit(system) {{
+						//final JavaTestKit probe = new JavaTestKit(system);
+						local.tell(getRef(),getRef());
 
-					localActor.tell(new MindmapAsJsonRequest(mapId + "", 5),
-							localActor);
+						new Within(duration("5 seconds")) {
 
-					closeMindMapOnServer(mapId);
+							public void run() {
+								sendMindMapToServer(mapId);
 
-					finishSemaphore.release();
-					//							}
-					//						}
 
+
+								remoteActor.tell(new MindmapAsJsonRequest(mapId + "", 5),local);
+								MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
+								//System.out.println(response.getJsonString());
+
+								if(mapId == 1) {
+									assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\"");
+								} else if(mapId == 2) {
+									assertThat(response.getJsonString()).contains("\"id\":\"2.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"New Mindmap\"");
+								} else if(mapId == 3) {
+									assertThat(response.getJsonString()).contains("\"id\":\"3.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"Welcome\"");
+								} else if(mapId == 4) {
+									assertThat(response.getJsonString()).contains("\"id\":\"5.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
+								}
+
+								closeMindMapOnServer(mapId);
+
+								finishSemaphore.release();
+							}
+						};
+
+					}};
 				}
 			}).start();
 		}
-
+		
 		finishSemaphore.acquireUninterruptibly();
-		//}};
-	}
-
-	@Test
-	public void simulateMultipleUserAkka() {
-		//final ActorRef remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-		new JavaTestKit(system) {{
-			//final JavaTestKit probe = new JavaTestKit(system);
-			localActor.tell(getRef(),getRef());
-			
-			new Within(duration("5 seconds")) {
-				
-				public void run() {
-					sendMindMapToServer(1);
-					sendMindMapToServer(2);
-					sendMindMapToServer(3);
-					sendMindMapToServer(5);
-					
-					
-					MindmapAsJsonReponse response;
-					
-					remoteActor.tell(new MindmapAsJsonRequest(1 + "", 5),localActor);
-					//probe.
-					response = expectMsgClass(MindmapAsJsonReponse.class);
-					System.out.println(response.getJsonString());
-					assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\"");
-					
-					remoteActor.tell(new MindmapAsJsonRequest(2 + "", 5),localActor);
-					response = expectMsgClass(duration("2 seconds"),MindmapAsJsonReponse.class);
-					System.out.println(response.getJsonString());
-					assertThat(response.getJsonString()).contains("\"id\":\"2.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"New Mindmap\"");
-					
-					remoteActor.tell(new MindmapAsJsonRequest(3 + "", 5),localActor);
-					response = expectMsgClass(duration("2 seconds"),MindmapAsJsonReponse.class);
-					System.out.println(response.getJsonString());
-					assertThat(response.getJsonString()).contains("\"id\":\"3.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"Welcome\"");
-					
-					remoteActor.tell(new MindmapAsJsonRequest(5 + "", 5),localActor);
-					response = expectMsgClass(duration("2 seconds"),MindmapAsJsonReponse.class);
-					System.out.println(response.getJsonString());
-					assertThat(response.getJsonString()).contains("\"id\":\"5.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
-
-
-					
-
-					closeMindMapOnServer(1);
-					closeMindMapOnServer(2);
-					closeMindMapOnServer(3);
-					closeMindMapOnServer(5);
-
-				}
-			};
-
-		}};
 	}
 
 	public void sendMindMapToServer(final int id) {
@@ -332,7 +324,7 @@ public class AkkaTests {
 				System.err.println("warning: Error occured.");
 				//org.fest.assertions.Fail.fail("An error occured", ((ErrorMessage) message).getException());
 			}
-			
+
 			if (message instanceof ActorRef) {
 				target = (ActorRef)message;
 			} else {

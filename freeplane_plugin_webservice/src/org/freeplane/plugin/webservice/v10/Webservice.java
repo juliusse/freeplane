@@ -363,7 +363,11 @@ public class Webservice {
 			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
 
 		//TODO works correct?
+		try {
 		mapController.deleteNode(node);
+		} catch (RuntimeException e) {
+			e.printStackTrace();
+		}
 		//node.removeFromParent();
 		
 		//node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
