@@ -285,7 +285,11 @@ public class Webservice {
 		final String mapId = request.getMapId();
 		final String parentNodeId = request.getParentNodeId(); 
 
+		System.out.println("Selecting Map.");
+		
 		selectMap(mapId);
+		
+		System.out.println("Map selected.");
 
 		ModeController modeController = getModeController();
 		MapController mapController = modeController.getMapController();
@@ -298,6 +302,8 @@ public class Webservice {
 		if(parentNode == null)
 			throw new NodeNotFoundException("Node with id '"+parentNodeId+"' not found");
 
+		System.out.println("got parent node: " + parentNode.getID());
+		
 		//create new node
 		NodeModel node = modeController.getMapController().newNode("", mm);
 
@@ -306,6 +312,7 @@ public class Webservice {
 		mapController.fireMapChanged(new MapChangeEvent(null, "node", "", ""));
 
 		node.createID();
+		System.out.println("created node." + node.getID() + " with text: \"" + node.getText() + "\"");
 
 		return new AddNodeResponse(new DefaultNodeModel(node, false));
 		//return Response.ok(new DefaultNodeModel(node, false)).build();	

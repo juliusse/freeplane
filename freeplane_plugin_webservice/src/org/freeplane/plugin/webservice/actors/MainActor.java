@@ -31,8 +31,7 @@ public class MainActor extends UntypedActor {
 		try {
 			//get map as json
 			if(message instanceof MindmapAsJsonRequest) {
-				MindmapAsJsonRequest request = (MindmapAsJsonRequest) message;
-				response = Webservice.getMapModelJson(request);
+				response = Webservice.getMapModelJson((MindmapAsJsonRequest) message);
 			}
 			
 			//get map as xml
@@ -42,8 +41,7 @@ public class MainActor extends UntypedActor {
 
 			//add node to map
 			if(message instanceof AddNodeRequest) {
-				AddNodeRequest request = (AddNodeRequest) message;
-				response = Webservice.addNode(request);			
+				response = Webservice.addNode((AddNodeRequest) message);			
 			}
 			
 			//change node
@@ -81,6 +79,7 @@ public class MainActor extends UntypedActor {
 			
 		}
 		catch(Exception e) {
+			System.out.println(e.getMessage());
 			sender.tell(new ErrorMessage(e),getSelf());
 
 		}
