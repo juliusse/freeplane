@@ -1,5 +1,6 @@
 package org.freeplane.plugin.webservice.v10.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +20,7 @@ import org.freeplane.plugin.webservice.WebserviceController;
 
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class DefaultNodeModel extends NodeModelBase{
+public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	@XmlElement(name="children")
 	public List<DefaultNodeModel> children;
 

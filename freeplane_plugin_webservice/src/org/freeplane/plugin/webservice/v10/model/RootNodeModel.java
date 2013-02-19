@@ -1,5 +1,6 @@
 package org.freeplane.plugin.webservice.v10.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,7 @@ import org.freeplane.plugin.webservice.WebserviceController;
 
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class RootNodeModel extends NodeModelBase {
+public class RootNodeModel extends NodeModelBase implements Serializable {
 	
 	//@XmlElement(required=true,nillable=true)
 	@XmlElement(name="leftChildren")

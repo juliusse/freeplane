@@ -14,7 +14,6 @@ import org.freeplane.plugin.webservice.Messages.ErrorMessage;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
 import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
-import org.freeplane.plugin.webservice.actors.MainActor;
 import org.freeplane.plugin.webservice.v10.Webservice;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -70,6 +69,7 @@ public class AkkaTests {
 	public void testAddNodeRequest() {
 		new JavaTestKit(system) {
 			{
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(1);
@@ -78,6 +78,7 @@ public class AkkaTests {
 						AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
 						System.out.println(response.getNode().nodeText);
 						Assert.assertEquals("",response.getNode().nodeText);
+						closeMindMapOnServer(1);
 					}
 				};
 			}
@@ -150,7 +151,7 @@ public class AkkaTests {
 			//final JavaTestKit probe = new JavaTestKit(system);
 			localActor.tell(getRef(),getRef());
 			
-			new Within(duration("2 seconds")) {
+			new Within(duration("5 seconds")) {
 				
 				public void run() {
 					sendMindMapToServer(1);
@@ -165,22 +166,22 @@ public class AkkaTests {
 					//probe.
 					response = expectMsgClass(MindmapAsJsonReponse.class);
 					System.out.println(response.getJsonString());
-					Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\""));
+					assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\"");
 					
 					remoteActor.tell(new MindmapAsJsonRequest(2 + "", 5),localActor);
 					response = expectMsgClass(duration("2 seconds"),MindmapAsJsonReponse.class);
 					System.out.println(response.getJsonString());
-					Assert.assertTrue(response.getJsonString().contains("\"id\":\"2.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"New Mindmap\""));
+					assertThat(response.getJsonString()).contains("\"id\":\"2.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"New Mindmap\"");
 					
 					remoteActor.tell(new MindmapAsJsonRequest(3 + "", 5),localActor);
 					response = expectMsgClass(duration("2 seconds"),MindmapAsJsonReponse.class);
 					System.out.println(response.getJsonString());
-					Assert.assertTrue(response.getJsonString().contains("\"id\":\"3.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"Welcome\""));
+					assertThat(response.getJsonString()).contains("\"id\":\"3.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"Welcome\"");
 					
 					remoteActor.tell(new MindmapAsJsonRequest(5 + "", 5),localActor);
 					response = expectMsgClass(duration("2 seconds"),MindmapAsJsonReponse.class);
 					System.out.println(response.getJsonString());
-					Assert.assertTrue(response.getJsonString().contains("\"id\":\"5.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
+					assertThat(response.getJsonString()).contains("\"id\":\"5.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 
 
 					
