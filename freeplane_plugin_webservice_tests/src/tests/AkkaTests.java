@@ -12,6 +12,7 @@ import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
+import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
 import org.freeplane.plugin.webservice.Messages.ErrorMessage;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
@@ -57,11 +58,11 @@ public class AkkaTests {
 			{
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						remoteActor.tell(new MindmapAsJsonRequest("test_1"), getRef());
+						remoteActor.tell(new MindmapAsJsonRequest("test_5"), getRef());
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
-						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\""));
+						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
 					}
 				};
 			}
@@ -75,13 +76,13 @@ public class AkkaTests {
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						sendMindMapToServer(1);
-						remoteActor.tell(new AddNodeRequest("1", "ID_1723255651"), localActor);
+						sendMindMapToServer(5);
+						remoteActor.tell(new AddNodeRequest("5", "ID_0"), localActor);
 
 						AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
 						System.out.println(response.getNode().nodeText);
 						Assert.assertEquals("",response.getNode().nodeText);
-						closeMindMapOnServer(1);
+						closeMindMapOnServer(5);
 					}
 				};
 			}
@@ -101,6 +102,30 @@ public class AkkaTests {
 						System.out.println(response.getNode().nodeText);
 						Assert.assertEquals("right_L1P0_Links",response.getNode().nodeText);
 						Assert.assertEquals("70",response.getNode().hGap);
+						
+						closeMindMapOnServer(5);
+					}
+				};
+			}
+		};
+	}
+	
+	@Test
+	public void testRemoveNodeRequest() {
+		new JavaTestKit(system) {
+			{
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_5"), localActor);
+
+						expectNoMsg();
+						
+						remoteActor.tell(new GetNodeRequest("5", "ID_5", 1), localActor);
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						Assert.assertTrue(response.getException().getMessage().contains("Node with id 'ID_5' not found."));
+						
+						closeMindMapOnServer(5);
 					}
 				};
 			}
@@ -138,7 +163,7 @@ public class AkkaTests {
 			{
 				new Within(duration("4 seconds")) {
 					public void run() {
-						sendMindMapToServer(1);
+						sendMindMapToServer(5);
 
 						remoteActor.tell(new MindmapAsJsonRequest("5"), getRef());
 
@@ -147,7 +172,7 @@ public class AkkaTests {
 						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
 
 
-						closeMindMapOnServer(1);
+						closeMindMapOnServer(5);
 					}
 				};
 			}
