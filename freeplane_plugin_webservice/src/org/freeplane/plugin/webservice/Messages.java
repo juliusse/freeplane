@@ -217,6 +217,11 @@ public class Messages {
 
 	}
 
+	public static class CloseAllOpenMapsRequest implements Serializable {
+		public CloseAllOpenMapsRequest() {
+			
+		}
+	}
 	public static class CloseServerRequest implements Serializable {
 		public CloseServerRequest() {
 		}

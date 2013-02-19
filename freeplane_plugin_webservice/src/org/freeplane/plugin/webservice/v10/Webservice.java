@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +19,11 @@ import java.util.Set;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.freeplane.features.attribute.Attribute;
+import org.freeplane.features.attribute.AttributeController;
+import org.freeplane.features.attribute.NodeAttributeTableModel;
+import org.freeplane.features.link.LinkModel;
+import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapWriter;
@@ -30,6 +37,7 @@ import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
 import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
@@ -46,6 +54,8 @@ import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
+
+import com.sun.org.apache.xml.internal.dtm.ref.NodeLocator;
 
 public class Webservice {
 
@@ -304,7 +314,8 @@ public class Webservice {
 		//return Response.ok(new DefaultNodeModel(node, false)).build();	
 	}
 
-	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException {
+	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException, URISyntaxException {
+
 		final String mapId = request.getMapId();
 
 		final DefaultNodeModel node = objectMapper.readValue(request.getNodeAsJsonString(), DefaultNodeModel.class);
@@ -327,7 +338,21 @@ public class Webservice {
 			freeplaneNode.setXmlText(node.nodeText);
 		}
 		if(node.attributes != null) {
-			//TODO set attributes right
+			//TODO implement correctly
+//			NodeAttributeTableModel attrTable;
+//			AttributeController attrController = AttributeController.getController();
+//			
+//			if(node.attributes.size() > 0) {
+//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
+//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
+//					//attrController.performInsertRow(attrTable, row, name, value)
+//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
+//				}
+//				freeplaneNode.addExtension(attrTable);
+//			} else if (node.attributes.size() == 0) {
+//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
+//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
+//			}
 		}
 		if(node.hGap != null) {
 			updateLocationModel(freeplaneNode, node.hGap, null);
@@ -339,7 +364,15 @@ public class Webservice {
 			//TODO handle
 		}
 		if(node.link != null) {
-			//TODO handle
+			
+			NodeLinks nodeLinks = freeplaneNode.getExtension(NodeLinks.class);
+			
+			if(nodeLinks == null) {
+				nodeLinks = new NodeLinks();
+				freeplaneNode.addExtension(nodeLinks);				
+			}
+			
+			nodeLinks.setHyperLink(new URI(node.link));
 		}
 		if(node.nodeText != null) {
 			freeplaneNode.setText(node.nodeText);
@@ -450,6 +483,17 @@ public class Webservice {
 
 
 		return buildJSON(expiredNodes.toArray());
+	}
+	
+	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) {
+		Set<String> ids = mapIdInfoMap.keySet(); 
+		for(String mapId : ids) {
+			try {
+				WebserviceHelper.closeMap(mapId);
+			} catch (Exception e) {
+
+			}
+		}
 	}
 
 	public static void closeUnusedMaps() {

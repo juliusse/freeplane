@@ -2,6 +2,7 @@ package org.freeplane.plugin.webservice.actors;
 
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
 import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
 import org.freeplane.plugin.webservice.Messages.CloseServerRequest;
 import org.freeplane.plugin.webservice.Messages.ErrorMessage;
@@ -67,6 +68,11 @@ public class MainActor extends UntypedActor {
 			//close map
 			if(message instanceof CloseMapRequest) {
 				Webservice.closeMap((CloseMapRequest)message);
+			}
+			
+			//close all maps
+			if(message instanceof CloseAllOpenMapsRequest) {
+				Webservice.closeAllOpenMaps((CloseAllOpenMapsRequest)message);
 			}
 			
 			//close server

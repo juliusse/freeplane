@@ -1,31 +1,37 @@
 package tests;
 
 import static org.fest.assertions.Assertions.assertThat;
-import static org.freeplane.plugin.webservice.Messages.*;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import org.codehaus.jackson.map.ObjectMapper;
+import org.fest.assertions.Fail;
 import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
 import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
 import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
 import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
 import org.freeplane.plugin.webservice.Messages.ErrorMessage;
 import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
 import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
 import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlResponse;
 import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
 import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.v10.Webservice;
+import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import akka.actor.ActorRef;
@@ -41,13 +47,13 @@ public class AkkaTests {
 	private static ActorSystem system;
 	private static ActorRef remoteActor;
 	private static ActorRef localActor;
-	private static Semaphore finishSemaphore;
+	
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
-		//		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-		//		localActor = system.actorOf(new Props(TheActor.class), "localActor");
+		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
+		
 	}
 
 	@AfterClass
@@ -57,9 +63,12 @@ public class AkkaTests {
 
 	@Before
 	public  void setUp() throws Exception {
-		//system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
-		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 		localActor = system.actorOf(new Props(TheActor.class), "localActor_"+System.currentTimeMillis());
+	}
+	
+	@After
+	public void tearDown() throws Exception {
+		remoteActor.tell(new CloseAllOpenMapsRequest(), localActor);
 	}
 
 	public void testSkeleton() {
@@ -176,18 +185,58 @@ public class AkkaTests {
 		new JavaTestKit(system) {
 			{
 				localActor.tell(getRef(),getRef());
-				new Within(duration("3 seconds")) {
+				new Within(duration("10 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						String newNodeText = "This is a new nodeText";
-						String nodeAsJSON = "{\"id\":\"ID_1\",\"nodeText\":\"" + newNodeText + "\"}";
+						
+						final String nodeId = "ID_1";
+						final String newNodeText = "This is a new nodeText";
+						final Boolean isHtml = false;
+						final Boolean folded = true;
+						final String[] icons = new String[] {"yes"};
+						final String link = "http://www.google.de";
+						final Integer hGap = 10;
+						final Integer shiftY = 10;
+						final Map<String,String> attr = new HashMap<String, String>();
+						attr.put("key", "value");
+						
+						
+						
+						DefaultNodeModel node = new DefaultNodeModel();
+						node.id = nodeId;
+						node.nodeText = newNodeText;
+						node.isHtml = isHtml;
+						node.folded = folded;
+						node.icons = icons;
+						node.link = link;
+						node.hGap = hGap;
+						node.shiftY = shiftY;
+						node.attributes = attr;
+						
+						ObjectMapper om = new ObjectMapper();
+						//String nodeAsJSON = "{\"id\":\"ID_1\",\"nodeText\":\"" + newNodeText + "\"}";
+						String nodeAsJSON = null;
+						try {
+							nodeAsJSON = om.writeValueAsString(node);
+						} catch (Exception e) {
+							Fail.fail("error parsing DefaultNodeModel");
+						}
 						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
 
 						//expectNoMsg();
 
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
-						Assert.assertEquals(newNodeText, response.getNode().nodeText);
+						final DefaultNodeModel receivedNode = response.getNode();
+						
+						assertThat(receivedNode.nodeText).isEqualTo(newNodeText);
+						assertThat(receivedNode.isHtml).isEqualTo(isHtml);
+						assertThat(receivedNode.folded).isEqualTo(folded);
+						//assertThat(receivedNode.icons).isEqualTo(icons);
+						assertThat(receivedNode.link).isEqualTo(link);
+						assertThat(receivedNode.hGap).isEqualTo(hGap);
+						assertThat(receivedNode.shiftY).isEqualTo(shiftY);
+						//assertThat(receivedNode.attributes.get("key")).isEqualTo("value");
 
 						closeMindMapOnServer(5);
 					}
@@ -328,7 +377,8 @@ public class AkkaTests {
 			if (message instanceof ActorRef) {
 				target = (ActorRef)message;
 			} else {
-				target.tell(message, getSelf());
+				if(target != null)
+					target.tell(message, getSelf());
 			}
 
 		}

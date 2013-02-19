@@ -17,14 +17,14 @@ import org.freeplane.features.map.NodeModel;
 @XmlSeeAlso(value={DefaultNodeModel.class,RootNodeModel.class})
 abstract public class NodeModelBase implements Serializable {
 
-	public final String id;
-	public final String nodeText;
-	public final Boolean isHtml;
-	public final Boolean folded;
-	public final String[] icons;
-	public final ImageModel image;
-	public final String link;
-	public final String locked;
+	public String id;
+	public String nodeText;
+	public Boolean isHtml;
+	public Boolean folded;
+	public String[] icons;
+	public ImageModel image;
+	public String link;
+	public String locked;
 
 	//@XmlTransient
 	//protected final NodeModel freeplaneNode;
