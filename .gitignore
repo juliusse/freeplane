@@ -28,4 +28,5 @@ freeplane_plugin_webservice/.settings/
 freeplane_plugin_webservice/META-INF/MANIFEST.MF.bak
 freeplane_plugin_webservice_tests/.classpath
 freeplane_plugin_webservice_tests/.project
+freeplane_plugin_webservice_tests/lib
 

@@ -86,6 +86,7 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
+					@Override
 					protected void run() {
 						remoteActor.tell(new MindmapAsJsonRequest("test_5"), getRef());
 
@@ -121,6 +122,7 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
+					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						remoteActor.tell(new AddNodeRequest("5", "ID_0"), localActor);
@@ -141,6 +143,7 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(),getRef());
 				new Within(duration("3 seconds")) {
+					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
@@ -163,6 +166,7 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(),getRef());
 				new Within(duration("3 seconds")) {
+					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						remoteActor.tell(new RemoveNodeRequest("5", "ID_5"), localActor);
@@ -186,6 +190,7 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(),getRef());
 				new Within(duration("10 seconds")) {
+					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						
@@ -251,6 +256,7 @@ public class AkkaTests {
 		new JavaTestKit(system) {
 			{
 				new Within(duration("4 seconds")) {
+					@Override
 					public void run() {
 						sendMindMapToServer(5);
 
@@ -289,6 +295,7 @@ public class AkkaTests {
 
 						new Within(duration("5 seconds")) {
 
+							@Override
 							public void run() {
 								sendMindMapToServer(mapId);
 
@@ -334,6 +341,7 @@ public class AkkaTests {
 			new JavaTestKit(system) {
 				{
 					new Within(duration("5 seconds")) {
+						@Override
 						public void run() {
 							remoteActor.tell(request, localActor);
 							//expectNoMsg();
@@ -352,6 +360,7 @@ public class AkkaTests {
 		new JavaTestKit(system) {
 			{
 				new Within(duration("2 seconds")) {
+					@Override
 					public void run() {
 						remoteActor.tell(new CloseMapRequest(id+""), localActor);
 						//expectNoMsg();

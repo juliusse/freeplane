@@ -1,0 +1,489 @@
+Buildfile: D:\Docear\HTW-Backend\docear_plugin_webservice\ant\build.xml
+
+install-ivy:
+
+resolve:
+[ivy:retrieve] :: Ivy 2.2.0 - 20100923230623 :: http://ant.apache.org/ivy/ ::
+[ivy:retrieve] :: loading settings :: url = jar:file:/D:/Docear/HTW-Backend/docear_plugin_webservice/ivy/ivy.jar!/org/apache/ivy/core/settings/ivysettings.xml
+[ivy:retrieve] :: resolving dependencies :: org.docear#webservice;working@julius-laptop
+[ivy:retrieve] 	confs: [default]
+[ivy:retrieve] 	found com.sun.jersey#jersey-bundle;1.16 in public
+[ivy:retrieve] 	found javax.ws.rs#jsr311-api;1.1.1 in public
+[ivy:retrieve] 	found com.sun.jersey#jersey-grizzly;1.16 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-servlet-webserver;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-http;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-framework;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-utils;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-lzma;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-rcm;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-portunif;1.9.45 in public
+[ivy:retrieve] 	found com.sun.grizzly#grizzly-http-servlet;1.9.45 in public
+[ivy:retrieve] 	found javax.servlet#servlet-api;2.5 in public
+[ivy:retrieve] 	found org.osgi#osgi_R4_core;1.0 in public
+[ivy:retrieve] 	found com.sun.jersey#jersey-client;1.16 in public
+[ivy:retrieve] 	found com.sun.jersey#jersey-atom;1.16 in public
+[ivy:retrieve] 	found rome#rome;0.9 in public
+[ivy:retrieve] 	found jdom#jdom;1.0 in public
+[ivy:retrieve] 	found com.sun.jersey#jersey-json;1.16 in public
+[ivy:retrieve] 	found com.sun.xml.bind#jaxb-impl;2.2.3-1 in public
+[ivy:retrieve] 	found org.codehaus.jackson#jackson-core-asl;1.9.2 in public
+[ivy:retrieve] 	found org.codehaus.jackson#jackson-mapper-asl;1.9.2 in public
+[ivy:retrieve] 	found org.codehaus.jackson#jackson-jaxrs;1.9.2 in public
+[ivy:retrieve] 	found org.codehaus.jackson#jackson-xc;1.9.2 in public
+[ivy:retrieve] 	found com.sun.jersey#jersey-fastinfoset;1.16 in public
+[ivy:retrieve] 	found com.sun.xml.fastinfoset#FastInfoset;1.2.9 in public
+[ivy:retrieve] 	found javax.xml#jsr173;1.0 in public
+[ivy:retrieve] 	found javax.persistence#persistence-api;1.0 in public
+[ivy:retrieve] 	found javax.mail#mail;1.4 in public
+[ivy:retrieve] 	found javax.activation#activation;1.1 in public
+[ivy:retrieve] 	found javax.xml.bind#jaxb-api;2.1 in public
+[ivy:retrieve] 	found javax.xml.stream#stax-api;1.0-2 in public
+[ivy:retrieve] 	found javax.servlet#javax.servlet-api;3.0.1 in public
+[ivy:retrieve] 	found javax.servlet#jsp-api;2.0 in public
+[ivy:retrieve] 	found org.glassfish#javax.ejb;3.1 in public
+[ivy:retrieve] 	found org.glassfish#javax.transaction;3.1 in public
+[ivy:retrieve] 	found org.glassfish#javax.annotation;3.1 in public
+[ivy:retrieve] 	found org.jboss.weld#weld-osgi-bundle;1.1.4.Final in public
+[ivy:retrieve] 	found org.slf4j#slf4j-jdk14;1.5.10 in public
+[ivy:retrieve] 	found org.slf4j#slf4j-api;1.5.10 in public
+[ivy:retrieve] 	found javax.enterprise#cdi-api;1.0-SP3 in public
+[ivy:retrieve] 	found org.jboss.spec.javax.interceptor#jboss-interceptors-api_1.1_spec;1.0.0.Beta1 in public
+[ivy:retrieve] 	found javax.annotation#jsr250-api;1.0 in public
+[ivy:retrieve] 	found javax.inject#javax.inject;1 in public
+[ivy:retrieve] 	found org.jboss.weld#weld-api;1.1.Final in public
+[ivy:retrieve] 	found org.jboss.weld#weld-core;1.1.4.Final in public
+[ivy:retrieve] 	found org.jboss.weld#weld-spi;1.1.Final in public
+[ivy:retrieve] 	found org.javassist#javassist;3.14.0-GA in public
+[ivy:retrieve] 	found com.google.guava#guava;r06 in public
+[ivy:retrieve] 	found org.jboss.interceptor#jboss-interceptor-spi;2.0.0.CR1 in public
+[ivy:retrieve] 	found org.jboss.interceptor#jboss-interceptor-core;2.0.0.CR1 in public
+[ivy:retrieve] 	found javassist#javassist;3.12.0.GA in public
+[ivy:retrieve] 	found org.slf4j#slf4j-ext;1.5.10 in public
+[ivy:retrieve] 	found ch.qos.cal10n#cal10n-api;0.7.2 in public
+[ivy:retrieve] 	found org.jboss.weld#weld-build-config;1.1.4.Final in public
+[ivy:retrieve] 	found ant#ant;1.6.5 in public
+[ivy:retrieve] 	found com.sun.net.httpserver#http;20070405 in public
+[ivy:retrieve] 	found asm#asm;3.1 in public
+[ivy:retrieve] 	found org.osgi#org.osgi.core;4.2.0 in public
+[ivy:retrieve] 	found com.sun.jersey.contribs#jersey-multipart;1.16 in public
+[ivy:retrieve] 	found org.jvnet#mimepull;1.6 in public
+[ivy:retrieve] :: resolution report :: resolve 4273ms :: artifacts dl 104ms
+[ivy:retrieve] 	:: evicted modules:
+[ivy:retrieve] 	javax.xml.bind#jaxb-api;2.2.2 by [javax.xml.bind#jaxb-api;2.1] in [default]
+[ivy:retrieve] 	javax.servlet#servlet-api;2.4 by [javax.servlet#servlet-api;2.5] in [default]
+	---------------------------------------------------------------------
+	|                  |            modules            ||   artifacts   |
+	|       conf       | number| search|dwnlded|evicted|| number|dwnlded|
+	---------------------------------------------------------------------
+	|      default     |   62  |   0   |   0   |   2   ||   64  |   0   |
+	---------------------------------------------------------------------
+[ivy:retrieve] :: retrieving :: org.docear#webservice
+[ivy:retrieve] 	confs: [default]
+[ivy:retrieve] 	0 artifacts copied, 64 already retrieved (0kB/50ms)
+
+lib_fileset:
+
+build:
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\ant\build.xml:41: warning: 'includeantruntime' was not set, defaulting to build.sysclasspath=last; set to false for repeatable builds
+    [javac] Compiling 13 source files to D:\Docear\HTW-Backend\docear_plugin_webservice\build
+    [javac] warning: [options] bootstrap class path not set in conjunction with -source 1.5
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\Activator.java:5: error: package org.freeplane.features.mode does not exist
+    [javac] import org.freeplane.features.mode.Controller;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\Activator.java:6: error: package org.freeplane.features.mode does not exist
+    [javac] import org.freeplane.features.mode.ModeController;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\Activator.java:7: error: package org.freeplane.main.osgi does not exist
+    [javac] import org.freeplane.main.osgi.IControllerExtensionProvider;
+    [javac]                               ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:8: error: package org.freeplane.core.util does not exist
+    [javac] import org.freeplane.core.util.LogUtils;
+    [javac]                               ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:9: error: package org.freeplane.features.mode does not exist
+    [javac] import org.freeplane.features.mode.ModeController;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:10: error: package org.freeplane.features.ui does not exist
+    [javac] import org.freeplane.features.ui.INodeViewLifeCycleListener;
+    [javac]                                 ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:23: error: cannot find symbol
+    [javac] 	private final ModeController modeController;
+    [javac] 	              ^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class WebserviceController
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:30: error: cannot find symbol
+    [javac] 	WebserviceController(final ModeController modeController, BundleContext context) {
+    [javac] 	                           ^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class WebserviceController
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:85: error: cannot find symbol
+    [javac] 	public ModeController getModeController() {
+    [javac] 	       ^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class WebserviceController
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:32: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapChangeEvent;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:33: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapController;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:34: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapWriter;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:35: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeChangeEvent;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:36: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeModel;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:37: error: package org.freeplane.features.mapio does not exist
+    [javac] import org.freeplane.features.mapio.MapIO;
+    [javac]                                    ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:38: error: package org.freeplane.features.mapio.mindmapmode does not exist
+    [javac] import org.freeplane.features.mapio.mindmapmode.MMapIO;
+    [javac]                                                ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:39: error: package org.freeplane.features.mode does not exist
+    [javac] import org.freeplane.features.mode.ModeController;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:14: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapController;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:15: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeModel;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:16: error: package org.freeplane.features.nodelocation does not exist
+    [javac] import org.freeplane.features.nodelocation.LocationModel;
+    [javac]                                           ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:17: error: package org.freeplane.features.attribute does not exist
+    [javac] import org.freeplane.features.attribute.Attribute;
+    [javac]                                        ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:18: error: package org.freeplane.features.attribute does not exist
+    [javac] import org.freeplane.features.attribute.NodeAttributeTableModel;
+    [javac]                                        ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:10: error: package org.freeplane.features.icon does not exist
+    [javac] import org.freeplane.features.icon.MindIcon;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:11: error: package org.freeplane.features.link does not exist
+    [javac] import org.freeplane.features.link.NodeLinks;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:12: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeModel;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:354: error: cannot find symbol
+    [javac] 	static ModeController getModeController() {
+    [javac] 	       ^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:358: error: package org.freeplane.features.map does not exist
+    [javac] 	static org.freeplane.features.map.MapModel getOpenMap() {
+    [javac] 	                                 ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:37: error: package org.freeplane.features.map does not exist
+    [javac] 	public DefaultNodeModel(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
+    [javac] 	                                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:44: error: package org.freeplane.features.map does not exist
+    [javac] 	private void loadLocation(org.freeplane.features.map.NodeModel freeplaneNode) {
+    [javac] 	                                                    ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:55: error: package org.freeplane.features.map does not exist
+    [javac] 	private void loadAttributes(org.freeplane.features.map.NodeModel freeplaneNode){
+    [javac] 	                                                      ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:45: error: package org.freeplane.features.map does not exist
+    [javac] 	public NodeModelBase(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
+    [javac] 	                                               ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:67: error: package org.freeplane.features.map does not exist
+    [javac] 	private String[] getIconArray(org.freeplane.features.map.NodeModel freeplaneNode) {
+    [javac] 	                                                        ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:76: error: package org.freeplane.features.map does not exist
+    [javac] 	private ImageModel getImage(org.freeplane.features.map.NodeModel freeplaneNode) {
+    [javac] 	                                                      ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:85: error: cannot find symbol
+    [javac] 	protected void saveChildrenIds(NodeModel freeplaneNode) {
+    [javac] 	                               ^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class NodeModelBase
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:20: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapChangeEvent;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:21: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapWriter;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:22: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeChangeEvent;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:23: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeModel;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:24: error: package org.freeplane.features.mapio does not exist
+    [javac] import org.freeplane.features.mapio.MapIO;
+    [javac]                                    ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:25: error: package org.freeplane.features.mode does not exist
+    [javac] import org.freeplane.features.mode.ModeController;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\MapModel.java:7: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeModel;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\RootNodeModel.java:12: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.MapController;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\RootNodeModel.java:13: error: package org.freeplane.features.map does not exist
+    [javac] import org.freeplane.features.map.NodeModel;
+    [javac]                                  ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\MapModel.java:19: error: package org.freeplane.features.map does not exist
+    [javac] 	public MapModel(org.freeplane.features.map.MapModel freeplaneMap, boolean autoloadChildren) {
+    [javac] 	                                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\RootNodeModel.java:41: error: package org.freeplane.features.map does not exist
+    [javac] 	public RootNodeModel(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
+    [javac] 	                                               ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceHelper.java:12: error: package org.freeplane.features.mapio does not exist
+    [javac] import org.freeplane.features.mapio.MapIO;
+    [javac]                                    ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceHelper.java:13: error: package org.freeplane.features.mode does not exist
+    [javac] import org.freeplane.features.mode.ModeController;
+    [javac]                                   ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\Activator.java:29: error: cannot find symbol
+    [javac] 		final ModeController modeController = Controller.getCurrentModeController();
+    [javac] 		      ^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Activator
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\Activator.java:29: error: cannot find symbol
+    [javac] 		final ModeController modeController = Controller.getCurrentModeController();
+    [javac] 		                                      ^
+    [javac]   symbol:   variable Controller
+    [javac]   location: class Activator
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:33: error: cannot find symbol
+    [javac] 		LogUtils.info("starting Webservice Plugin...");
+    [javac] 		^
+    [javac]   symbol:   variable LogUtils
+    [javac]   location: class WebserviceController
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:57: error: cannot find symbol
+    [javac] 			LogUtils.getLogger().log(Level.SEVERE, "Webservice could not be started.",e);
+    [javac] 			^
+    [javac]   symbol:   variable LogUtils
+    [javac]   location: class WebserviceController
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\WebserviceController.java:71: error: cannot find symbol
+    [javac] 		modeController.addINodeViewLifeCycleListener(new INodeViewLifeCycleListener() {
+    [javac] 		                                                 ^
+    [javac]   symbol:   class INodeViewLifeCycleListener
+    [javac]   location: class WebserviceController
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:73: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:92: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
+    [javac] 		                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:131: error: cannot find symbol
+    [javac] 			ModeController modeController = getModeController();
+    [javac] 			^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:133: error: cannot find symbol
+    [javac] 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+    [javac] 			^
+    [javac]   symbol:   class MMapIO
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:133: error: cannot find symbol
+    [javac] 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+    [javac] 			              ^
+    [javac]   symbol:   class MMapIO
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:133: error: cannot find symbol
+    [javac] 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+    [javac] 			                                                 ^
+    [javac]   symbol:   class MapIO
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:150: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:160: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
+    [javac] 		                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:167: error: package MapWriter does not exist
+    [javac] 			modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
+    [javac] 			                                                                                              ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:220: error: cannot find symbol
+    [javac] 			ModeController modeController = getModeController();
+    [javac] 			^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:222: error: cannot find symbol
+    [javac] 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+    [javac] 			^
+    [javac]   symbol:   class MMapIO
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:222: error: cannot find symbol
+    [javac] 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+    [javac] 			              ^
+    [javac]   symbol:   class MMapIO
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:222: error: cannot find symbol
+    [javac] 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+    [javac] 			                                                 ^
+    [javac]   symbol:   class MapIO
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:273: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:277: error: cannot find symbol
+    [javac] 		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(id);
+    [javac] 		^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:299: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:300: error: cannot find symbol
+    [javac] 		MapController mapController = modeController.getMapController();
+    [javac] 		^
+    [javac]   symbol:   class MapController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:302: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
+    [javac] 		                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:305: error: cannot find symbol
+    [javac] 		NodeModel parentNode = mapController.getNodeFromID(parentNodeId);
+    [javac] 		^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:311: error: cannot find symbol
+    [javac] 		NodeModel node = modeController.getMapController().newNode(nodeText, mm);
+    [javac] 		^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:315: error: cannot find symbol
+    [javac] 		mapController.fireMapChanged(new MapChangeEvent(this, "node", "", ""));
+    [javac] 		                                 ^
+    [javac]   symbol:   class MapChangeEvent
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:327: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:328: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
+    [javac] 		                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:330: error: cannot find symbol
+    [javac] 		NodeModel freeplaneNode = mm.getNodeForID(node.id);
+    [javac] 		^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:344: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:345: error: cannot find symbol
+    [javac] 		NodeModel node = modeController.getMapController().getNodeFromID(id);
+    [javac] 		^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:350: error: cannot find symbol
+    [javac] 		node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
+    [javac] 		                         ^
+    [javac]   symbol:   class NodeChangeEvent
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\Webservice.java:359: error: cannot find symbol
+    [javac] 		ModeController modeController = getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class Webservice
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:56: error: cannot find symbol
+    [javac] 		NodeLinks nl = freeplaneNode.getExtension(NodeLinks.class);
+    [javac] 		^
+    [javac]   symbol:   class NodeLinks
+    [javac]   location: class NodeModelBase
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:56: error: cannot find symbol
+    [javac] 		NodeLinks nl = freeplaneNode.getExtension(NodeLinks.class);
+    [javac] 		                                          ^
+    [javac]   symbol:   class NodeLinks
+    [javac]   location: class NodeModelBase
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:70: error: cannot find symbol
+    [javac] 		for(MindIcon mi : freeplaneNode.getIcons()) {
+    [javac] 		    ^
+    [javac]   symbol:   class MindIcon
+    [javac]   location: class NodeModelBase
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\NodeModelBase.java:88: error: cannot find symbol
+    [javac] 		for(NodeModel node : freeplaneNode.getChildren()) {
+    [javac] 		    ^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class NodeModelBase
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:45: error: cannot find symbol
+    [javac] 		LocationModel l = freeplaneNode.getExtension(LocationModel.class);
+    [javac] 		^
+    [javac]   symbol:   class LocationModel
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:45: error: cannot find symbol
+    [javac] 		LocationModel l = freeplaneNode.getExtension(LocationModel.class);
+    [javac] 		                                             ^
+    [javac]   symbol:   class LocationModel
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:56: error: cannot find symbol
+    [javac] 		NodeAttributeTableModel attributeModel = freeplaneNode.getExtension(NodeAttributeTableModel.class);
+    [javac] 		^
+    [javac]   symbol:   class NodeAttributeTableModel
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:56: error: cannot find symbol
+    [javac] 		NodeAttributeTableModel attributeModel = freeplaneNode.getExtension(NodeAttributeTableModel.class);
+    [javac] 		                                                                    ^
+    [javac]   symbol:   class NodeAttributeTableModel
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:59: error: cannot find symbol
+    [javac] 			for (Attribute attribute : attributeModel.getAttributes()){
+    [javac] 			     ^
+    [javac]   symbol:   class Attribute
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:71: error: cannot find symbol
+    [javac] 		MapController mapController = WebserviceController.getInstance().getModeController().getMapController();
+    [javac] 		^
+    [javac]   symbol:   class MapController
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\model\DefaultNodeModel.java:75: error: cannot find symbol
+    [javac] 			NodeModel freeplaneChild = mapController.getNodeFromID(nodeId);
+    [javac] 			^
+    [javac]   symbol:   class NodeModel
+    [javac]   location: class DefaultNodeModel
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:45: error: cannot find symbol
+    [javac] 		ModeController modeController = Webservice.getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class WebserviceDeprecated
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:48: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
+    [javac] 		                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:69: error: cannot find symbol
+    [javac] 		ModeController modeController = Webservice.getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class WebserviceDeprecated
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:70: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
+    [javac] 		                          ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:73: error: package MapWriter does not exist
+    [javac] 		modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
+    [javac] 		                                                                                              ^
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:83: error: cannot find symbol
+    [javac] 		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
+    [javac] 		^
+    [javac]   symbol:   class MapIO
+    [javac]   location: class WebserviceDeprecated
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:83: error: cannot find symbol
+    [javac] 		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
+    [javac] 		                                                                                ^
+    [javac]   symbol:   class MapIO
+    [javac]   location: class WebserviceDeprecated
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:103: error: cannot find symbol
+    [javac] 		ModeController modeController = Webservice.getModeController();
+    [javac] 		^
+    [javac]   symbol:   class ModeController
+    [javac]   location: class WebserviceDeprecated
+    [javac] D:\Docear\HTW-Backend\docear_plugin_webservice\src\org\docear\plugin\webservice\v10\WebserviceDeprecated.java:104: error: package org.freeplane.features.map does not exist
+    [javac] 		org.freeplane.features.map.MapModel mm = Webservice.getOpenMap();
+    [javac] 		                          ^
+    [javac] 100 errors
+    [javac] 1 warning
