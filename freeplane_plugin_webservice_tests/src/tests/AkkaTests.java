@@ -10,26 +10,29 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-import messages.Messages.AddNodeRequest;
-import messages.Messages.AddNodeResponse;
-import messages.Messages.ChangeNodeRequest;
-import messages.Messages.CloseAllOpenMapsRequest;
-import messages.Messages.CloseMapRequest;
-import messages.Messages.ErrorMessage;
-import messages.Messages.GetNodeRequest;
-import messages.Messages.GetNodeResponse;
-import messages.Messages.MindmapAsJsonReponse;
-import messages.Messages.MindmapAsJsonRequest;
-import messages.Messages.MindmapAsXmlRequest;
-import messages.Messages.MindmapAsXmlResponse;
-import messages.Messages.OpenMindMapRequest;
-import messages.Messages.RemoveNodeRequest;
-
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.fest.assertions.Fail;
+import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
+import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
+import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
+import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
+import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
+import org.freeplane.plugin.webservice.Messages.ErrorMessage;
+import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
+import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
+import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
+import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
+import org.freeplane.plugin.webservice.Messages.MindmapAsXmlResponse;
+import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
+import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
+import org.freeplane.plugin.webservice.v10.Webservice;
+import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
+import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -83,7 +86,11 @@ public class AkkaTests {
 			}
 		};
 	}
-
+	
+	/**
+	 * testMindMapAsJson
+	 * Open one of default test maps and receive json of map
+	 */
 	@Test
 	public void testMindMapAsJson() {
 		new JavaTestKit(system) {
@@ -96,13 +103,39 @@ public class AkkaTests {
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
-						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
+						assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 					}
 				};
 			}
 		};
 	}
 
+	/**
+	 * testMindMapAsJsonFail
+	 * Try to open a not available map. Should throw MapNotFoundException.
+	 */
+	@Test
+	public void testMindMapAsJsonFail() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
+				new Within(duration("3 seconds")) {
+					@Override
+					protected void run() {
+						remoteActor.tell(new MindmapAsJsonRequest("test_6"), getRef());
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						assertThat(response.getException() instanceof MapNotFoundException).isTrue();
+					}
+				};
+			}
+		};
+	}
+	
+	
+	/**
+	 * testMindMapAsXml
+	 * Send MindMap to server. Request opened Mindmap as xml.
+	 */
 	@Test
 	public void testMindMapAsXml() {
 		new JavaTestKit(system) {
@@ -120,6 +153,29 @@ public class AkkaTests {
 		};
 	}
 
+	
+	/**
+	 * testMindMapAsXmlFail
+	 * Requesting not opened mindmap. should throw MapNotFoundException
+	 */
+	@Test
+	public void testMindMapAsXmlFail() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
+				remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
+
+				ErrorMessage response = expectMsgClass(ErrorMessage.class);
+				assertThat(response.getException() instanceof MapNotFoundException).isTrue();
+			}
+		};
+	}
+	
+	
+	/**
+	 * testAddNodeRequest
+	 * Open Map. Add new node to root node.
+	 */
 	@Test
 	public void testAddNodeRequest() {
 		new JavaTestKit(system) {
@@ -133,6 +189,7 @@ public class AkkaTests {
 						remoteActor.tell(new AddNodeRequest("5", "ID_0"), localActor);
 
 						AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
+						
 						DefaultNodeModel node = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
 						System.out.println(node.nodeText);
 						Assert.assertEquals("",node.nodeText);
@@ -152,6 +209,30 @@ public class AkkaTests {
 		};
 	}
 
+	/**
+	 * testAddNodeRequestFailInvalidNode
+	 * Open Map. Add new node to invalid node. Should throw NodeNotFoundException
+	 */
+	@Test
+	public void testAddNodeRequestFailInvalidNode() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
+				new Within(duration("3 seconds")) {
+					@Override
+					protected void run() {
+						sendMindMapToServer(5);
+						remoteActor.tell(new AddNodeRequest("5", "ID_FAIL"), localActor);
+
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						assertThat(response.getException() instanceof NodeNotFoundException).isTrue();
+						closeMindMapOnServer(5);
+					}
+				};
+			}
+		};
+	}
+	
 	@Test
 	public void testGetNodeRequest() {
 		new JavaTestKit(system) {
