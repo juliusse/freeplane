@@ -16,26 +16,26 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import messages.Messages.AddNodeRequest;
-import messages.Messages.AddNodeResponse;
-import messages.Messages.ChangeNodeRequest;
-import messages.Messages.CloseAllOpenMapsRequest;
-import messages.Messages.CloseMapRequest;
-import messages.Messages.GetNodeRequest;
-import messages.Messages.GetNodeResponse;
-import messages.Messages.MindmapAsJsonReponse;
-import messages.Messages.MindmapAsJsonRequest;
-import messages.Messages.MindmapAsXmlRequest;
-import messages.Messages.MindmapAsXmlResponse;
-import messages.Messages.OpenMindMapRequest;
-import messages.Messages.RemoveNodeRequest;
-import messages.exceptions.MapNotFoundException;
-import messages.exceptions.NodeNotFoundException;
-
+import org.apache.tools.ant.util.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.docear.messages.Messages.AddNodeRequest;
+import org.docear.messages.Messages.AddNodeResponse;
+import org.docear.messages.Messages.ChangeNodeRequest;
+import org.docear.messages.Messages.CloseAllOpenMapsRequest;
+import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.GetNodeRequest;
+import org.docear.messages.Messages.GetNodeResponse;
+import org.docear.messages.Messages.MindmapAsJsonReponse;
+import org.docear.messages.Messages.MindmapAsJsonRequest;
+import org.docear.messages.Messages.MindmapAsXmlRequest;
+import org.docear.messages.Messages.MindmapAsXmlResponse;
+import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.RemoveNodeRequest;
+import org.docear.messages.exceptions.MapNotFoundException;
+import org.docear.messages.exceptions.NodeNotFoundException;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeModel;
@@ -185,17 +185,9 @@ public class Webservice {
 			File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
+			
 			File received = request.getMindmapFile();
-			file = received;
-//			//fill file from inputstream
-//			FileOutputStream out = new FileOutputStream(file);
-//			byte[] buffer = new byte[1024];
-//			int length;
-//			while((length = request.getUploadedInputStream().read(buffer, 0, buffer.length)) != -1) {
-//				out.write(buffer, 0, length);
-//			}
-//			out.flush();
-//			out.close();
+			org.apache.commons.io.FileUtils.copyFile(received, file);
 
 			//put map in openMap Collection
 			String mapId = WebserviceHelper.getMapIdFromFile(file);

@@ -1,17 +1,16 @@
 package org.freeplane.plugin.webservice.actors;
 
-import messages.Messages.AddNodeRequest;
-import messages.Messages.ChangeNodeRequest;
-import messages.Messages.CloseAllOpenMapsRequest;
-import messages.Messages.CloseMapRequest;
-import messages.Messages.CloseServerRequest;
-import messages.Messages.ErrorMessage;
-import messages.Messages.GetNodeRequest;
-import messages.Messages.MindmapAsJsonRequest;
-import messages.Messages.MindmapAsXmlRequest;
-import messages.Messages.OpenMindMapRequest;
-import messages.Messages.RemoveNodeRequest;
-
+import org.docear.messages.Messages.AddNodeRequest;
+import org.docear.messages.Messages.ChangeNodeRequest;
+import org.docear.messages.Messages.CloseAllOpenMapsRequest;
+import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.CloseServerRequest;
+import org.docear.messages.Messages.ErrorMessage;
+import org.docear.messages.Messages.GetNodeRequest;
+import org.docear.messages.Messages.MindmapAsJsonRequest;
+import org.docear.messages.Messages.MindmapAsXmlRequest;
+import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.v10.Webservice;
 
 import akka.actor.ActorRef;
