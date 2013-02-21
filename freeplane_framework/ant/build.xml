@@ -133,7 +133,7 @@
 		<antcall target="makePlugin" inheritall="false">
 			<param name="anttarget" value="dist"/>
 			<param name="targetdir" value="plugins"/>
-			<param name="plugindir" value="freeplane_plugin_remote"/>
+			<param name="plugindir" value="freeplane_plugin_webservice"/>
 			<param name="pluginname" value="org.freeplane.plugin.remote"/>
 		</antcall>
 	</target>
