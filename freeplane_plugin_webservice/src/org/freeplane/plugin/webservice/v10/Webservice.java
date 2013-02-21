@@ -73,25 +73,18 @@ public class Webservice {
 
 		boolean loadAllNodes = nodeCount == -1;
 		ModeController modeController = getModeController();
-
-		try {
-			if(!WebserviceHelper.selectMap(mapId)) {
-				if(mapId.startsWith("test_")) { //FOR DEBUGING
-					openTestMap(mapId);
-					if(!WebserviceHelper.selectMap(mapId)) {
-						throw new MapNotFoundException("Map not found!\n"+
-								"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'");
-					}
-				} else {
-					throw new MapNotFoundException("Map not found");
+		
+		if(!WebserviceHelper.selectMap(mapId)) {
+			if(mapId.startsWith("test_")) { //FOR DEBUGING
+				openTestMap(mapId);
+				if(!WebserviceHelper.selectMap(mapId)) {
+					throw new MapNotFoundException("Map not found!\n"+
+							"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'");
 				}
+			} else {
+				throw new MapNotFoundException("Map not found");
 			}
-		} catch(Exception e) {
-			//TODO real handling
-			throw new RuntimeException();
-			//return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
-
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode

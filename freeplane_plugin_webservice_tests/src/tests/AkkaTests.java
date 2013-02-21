@@ -9,30 +9,30 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.logging.ErrorManager;
+
+import messages.Messages.AddNodeRequest;
+import messages.Messages.AddNodeResponse;
+import messages.Messages.ChangeNodeRequest;
+import messages.Messages.CloseAllOpenMapsRequest;
+import messages.Messages.CloseMapRequest;
+import messages.Messages.ErrorMessage;
+import messages.Messages.GetNodeRequest;
+import messages.Messages.GetNodeResponse;
+import messages.Messages.MindmapAsJsonReponse;
+import messages.Messages.MindmapAsJsonRequest;
+import messages.Messages.MindmapAsXmlRequest;
+import messages.Messages.MindmapAsXmlResponse;
+import messages.Messages.OpenMindMapRequest;
+import messages.Messages.RemoveNodeRequest;
+import messages.exceptions.MapNotFoundException;
+import messages.exceptions.NodeNotFoundException;
 
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.fest.assertions.Fail;
-import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
-import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
-import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
-import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
-import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
-import org.freeplane.plugin.webservice.Messages.ErrorMessage;
-import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlResponse;
-import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
-import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
-import org.freeplane.plugin.webservice.v10.Webservice;
-import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
-import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
-import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -120,10 +120,10 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
-					@Override
 					protected void run() {
-						remoteActor.tell(new MindmapAsJsonRequest("test_6"), getRef());
+						remoteActor.tell(new MindmapAsJsonRequest("6"), getRef());
 						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						System.out.println(response.getException());
 						assertThat(response.getException() instanceof MapNotFoundException).isTrue();
 					}
 				};
@@ -141,14 +141,18 @@ public class AkkaTests {
 		new JavaTestKit(system) {
 			{
 				localActor.tell(getRef(), getRef());
-				sendMindMapToServer(5);
-
-				remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
-
-				MindmapAsXmlResponse response = expectMsgClass(MindmapAsXmlResponse.class);
-				assertThat(response.getXmlString()).contains("<node TEXT=\"right_L1P0_Links\" COLOR=\"#000000\" STYLE=\"as_parent\" MAX_WIDTH=\"600\" MIN_WIDTH=\"1\" POSITION=\"right\" ID=\"ID_1\" CREATED=\"1354627639897\" MODIFIED=\"1355079961660\" HGAP=\"70\" VSHIFT=\"-160\">");
-
-				closeMindMapOnServer(5);
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+		
+						remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
+		
+						MindmapAsXmlResponse response = expectMsgClass(MindmapAsXmlResponse.class);
+						assertThat(response.getXmlString()).contains("<node TEXT=\"right_L1P0_Links\" COLOR=\"#000000\" STYLE=\"as_parent\" MAX_WIDTH=\"600\" MIN_WIDTH=\"1\" POSITION=\"right\" ID=\"ID_1\" CREATED=\"1354627639897\" MODIFIED=\"1355079961660\" HGAP=\"70\" VSHIFT=\"-160\">");
+		
+						closeMindMapOnServer(5);
+					}
+				};
 			}
 		};
 	}
@@ -162,11 +166,16 @@ public class AkkaTests {
 	public void testMindMapAsXmlFail() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(), getRef());
-				remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
-
-				ErrorMessage response = expectMsgClass(ErrorMessage.class);
-				assertThat(response.getException() instanceof MapNotFoundException).isTrue();
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						localActor.tell(getRef(), getRef());
+						remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
+		
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						assertThat(response.getException() instanceof MapNotFoundException).isTrue();
+			
+					}
+				};
 			}
 		};
 	}
@@ -182,7 +191,6 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
-					@Override
 					protected void run() {
 						try {
 						sendMindMapToServer(5);
@@ -219,7 +227,6 @@ public class AkkaTests {
 			{
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
-					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						remoteActor.tell(new AddNodeRequest("5", "ID_FAIL"), localActor);
@@ -233,13 +240,37 @@ public class AkkaTests {
 		};
 	}
 	
+	/**
+	 * testAddNodeRequestFailInvalidMap
+	 * Open no Map. Try to add node. Should throw MapNotFoundException
+	 */
+	@Test
+	public void testAddNodeRequestFailInvalidMap() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						remoteActor.tell(new AddNodeRequest("16", "ID_FAIL"), localActor);
+
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						assertThat(response.getException() instanceof MapNotFoundException).isTrue();
+					}
+				};
+			}
+		};
+	}
+
+	/**
+	 * testGetNodeRequest
+	 * Get node from map 
+	 */
 	@Test
 	public void testGetNodeRequest() {
 		new JavaTestKit(system) {
 			{
 				localActor.tell(getRef(),getRef());
 				new Within(duration("3 seconds")) {
-					@Override
 					protected void run() {
 						try {
 						sendMindMapToServer(5);
@@ -266,23 +297,71 @@ public class AkkaTests {
 			}
 		};
 	}
+	
+	/**
+	 * testGetNodeRequest
+	 * Get invalid node from map. Should throw NodeNotFoundException
+	 */
+	@Test
+	public void testGetNodeRequestFailInvalidNode() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						remoteActor.tell(new GetNodeRequest("5", "ID_FAIL", 1), localActor);
 
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						assertThat(response.getException() instanceof NodeNotFoundException).isTrue();
+						closeMindMapOnServer(5);
+					}
+				};
+			}
+		};
+	}
+
+	/**
+	 * testRemoveNodeRequest
+	 * send map to server. remove valid node from Map. check if node with id isn't available any more.
+	 */
 	@Test
 	public void testRemoveNodeRequest() {
 		new JavaTestKit(system) {
 			{
 				localActor.tell(getRef(),getRef());
 				new Within(duration("3 seconds")) {
-					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						remoteActor.tell(new RemoveNodeRequest("5", "ID_5"), localActor);
 
-						//expectNoMsg();
-
 						remoteActor.tell(new GetNodeRequest("5", "ID_5", 1), localActor);
 						ErrorMessage response = expectMsgClass(ErrorMessage.class);
-						assertThat(response.getException().getMessage()).contains("Node with id 'ID_5' not found");
+						assertThat(response.getException() instanceof NodeNotFoundException).isTrue();
+
+						closeMindMapOnServer(5);
+					}
+				};
+			}
+		};
+	}
+	
+	/**
+	 * testRemoveNodeRequestFailInvalidNode
+	 * send map to server. remove valid node from Map. check if 
+	 */
+	@Test
+	public void testRemoveNodeRequestFailInvalidNode() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_FAIL"), localActor);
+					
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+						assertThat(response.getException() instanceof NodeNotFoundException).isTrue();
 
 						closeMindMapOnServer(5);
 					}
@@ -291,13 +370,16 @@ public class AkkaTests {
 		};
 	}
 
+	/**
+	 * testChangeNodeRequest
+	 * change available node to defined attributes. check if node got attributes.
+	 */
 	@Test
 	public void testChangeNodeRequest() {
 		new JavaTestKit(system) {
 			{
 				localActor.tell(getRef(),getRef());
 				new Within(duration("10 seconds")) {
-					@Override
 					protected void run() {
 						sendMindMapToServer(5);
 						
@@ -326,7 +408,6 @@ public class AkkaTests {
 						node.attributes = attr;
 						
 						ObjectMapper om = new ObjectMapper();
-						//String nodeAsJSON = "{\"id\":\"ID_1\",\"nodeText\":\"" + newNodeText + "\"}";
 						String nodeAsJSON = null;
 						try {
 							nodeAsJSON = om.writeValueAsString(node);
@@ -334,8 +415,6 @@ public class AkkaTests {
 							Fail.fail("error parsing DefaultNodeModel");
 						}
 						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
-
-						//expectNoMsg();
 
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
@@ -346,11 +425,9 @@ public class AkkaTests {
 						assertThat(receivedNode.nodeText).isEqualTo(newNodeText);
 						assertThat(receivedNode.isHtml).isEqualTo(isHtml);
 						assertThat(receivedNode.folded).isEqualTo(folded);
-						//assertThat(receivedNode.icons).isEqualTo(icons);
 						assertThat(receivedNode.link).isEqualTo(link);
 						assertThat(receivedNode.hGap).isEqualTo(hGap);
 						assertThat(receivedNode.shiftY).isEqualTo(shiftY);
-						//assertThat(receivedNode.attributes.get("key")).isEqualTo("value");
 
 						} catch (JsonMappingException e) {
 							Fail.fail("json mapping error", e);
@@ -367,7 +444,47 @@ public class AkkaTests {
 		};
 	}
 
+	
+	/**
+	 * testChangeNodeRequestFailInvalidNode
+	 * change invalid node to defined attributes. Should throw NodeNotFoundException
+	 */
+	@Test
+	public void testChangeNodeRequestFailInvalidNode() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("10 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						
+						DefaultNodeModel node = new DefaultNodeModel();
+						node.id = "ID_FAIL";
+						node.nodeText = "This is a new nodeText";
+						
+						ObjectMapper om = new ObjectMapper();
+						String nodeAsJSON = null;
+						try {
+							nodeAsJSON = om.writeValueAsString(node);
+						} catch (Exception e) {
+							Fail.fail("error parsing DefaultNodeModel");
+						}
+						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
+						
+						ErrorMessage response = expectMsgClass(ErrorMessage.class);
+					
+						assertThat(response.getException() instanceof NodeNotFoundException).isTrue();
+					}
+				};
+			}
+		};
+	}
 
+
+	/**
+	 * sendMapGetAsJsonAndCloseOnServerTest
+	 * send Map, get map as json, close map
+	 */
 	@Test
 	public void sendMapGetAsJsonAndCloseOnServerTest() {
 		new JavaTestKit(system) {
@@ -381,21 +498,50 @@ public class AkkaTests {
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
-						Assert.assertTrue(response.getJsonString().contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\""));
-
+						assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 
 						closeMindMapOnServer(5);
 					}
 				};
 			}
 		};
+	}
+	
+	/**
+	 * sendMapGetAsJsonAndCloseOnServerTestFailDoubleClose
+	 * send Map, get map as json, close map, close map again. should run.
+	 */
+	@Test
+	public void sendMapGetAsJsonAndCloseOnServerTestDoubleClose() {
+		new JavaTestKit(system) {
+			{
+				new Within(duration("3 seconds")) {
+					@Override
+					public void run() {
+						sendMindMapToServer(5);
 
+						remoteActor.tell(new MindmapAsJsonRequest("5"), getRef());
+
+						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
+						System.out.println(response.getJsonString());
+						assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
+						
+						closeMindMapOnServer(5);
+						closeMindMapOnServer(5);
+						
+						expectNoMsg();
+					}
+				};
+			}
+		};
 	}
 
+	/**
+	 * simulateMultipleUserAkka
+	 * four user opening 4 different maps, each in one thread
+	 */
 	@Test
 	public void simulateMultipleUserAkka() {
-		//final ActorRef remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-
 		final Semaphore finishSemaphore = new Semaphore(-3);
 
 		for (int i = 1; i <= 4; i++) {
@@ -407,7 +553,6 @@ public class AkkaTests {
 				@Override
 				public void run() {
 					new JavaTestKit(system) {{
-						//final JavaTestKit probe = new JavaTestKit(system);
 						local.tell(getRef(),getRef());
 
 						new Within(duration("5 seconds")) {
@@ -415,12 +560,9 @@ public class AkkaTests {
 							@Override
 							public void run() {
 								sendMindMapToServer(mapId);
-
-
-
+								
 								remoteActor.tell(new MindmapAsJsonRequest(mapId + "", 5),local);
 								MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
-								//System.out.println(response.getJsonString());
 
 								if(mapId == 1) {
 									assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"foo2\"");
@@ -428,7 +570,7 @@ public class AkkaTests {
 									assertThat(response.getJsonString()).contains("\"id\":\"2.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"New Mindmap\"");
 								} else if(mapId == 3) {
 									assertThat(response.getJsonString()).contains("\"id\":\"3.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_1723255651\",\"nodeText\":\"Welcome\"");
-								} else if(mapId == 4) {
+								} else if(mapId == 5) {
 									assertThat(response.getJsonString()).contains("\"id\":\"5.mm\",\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 								}
 
@@ -458,10 +600,8 @@ public class AkkaTests {
 			new JavaTestKit(system) {
 				{
 					new Within(duration("5 seconds")) {
-						@Override
 						public void run() {
 							remoteActor.tell(request, localActor);
-							//expectNoMsg();
 						}
 					};
 				}
@@ -477,10 +617,8 @@ public class AkkaTests {
 		new JavaTestKit(system) {
 			{
 				new Within(duration("2 seconds")) {
-					@Override
 					public void run() {
 						remoteActor.tell(new CloseMapRequest(id+""), localActor);
-						//expectNoMsg();
 					}
 				};
 			}
