@@ -1,16 +1,17 @@
 package org.freeplane.plugin.webservice.actors;
 
-import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
-import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
-import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
-import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
-import org.freeplane.plugin.webservice.Messages.CloseServerRequest;
-import org.freeplane.plugin.webservice.Messages.ErrorMessage;
-import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
-import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
-import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
+import messages.Messages.AddNodeRequest;
+import messages.Messages.ChangeNodeRequest;
+import messages.Messages.CloseAllOpenMapsRequest;
+import messages.Messages.CloseMapRequest;
+import messages.Messages.CloseServerRequest;
+import messages.Messages.ErrorMessage;
+import messages.Messages.GetNodeRequest;
+import messages.Messages.MindmapAsJsonRequest;
+import messages.Messages.MindmapAsXmlRequest;
+import messages.Messages.OpenMindMapRequest;
+import messages.Messages.RemoveNodeRequest;
+
 import org.freeplane.plugin.webservice.v10.Webservice;
 
 import akka.actor.ActorRef;
@@ -37,46 +38,46 @@ public class MainActor extends UntypedActor {
 			}
 			
 			//get map as xml
-			if(message instanceof MindmapAsXmlRequest) {
+			else if(message instanceof MindmapAsXmlRequest) {
 				response = Webservice.getMapModelXml((MindmapAsXmlRequest)message);
 			}
 
 			//add node to map
-			if(message instanceof AddNodeRequest) {
+			else if(message instanceof AddNodeRequest) {
 				response = Webservice.addNode((AddNodeRequest) message);			
 			}
 			
 			//change node
-			if(message instanceof ChangeNodeRequest) {
+			else if(message instanceof ChangeNodeRequest) {
 				Webservice.changeNode((ChangeNodeRequest)message);
 			}
 			
 			//remove node from map
-			if(message instanceof RemoveNodeRequest) {
+			else if(message instanceof RemoveNodeRequest) {
 				Webservice.removeNode((RemoveNodeRequest) message);			
 			}
 			
 			//get node from map
-			if(message instanceof GetNodeRequest) {
+			else if(message instanceof GetNodeRequest) {
 				response = Webservice.getNode((GetNodeRequest) message);			
 			}
 			
-			if (message instanceof OpenMindMapRequest){
+			else if (message instanceof OpenMindMapRequest){
 				Webservice.openMindmap((OpenMindMapRequest)message);
 			}
 			
 			//close map
-			if(message instanceof CloseMapRequest) {
+			else if(message instanceof CloseMapRequest) {
 				Webservice.closeMap((CloseMapRequest)message);
 			}
 			
 			//close all maps
-			if(message instanceof CloseAllOpenMapsRequest) {
+			else if(message instanceof CloseAllOpenMapsRequest) {
 				Webservice.closeAllOpenMaps((CloseAllOpenMapsRequest)message);
 			}
 			
 			//close server
-			if(message instanceof CloseServerRequest) {
+			else if(message instanceof CloseServerRequest) {
 				Webservice.closeServer();
 			}
 

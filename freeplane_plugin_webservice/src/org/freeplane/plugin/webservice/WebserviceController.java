@@ -8,6 +8,7 @@ import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
+import org.freeplane.features.url.mindmapmode.MFileManager;
 import org.freeplane.plugin.webservice.actors.MainActor;
 import org.freeplane.plugin.webservice.v10.Webservice;
 
@@ -43,11 +44,9 @@ public class WebserviceController {
 		} catch (Exception e) {}
 
 		this.registerListeners();
-
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(WebserviceController.class.getClassLoader());
-
+		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
 
 
 		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));

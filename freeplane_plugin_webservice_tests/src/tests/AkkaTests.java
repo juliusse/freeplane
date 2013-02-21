@@ -3,29 +3,32 @@ package tests;
 import static org.fest.assertions.Assertions.assertThat;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import messages.Messages.AddNodeRequest;
+import messages.Messages.AddNodeResponse;
+import messages.Messages.ChangeNodeRequest;
+import messages.Messages.CloseAllOpenMapsRequest;
+import messages.Messages.CloseMapRequest;
+import messages.Messages.ErrorMessage;
+import messages.Messages.GetNodeRequest;
+import messages.Messages.GetNodeResponse;
+import messages.Messages.MindmapAsJsonReponse;
+import messages.Messages.MindmapAsJsonRequest;
+import messages.Messages.MindmapAsXmlRequest;
+import messages.Messages.MindmapAsXmlResponse;
+import messages.Messages.OpenMindMapRequest;
+import messages.Messages.RemoveNodeRequest;
+
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.fest.assertions.Fail;
-import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
-import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
-import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
-import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
-import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
-import org.freeplane.plugin.webservice.Messages.ErrorMessage;
-import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlResponse;
-import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
-import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
-import org.freeplane.plugin.webservice.v10.Webservice;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -47,13 +50,14 @@ public class AkkaTests {
 	private static ActorSystem system;
 	private static ActorRef remoteActor;
 	private static ActorRef localActor;
+	private static ObjectMapper objectMapper;
 	
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
 		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-		
+		objectMapper = new ObjectMapper();
 	}
 
 	@AfterClass
@@ -124,13 +128,24 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					@Override
 					protected void run() {
+						try {
 						sendMindMapToServer(5);
 						remoteActor.tell(new AddNodeRequest("5", "ID_0"), localActor);
 
 						AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
-						System.out.println(response.getNode().nodeText);
-						Assert.assertEquals("",response.getNode().nodeText);
-						closeMindMapOnServer(5);
+						DefaultNodeModel node = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
+						System.out.println(node.nodeText);
+						Assert.assertEquals("",node.nodeText);
+						
+						} catch (JsonMappingException e) {
+							Fail.fail("json mapping error", e);
+						} catch (JsonParseException e) {
+							Fail.fail("json parse error", e);
+						} catch (IOException e) {
+							Fail.fail("json IOException error", e);
+						} finally {
+							closeMindMapOnServer(5);
+						}
 					}
 				};
 			}
@@ -145,15 +160,26 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					@Override
 					protected void run() {
+						try {
 						sendMindMapToServer(5);
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
-						System.out.println(response.getNode().nodeText);
-						assertThat(response.getNode().nodeText).isEqualTo("right_L1P0_Links");
-						assertThat(response.getNode().hGap).isEqualTo(70);
+						DefaultNodeModel node = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
+						System.out.println(node.nodeText);
+						assertThat(node.nodeText).isEqualTo("right_L1P0_Links");
+						assertThat(node.hGap).isEqualTo(70);
 
-						closeMindMapOnServer(5);
+						
+						} catch (JsonMappingException e) {
+							Fail.fail("json mapping error", e);
+						} catch (JsonParseException e) {
+							Fail.fail("json parse error", e);
+						} catch (IOException e) {
+							Fail.fail("json IOException error", e);
+						} finally {
+							closeMindMapOnServer(5);
+						}
 					}
 				};
 			}
@@ -232,7 +258,9 @@ public class AkkaTests {
 
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
-						final DefaultNodeModel receivedNode = response.getNode();
+						
+						try {
+						final DefaultNodeModel receivedNode = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
 						
 						assertThat(receivedNode.nodeText).isEqualTo(newNodeText);
 						assertThat(receivedNode.isHtml).isEqualTo(isHtml);
@@ -243,7 +271,15 @@ public class AkkaTests {
 						assertThat(receivedNode.shiftY).isEqualTo(shiftY);
 						//assertThat(receivedNode.attributes.get("key")).isEqualTo("value");
 
-						closeMindMapOnServer(5);
+						} catch (JsonMappingException e) {
+							Fail.fail("json mapping error", e);
+						} catch (JsonParseException e) {
+							Fail.fail("json parse error", e);
+						} catch (IOException e) {
+							Fail.fail("json IOException error", e);
+						} finally {
+							closeMindMapOnServer(5);
+						}
 					}
 				};
 			}
@@ -330,7 +366,7 @@ public class AkkaTests {
 	}
 
 	public void sendMindMapToServer(final int id) {
-		final URL pathURL = Webservice.class.getResource("/files/mindmaps/" + id + ".mm");
+		final URL pathURL = AkkaTests.class.getResource("/files/mindmaps/" + id + ".mm");
 
 		try {
 			final File f = new File(pathURL.toURI());
