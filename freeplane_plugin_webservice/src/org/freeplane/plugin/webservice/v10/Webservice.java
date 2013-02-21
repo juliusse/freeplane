@@ -16,46 +16,39 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import messages.Messages.AddNodeRequest;
+import messages.Messages.AddNodeResponse;
+import messages.Messages.ChangeNodeRequest;
+import messages.Messages.CloseAllOpenMapsRequest;
+import messages.Messages.CloseMapRequest;
+import messages.Messages.GetNodeRequest;
+import messages.Messages.GetNodeResponse;
+import messages.Messages.MindmapAsJsonReponse;
+import messages.Messages.MindmapAsJsonRequest;
+import messages.Messages.MindmapAsXmlRequest;
+import messages.Messages.MindmapAsXmlResponse;
+import messages.Messages.OpenMindMapRequest;
+import messages.Messages.RemoveNodeRequest;
+import messages.exceptions.MapNotFoundException;
+import messages.exceptions.NodeNotFoundException;
+
+import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.freeplane.features.attribute.Attribute;
-import org.freeplane.features.attribute.AttributeController;
-import org.freeplane.features.attribute.NodeAttributeTableModel;
-import org.freeplane.features.link.LinkModel;
 import org.freeplane.features.link.NodeLinks;
-import org.freeplane.features.map.MapChangeEvent;
-import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapWriter;
-import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.plugin.webservice.Messages.AddNodeRequest;
-import org.freeplane.plugin.webservice.Messages.AddNodeResponse;
-import org.freeplane.plugin.webservice.Messages.ChangeNodeRequest;
-import org.freeplane.plugin.webservice.Messages.CloseAllOpenMapsRequest;
-import org.freeplane.plugin.webservice.Messages.CloseMapRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeRequest;
-import org.freeplane.plugin.webservice.Messages.GetNodeResponse;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonReponse;
-import org.freeplane.plugin.webservice.Messages.MindmapAsJsonRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlRequest;
-import org.freeplane.plugin.webservice.Messages.MindmapAsXmlResponse;
-import org.freeplane.plugin.webservice.Messages.OpenMindMapRequest;
-import org.freeplane.plugin.webservice.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
-import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
-
-import com.sun.org.apache.xml.internal.dtm.ref.NodeLocator;
 
 public class Webservice {
 
@@ -254,8 +247,11 @@ public class Webservice {
 	 * @return a node model
 	 * @throws MapNotFoundException 
 	 * @throws NodeNotFoundException 
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonGenerationException 
 	 */
-	public static GetNodeResponse getNode(GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException {
+	public static GetNodeResponse getNode(GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
 		selectMap(request.getMapId());
 
 		ModeController modeController = getModeController();
@@ -274,10 +270,10 @@ public class Webservice {
 			WebserviceHelper.loadNodesIntoModel(node, request.getNodeCount());
 		}
 
-		return new GetNodeResponse(node);
+		return new GetNodeResponse(objectMapper.writeValueAsString(node));
 	}
 
-	public static AddNodeResponse addNode(AddNodeRequest request) throws MapNotFoundException, NodeNotFoundException {
+	public static AddNodeResponse addNode(AddNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
 		final String mapId = request.getMapId();
 		final String parentNodeId = request.getParentNodeId(); 
 
@@ -310,7 +306,7 @@ public class Webservice {
 		node.createID();
 		System.out.println("created node." + node.getID() + " with text: \"" + node.getText() + "\"");
 
-		return new AddNodeResponse(new DefaultNodeModel(node, false));
+		return new AddNodeResponse(objectMapper.writeValueAsString(new DefaultNodeModel(node, false)));
 		//return Response.ok(new DefaultNodeModel(node, false)).build();	
 	}
 
