@@ -1,50 +1,266 @@
-<project name="docear_webservice" default="dist" basedir=".." xmlns:ivy="antlib:org.apache.ivy.ant" >
+<project name="docear_webservice" default="dist" basedir=".." xmlns:ivy="antlib:org.apache.ivy.ant">
 	<property name="workspace" location=".." />
 	<property name="src" value="src" />
 	<property name="resources" value="resources" />
-	<property name="root" value="."/>
+	<property name="root" value="." />
 	<property name="osgimanifest" value="${root}/META-INF/MANIFEST.MF" />
 	<property file="${workspace}/freeplane_framework/ant/ant.properties" />
 	<property file="${workspace}/freeplane/ant/ant.properties" />
 	<property file="ant/ant.properties" />
-	<property name="build" value="${root}/build" />
-	<property name="lib" value="${root}/lib" />
-	<property name="dist" value="${root}/dist" />
+	<property name="build.dir" value="${root}/build" />
+	<property name="lib.dir" value="${root}/lib" />
+	<property name="src.dir" value="${root}/src" />
+	<property name="dist.dir" value="${root}/dist" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="jar.dir" value="${build.dir}/jar" />
+	<property name="src.tests" value="${src.dir}/tests" />
+	<property name="report.dir" value="${root}/report" />
 	<property name="dist.osgi.dir" value="${dist}/org.freeplane.plugin.webservice" />
-	<property name="freeplaneplugin.jar" value="${dist}/org.freeplane.plugin.webservice.jar"/>
+	<property name="freeplaneplugin.jar" value="${dist}/org.freeplane.plugin.webservice.jar" />
 	<property name="debug" value="on" />
 	<property name="java_source_version" value="1.5" />
 	<property name="java_target_version" value="1.5" />
 	<property name="build.compiler" value="modern" />
-	<property name="classpath" value="${framework.jar}:${freeplane.jars}:${services.jar}:${core.jar}:${workspace.jar}:${dependencies.jars}:${webservice-libs}"/>
-    <property name="ivy.jar.dir" value="${basedir}/ivy" />
-    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
-    <property name="build.dir" value="build" />
-    <property name="src.dir" value="src" />
+	<property name="classpath" value="${framework.jar}:${freeplane.jars}:${services.jar}:${core.jar}:${workspace.jar}:${dependencies.jars}:${webservice-libs}" />
+	<property name="classpath.tests" value="${freeplane.jars}:${webservice-libs}:${webservice-tests-libs}" />
+	<property name="ivy.jar.dir" value="${basedir}/ivy" />
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	<property name="JOrtho_0.4_freeplane.location" value="${root}/../JOrtho_0.4_freeplane" />
+	<property name="freeplane.location" value="${root}/../freeplane" />
+	<property name="freeplane_plugin_webservice.location" value="${root}/../freeplane_plugin_webservice" />
+	<!-- END PROPERTIES -->
 
-    <target name="install-ivy" description="adds ivy ant module to ant">
-        <path id="ivy.lib.path">
-            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-        </path>
-        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-    </target>
+	<!-- BEGIN PATH-->
+	<path id="JOrtho_0.4_freeplane.classpath">
+		<pathelement location="${JOrtho_0.4_freeplane.location}/bin" />
+	</path>
+	<path id="freeplane.classpath">
+		<pathelement location="${freeplane.location}/bin/classes" />
+		<pathelement location="${freeplane.location}/bin/classes" />
+		<pathelement location="${freeplane.location}/lib/commons-lang-2.0.jar" />
+		<pathelement location="${freeplane.location}/lib/forms-1.2.1.jar" />
+		<pathelement location="${freeplane.location}/lib/gnu-regexp-1.1.4.jar" />
+		<pathelement location="${freeplane.location}/lib/SimplyHTML.jar" />
+		<pathelement location="${freeplane.location}/lib/freeplanemac.jar" />
+		<pathelement location="${freeplane.location}/lib/commons-io-2.4.jar" />
+		<path refid="JOrtho_0.4_freeplane.classpath" />
+	</path>
+	<path id="freeplane_plugin_webservice.classpath">
+		<pathelement location="${freeplane_plugin_webservice.location}/bin" />
+		<pathelement location="${freeplane_plugin_webservice.location}/ivy/ivy.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/**.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/messages_2.10-0.1-SNAPSHOT.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/activation-1.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-actor_2.10-2.1.0-javadoc.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-actor_2.10-2.1.0-sources.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-actor_2.10-2.1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-osgi_2.10-2.1.0-javadoc.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-osgi_2.10-2.1.0-sources.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-osgi_2.10-2.1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-remote_2.10-2.1.0-javadoc.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-remote_2.10-2.1.0-sources.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/akka-remote_2.10-2.1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/ant-1.6.5.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/asm-3.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/cal10n-api-0.7.2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/cdi-api-1.0-SP3.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/commons-io-1.3.2-javadoc.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/commons-io-1.3.2-sources.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/commons-io-1.3.2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/config-1.0.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/FastInfoset-1.2.9.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-framework-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-http-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-http-servlet-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-lzma-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-portunif-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-rcm-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-servlet-webserver-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/grizzly-utils-1.9.45.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/guava-r06.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/http-20070405.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jackson-core-asl-1.9.2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jackson-jaxrs-1.9.2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jackson-mapper-asl-1.9.2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jackson-xc-1.9.2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javassist-3.12.0.GA.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javassist-3.14.0-GA.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javax.annotation-3.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javax.ejb-3.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javax.inject-1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javax.servlet-api-3.0.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/javax.transaction-3.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jaxb-api-2.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jaxb-impl-2.2.3-1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jboss-interceptor-core-2.0.0.CR1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jboss-interceptor-spi-2.0.0.CR1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jboss-interceptors-api_1.1_spec-1.0.0.Beta1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jdom-1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-atom-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-bundle-1.16-javadoc.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-bundle-1.16-sources.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-bundle-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-client-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-fastinfoset-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-grizzly-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-json-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-multipart-1.16-javadoc.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-multipart-1.16-sources.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jersey-multipart-1.16.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jsp-api-2.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jsr173-1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jsr250-api-1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/jsr311-api-1.1.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/mail-1.4.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/mimepull-1.6.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/netty-3.5.8.Final.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/org.osgi.core-4.2.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/osgi_R4_core-1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/persistence-api-1.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/protobuf-java-2.4.1.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/rome-0.9.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/scala-library-2.10.0.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/servlet-api-2.5.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/slf4j-api-1.5.10.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/slf4j-ext-1.5.10.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/slf4j-jdk14-1.5.10.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/stax-api-1.0-2.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/uncommons-maths-1.2.2a.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/weld-api-1.1.Final.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/weld-build-config-1.1.4.Final.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/weld-core-1.1.4.Final.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/weld-osgi-bundle-1.1.4.Final.jar" />
+		<pathelement location="${freeplane_plugin_webservice.location}/lib/weld-spi-1.1.Final.jar" />
+		<path refid="freeplane.classpath" />
+	</path>
+	<path id="freeplane_plugin_webservice_tests.classpath">
+		<pathelement location="bin" />
+		<pathelement location="ivy/ivy.jar" />
+		<pathelement location="lib/messages_2.10-0.1-SNAPSHOT.jar" />
+		<pathelement location="lib/akka-actor_2.10-2.1.0-javadoc.jar" />
+		<pathelement location="lib/akka-actor_2.10-2.1.0-sources.jar" />
+		<pathelement location="lib/akka-actor_2.10-2.1.0.jar" />
+		<pathelement location="lib/akka-remote_2.10-2.1.0-javadoc.jar" />
+		<pathelement location="lib/akka-remote_2.10-2.1.0-sources.jar" />
+		<pathelement location="lib/akka-remote_2.10-2.1.0.jar" />
+		<pathelement location="lib/akka-testkit_2.10-2.1.0-javadoc.jar" />
+		<pathelement location="lib/akka-testkit_2.10-2.1.0-sources.jar" />
+		<pathelement location="lib/akka-testkit_2.10-2.1.0.jar" />
+		<pathelement location="lib/config-1.0.0.jar" />
+		<pathelement location="lib/fest-assert-1.4.jar" />
+		<pathelement location="lib/fest-util-1.1.6.jar" />
+		<pathelement location="lib/hamcrest-core-1.3.jar" />
+		<pathelement location="lib/jackson-core-asl-1.9.12.jar" />
+		<pathelement location="lib/jackson-mapper-asl-1.9.12-javadoc.jar" />
+		<pathelement location="lib/jackson-mapper-asl-1.9.12-sources.jar" />
+		<pathelement location="lib/jackson-mapper-asl-1.9.12.jar" />
+		<pathelement location="lib/junit-4.11-javadoc.jar" />
+		<pathelement location="lib/junit-4.11-sources.jar" />
+		<pathelement location="lib/junit-4.11.jar" />
+		<pathelement location="lib/netty-3.5.8.Final.jar" />
+		<pathelement location="lib/protobuf-java-2.4.1.jar" />
+		<pathelement location="lib/scala-library-2.10.0.jar" />
+		<pathelement location="lib/uncommons-maths-1.2.2a.jar" />
+		<path refid="freeplane.classpath" />
+		<path refid="freeplane_plugin_webservice.classpath" />
+	</path>
+	<!-- END PATH -->
+
+	<!-- BEGIN TARGETS -->
+	<target name="install-ivy" description="adds ivy ant module to ant">
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar" />
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+	</target>
 
 
-    <target name="resolve" description="retrieve dependencies with ivy" depends="install-ivy">
-        <ivy:retrieve />
-    </target>
-	
+	<target name="resolve" description="retrieve dependencies with ivy" depends="install-ivy">
+		<ivy:retrieve />
+	</target>
+
 	<target name="clean">
-		<delete dir="${build}"  quiet="true"/>
-		<delete dir="${dist}"  quiet="true"/>
-		<delete dir="${lib}"  quiet="true"/>
+		<delete dir="${build.dir}" quiet="true" />
+		<delete dir="${dist.dir}" quiet="true" />
+		<delete dir="${lib.dir}" quiet="true" />
 		<delete>
-			<fileset defaultexcludes="no" dir="${src}" includes="**/*~"/>
+			<fileset defaultexcludes="no" dir="${src}" includes="**/*~" />
 		</delete>
 	</target>
-	
+
+	<target name="cleanall" depends="clean">
+		<ant antfile="build.xml" dir="${JOrtho_0.4_freeplane.location}" inheritAll="false" target="clean" />
+		<ant antfile="build.xml" dir="${freeplane.location}/ant" inheritAll="false" target="clean" />
+		<ant antfile="build.xml" dir="${freeplane_plugin_webservice.location}/ant" inheritAll="false" target="clean" />
+	</target>
+
 	<target name="dist" depends="resolve">
 	</target>
-	
+
+	<target name="init">
+		<mkdir dir="bin" />
+		<copy includeemptydirs="false" todir="bin">
+			<fileset dir="src">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+		<copy includeemptydirs="false" todir="bin">
+			<fileset dir="resources">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="build" depends="resolve,build-freeplane,init">
+		<echo message="${ant.project.name}: ${ant.file}" />
+		<javac debug="true" destdir="bin" includeantruntime="false">
+			<src path="src/tests" />
+			<src path="resources" />
+			<classpath refid="freeplane_plugin_webservice_tests.classpath" />
+		</javac>
+	</target>
+
+	<target name="build-freeplane">
+		<!-- <ant antfile="build.xml" dir="${JOrtho_0.4_freeplane.location}" inheritAll="false" target="dist" />
+		<ant antfile="build.xml" dir="${freeplane.location}/ant" inheritAll="false" target="build" />
+		<ant antfile="build.xml" dir="${freeplane_plugin_webservice.location}/ant" inheritAll="false" target="build" /> -->
+	</target>
+
+
+	<!-- TESTING -->
+
+	<target name="compile" depends="dist">
+		<mkdir dir="${classes.dir}" />
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" />
+	</target>
+
+	<target name="jar" depends="compile">
+		<mkdir dir="${jar.dir}" />
+		<jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${main-class}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="test" depends="build">
+		<mkdir dir="${report.dir}" />
+		<junit fork="yes" printsummary="yes" haltonfailure="no" showoutput="no">
+			<formatter type="plain" />
+			<formatter type="xml" />
+			<test name="tests.AkkaTests" todir="${report.dir}" />
+			<classpath refid="freeplane_plugin_webservice_tests.classpath" />
+		</junit>
+	</target>
+
+	<target name="junitreport">
+		<junitreport todir="${report.dir}">
+			<fileset dir="${report.dir}" includes="TEST-*.xml" />
+			<report todir="${report.dir}" />
+		</junitreport>
+	</target>
+
+	<!-- END TARGETS -->
+
 </project>
 

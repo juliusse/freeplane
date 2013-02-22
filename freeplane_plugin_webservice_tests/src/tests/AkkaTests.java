@@ -35,6 +35,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import akka.actor.ActorRef;
@@ -539,6 +540,7 @@ public class AkkaTests {
 	 * four user opening 4 different maps, each in one thread
 	 */
 	@Test
+	@Ignore
 	public void simulateMultipleUserAkka() {
 		final Semaphore finishSemaphore = new Semaphore(-3);
 
