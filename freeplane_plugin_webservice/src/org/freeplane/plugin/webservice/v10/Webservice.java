@@ -1,11 +1,9 @@
 package org.freeplane.plugin.webservice.v10;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -173,9 +171,6 @@ public class Webservice {
 	}
 
 	public static void openMindmap(OpenMindMapRequest request) {
-
-		InputStream inStream = null;
-		OutputStream outStream = null;
 		
 		try {
 			//create file

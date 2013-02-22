@@ -11,11 +11,11 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.freeplane.features.attribute.Attribute;
+import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.features.attribute.Attribute;
-import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.plugin.webservice.WebserviceController;
 
 @XmlRootElement(name="node")

@@ -1,25 +1,17 @@
 package org.freeplane.plugin.webservice;
 
 import java.awt.Container;
-import java.io.IOException;
-import java.util.logging.Level;
 
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
-import org.freeplane.features.url.mindmapmode.MFileManager;
 import org.freeplane.plugin.webservice.actors.MainActor;
-import org.freeplane.plugin.webservice.v10.Webservice;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 
-import com.sun.jersey.api.container.httpserver.HttpServerFactory;
-import com.sun.jersey.api.core.ClassNamesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.net.httpserver.HttpServer;
 import com.typesafe.config.ConfigFactory;
 
 
@@ -38,10 +30,10 @@ public class WebserviceController {
 
 		LogUtils.info("starting Webservice Plugin...");
 
-		int port = 8080;
-		try {
-			port = Integer.parseInt(System.getenv("webservice_port"));
-		} catch (Exception e) {}
+//		int port = 8080;
+//		try {
+//			port = Integer.parseInt(System.getenv("webservice_port"));
+//		} catch (Exception e) {}
 
 		this.registerListeners();
 		//change class loader

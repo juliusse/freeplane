@@ -5,7 +5,6 @@ import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
-import org.docear.messages.Messages.ErrorMessage;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;

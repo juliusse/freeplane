@@ -5,9 +5,9 @@ import java.util.Hashtable;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
-import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import akka.actor.*;
+
+import akka.actor.ActorSystem;
 import akka.osgi.ActorSystemActivator;
 
 

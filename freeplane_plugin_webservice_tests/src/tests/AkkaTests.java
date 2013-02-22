@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -59,6 +60,8 @@ public class AkkaTests {
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
 		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
+		//docear2
+		//remoteActor = system.actorFor("akka://freeplaneRemote@141.45.146.224:2553/user/main");
 		objectMapper = new ObjectMapper();
 	}
 
@@ -593,7 +596,8 @@ public class AkkaTests {
 
 		try {
 			final File f = new File(pathURL.toURI());
-			final OpenMindMapRequest request = new OpenMindMapRequest(f);
+			String mapContent = FileUtils.readFileToString(f);
+			final OpenMindMapRequest request = new OpenMindMapRequest(mapContent);
 
 			assertThat(f).isNotNull();
 
@@ -608,6 +612,7 @@ public class AkkaTests {
 			};
 
 		} catch (URISyntaxException e) {
+		} catch (IOException e) {
 		}
 
 
