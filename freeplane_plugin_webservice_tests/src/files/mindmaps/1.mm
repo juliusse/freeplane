@@ -1,6 +1,6 @@
 <map version="docear 1.0" dcr_id="1" dcr_uri="workspace:/../../Temp/Docear/1.mm">
 <!--To view this file, download Docear - The Academic Literature Suite from http://www.docear.org -->
-<node TEXT="foo2" FOLDED="false" ID="ID_1723255651" CREATED="1283093380553" MODIFIED="1353101417444" LINK="#ID_510509733"><hook NAME="MapStyle" zoom="0.825">
+<node TEXT="foo2" FOLDED="false" ID="ID_0" CREATED="1283093380553" MODIFIED="1353101417444" LINK="#ID_510509733"><hook NAME="MapStyle" zoom="0.825">
     <properties show_icon_for_attributes="true" show_note_icons="true"/>
 
 <map_styles>
@@ -53,7 +53,7 @@
 <hook NAME="AutomaticEdgeColor" COUNTER="3"/>
 <attribute_layout NAME_WIDTH="72" VALUE_WIDTH="72"/>
 <attribute NAME="wfad" VALUE="awdad"/>
-<node LOCALIZED_STYLE_REF="default" POSITION="right" ID="ID_510509733" CREATED="1351707688481" MODIFIED="1353101429148" LINK="#ID_1723255651"><richcontent TYPE="NODE">
+<node LOCALIZED_STYLE_REF="default" POSITION="right" ID="ID_510509733" CREATED="1351707688481" MODIFIED="1353101429148" LINK="#ID_0"><richcontent TYPE="NODE">
 
 <html>
   <head>
