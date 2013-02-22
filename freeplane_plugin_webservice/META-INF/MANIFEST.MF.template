@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: org.freeplane.plugin.webservice
-Bundle-SymbolicName: org.freeplane.plugin.webservice;singleton:=true
+Bundle-Name: org.freeplane.plugin.remote
+Bundle-SymbolicName: org.freeplane.plugin.remote;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: org.freeplane.plugin.webservice.Activator
 Require-Bundle: org.freeplane.core;bundle-version="1.0.1"
@@ -12,5 +12,5 @@ Import-Package:
 Bundle-ClassPath: .,
  @DEPENDENCY_JARS@,
  lib/plugin.jar,
- messages_2.10-0.1-SNAPSHOT.jar
+ lib/messages_2.10-0.1-SNAPSHOT.jar
 

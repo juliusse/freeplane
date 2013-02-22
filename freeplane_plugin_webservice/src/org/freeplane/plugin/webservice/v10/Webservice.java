@@ -1,9 +1,11 @@
 package org.freeplane.plugin.webservice.v10;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,7 +38,6 @@ import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.freeplane.features.link.NodeLinks;
-import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
@@ -172,6 +173,9 @@ public class Webservice {
 
 	public static void openMindmap(OpenMindMapRequest request) {
 
+		InputStream inStream = null;
+		OutputStream outStream = null;
+		
 		try {
 			//create file
 			Random ran = new Random();
@@ -181,6 +185,23 @@ public class Webservice {
 
 			
 			File received = request.getMindmapFile();
+			
+    	    inStream = new FileInputStream(received);
+    	    outStream = new FileOutputStream(file);
+ 
+    	    byte[] buffer = new byte[1024];
+ 
+    	    int length;
+    	    //copy the file content in bytes 
+    	    while ((length = inStream.read(buffer)) > 0){
+ 
+    	    	outStream.write(buffer, 0, length);
+ 
+    	    }
+ 
+    	    inStream.close();
+    	    outStream.close();
+    	    
 			org.apache.commons.io.FileUtils.copyFile(received, file);
 
 			//put map in openMap Collection
