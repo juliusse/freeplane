@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -183,26 +184,7 @@ public class Webservice {
 			File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
-			
-			File received = request.getMindmapFile();
-			
-    	    inStream = new FileInputStream(received);
-    	    outStream = new FileOutputStream(file);
- 
-    	    byte[] buffer = new byte[1024];
- 
-    	    int length;
-    	    //copy the file content in bytes 
-    	    while ((length = inStream.read(buffer)) > 0){
- 
-    	    	outStream.write(buffer, 0, length);
- 
-    	    }
- 
-    	    inStream.close();
-    	    outStream.close();
-    	    
-			org.apache.commons.io.FileUtils.copyFile(received, file);
+			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
 
 			//put map in openMap Collection
 			String mapId = WebserviceHelper.getMapIdFromFile(file);
