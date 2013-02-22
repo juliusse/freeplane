@@ -1,6 +1,8 @@
 package org.freeplane.plugin.webservice.v10.model;
 
-public class ImageModel {
+import java.io.Serializable;
+
+public class ImageModel implements Serializable {
 	public String URI;
 	public float size;
 	

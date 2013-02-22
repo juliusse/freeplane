@@ -31,8 +31,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JScrollPane;
 
@@ -41,6 +43,7 @@ import org.freeplane.features.map.IMapSelection;
 import org.freeplane.features.map.IMapSelectionListener;
 import org.freeplane.features.map.MapModel;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.mode.Controller;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.ui.IMapViewChangeListener;
 import org.freeplane.features.ui.IMapViewManager;
@@ -133,7 +136,7 @@ public class HeadlessMapViewController implements IMapViewManager {
 	}
 
 	public IMapSelection getMapSelection() {
-		return null;
+		return new MapSelection();
 	}
 
 	public Component getMapViewComponent() {
@@ -259,5 +262,93 @@ public class HeadlessMapViewController implements IMapViewManager {
 		currentKey = null;
 		currentMap = null;
 		return true;
+	}
+	
+	private class MapSelection implements IMapSelection {
+
+		public void centerNode(NodeModel node) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public NodeModel getSelected() {
+			// TODO just a hack because of undo
+			return Controller.getCurrentController().getModeController().getMapController().getRootNode();
+		}
+
+		public Set<NodeModel> getSelection() {			 
+			return new HashSet<NodeModel>();
+		}
+
+		public List<NodeModel> getOrderedSelection() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public List<NodeModel> getSortedSelection(boolean differentSubtrees) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		public boolean isSelected(NodeModel node) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		public void keepNodePosition(NodeModel node, float horizontalPoint,
+				float verticalPoint) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void makeTheSelected(NodeModel node) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void scrollNodeToVisible(NodeModel selected) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void selectAsTheOnlyOneSelected(NodeModel node) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void selectBranch(NodeModel node, boolean extend) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void selectContinuous(NodeModel node) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void selectRoot() {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void setSiblingMaxLevel(int nodeLevel) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public int size() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		public void toggleSelected(NodeModel node) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		public void replaceSelection(NodeModel[] nodes) {
+			// TODO Auto-generated method stub
+			
+		}
 	}
 }

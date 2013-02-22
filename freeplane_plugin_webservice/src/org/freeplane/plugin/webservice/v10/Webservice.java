@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,49 +16,49 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.docear.messages.Messages.AddNodeRequest;
+import org.docear.messages.Messages.AddNodeResponse;
+import org.docear.messages.Messages.ChangeNodeRequest;
+import org.docear.messages.Messages.CloseAllOpenMapsRequest;
+import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.GetNodeRequest;
+import org.docear.messages.Messages.GetNodeResponse;
+import org.docear.messages.Messages.MindmapAsJsonReponse;
+import org.docear.messages.Messages.MindmapAsJsonRequest;
+import org.docear.messages.Messages.MindmapAsXmlRequest;
+import org.docear.messages.Messages.MindmapAsXmlResponse;
+import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.RemoveNodeRequest;
+import org.docear.messages.exceptions.MapNotFoundException;
+import org.docear.messages.exceptions.NodeNotFoundException;
+import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapChangeEvent;
-import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
-import org.freeplane.plugin.webservice.v10.exceptions.NodeNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.webservice.v10.model.LockModel;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
 
-import com.sun.jersey.api.client.ClientResponse.Status;
-
-@Path("/v1")
-@Produces(MediaType.APPLICATION_JSON)
 public class Webservice {
 
 	static final Object lock = new Object();
 	static final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
+	static final ObjectMapper objectMapper = new ObjectMapper();
 
-	@GET
-	@Path("status")
-	public Response getStatus() {
-		return Response.ok("Webservice V0.05").build();
+	public static String getStatus() {
+		return "Webservice V0.1";
 	}
 
 	/**
@@ -65,53 +67,43 @@ public class Webservice {
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a map model
 	 */
-	@GET
-	@Path("map/{mapId}/json")
-	@Produces(MediaType.APPLICATION_JSON)
-	public synchronized Response getMapModel(
-			@PathParam("mapId") String mapId, 
-			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) 
-					throws MapNotFoundException {
-		MapModel mm;
-synchronized (lock) {
-	
+	public static MindmapAsJsonReponse getMapModelJson(MindmapAsJsonRequest request) throws MapNotFoundException {
+
+		final int nodeCount = request.getNodeCount();
+		final String mapId = request.getId();
 
 		boolean loadAllNodes = nodeCount == -1;
 		ModeController modeController = getModeController();
-
-		try {
-			if(!WebserviceHelper.selectMap(mapId)) {
-				if(mapId.startsWith("test_")) { //FOR DEBUGING
-					openTestMap(mapId);
-					if(!WebserviceHelper.selectMap(mapId)) {
-						return Response.status(Status.NOT_FOUND).entity("Map not found!\n"+
-								"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'").build();
-					}
-				} else {
-					return Response.status(Status.NOT_FOUND).entity("Map not found").build();
+		
+		if(!WebserviceHelper.selectMap(mapId)) {
+			if(mapId.startsWith("test_")) { //FOR DEBUGING
+				openTestMap(mapId);
+				if(!WebserviceHelper.selectMap(mapId)) {
+					throw new MapNotFoundException("Map not found!\n"+
+							"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'");
 				}
+			} else {
+				throw new MapNotFoundException("Map not found");
 			}
-		} catch(Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
 		}
-
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
+			throw new AssertionError("Current mode not MapMode");
 		}
 
 		//create the MapModel for JSON
-		mm = new MapModel(freeplaneMap,loadAllNodes);
+		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
 
 		if(!loadAllNodes) {
 			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
 		}
-}
-		return Response.ok(mm).build();
+
+		String result = buildJSON(mm); 
+		return new MindmapAsJsonReponse(result);
 	}
 
-	private void openTestMap(String id) {
+	private static void openTestMap(String id) {
 		try {
 			//create file
 			Random ran = new Random();
@@ -119,7 +111,7 @@ synchronized (lock) {
 			File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
-			InputStream in = this.getClass().getResourceAsStream("/mindmaps/"+id+".mm");
+			InputStream in = Webservice.class.getResourceAsStream("/mindmaps/"+id+".mm");
 			//fill file from inputstream
 			FileOutputStream out = new FileOutputStream(file);
 			byte[] buffer = new byte[1024];
@@ -142,37 +134,31 @@ synchronized (lock) {
 		} catch (Exception e) {}
 	}
 
-	/**
+	/** 
 	 * returns a map as a JSON-Object
 	 * @param id ID of map
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a map model
+	 * @throws MapNotFoundException 
 	 * @throws IOException 
 	 */
-	@GET
-	@Path("map/{mapId}/xml")
-	@Produces(MediaType.APPLICATION_XML)
-	public synchronized Response getMapModelXml(
-			@PathParam("mapId") String mapId) {
-		Response selectMapResponse = selectMap(mapId);
-		if (selectMapResponse != null){
-			return selectMapResponse;
-		}
+	public static MindmapAsXmlResponse getMapModelXml( MindmapAsXmlRequest request) throws MapNotFoundException, IOException {
+		final String mapId = request.getMapId();
+		
+		selectMap(mapId);
 
 		ModeController modeController = getModeController();
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity("Current mode not MapMode").build();
+			throw new AssertionError("Current mode not MapMode");
 		}
 
 		StringWriter writer = new StringWriter();
-		try {
-			modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
-		} catch (IOException e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
-		}
+		
+		modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
 
-		return Response.ok(writer.toString()).build();
+
+		return new MindmapAsXmlResponse(writer.toString());
 	}
 
 	/**
@@ -180,23 +166,11 @@ synchronized (lock) {
 	 * @param id
 	 * @return
 	 */
-	@DELETE
-	@Path("map/{mapId}")
-	public synchronized Response closeMap(@PathParam("mapId") String mapId) {
-		try {
-			WebserviceHelper.closeMap(mapId);
-			return Response.ok().build();
-		} catch (Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
-		}
+	public static void closeMap(CloseMapRequest request) throws Exception{
+		WebserviceHelper.closeMap(request.getMapId());
 	}
 
-	@PUT
-	@Path("map")
-	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
-	public synchronized Response openMindmap(InputStream uploadedInputStream) {
-synchronized (lock) {
-	
+	public static void openMindmap(OpenMindMapRequest request) {
 
 		try {
 			//create file
@@ -205,15 +179,9 @@ synchronized (lock) {
 			File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
-			//fill file from inputstream
-			FileOutputStream out = new FileOutputStream(file);
-			byte[] buffer = new byte[1024];
-			int length;
-			while((length = uploadedInputStream.read(buffer, 0, buffer.length)) != -1) {
-				out.write(buffer, 0, length);
-			}
-			out.flush();
-			out.close();
+			
+			File received = request.getMindmapFile();
+			org.apache.commons.io.FileUtils.copyFile(received, file);
 
 			//put map in openMap Collection
 			String mapId = WebserviceHelper.getMapIdFromFile(file);
@@ -226,16 +194,12 @@ synchronized (lock) {
 			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
 			mio.newMap(pathURL);
 		} catch (Exception e) {
-			return Response.status(Status.INTERNAL_SERVER_ERROR).entity(e).build();
+			throw new AssertionError(e);
 		}
-}
-		return Response.status(200).entity("File uploaded succesfully").build();
-		
 	}
 
-	@GET
-	@Path("shutdown")
-	public synchronized Response closeServer() {
+	
+	public static void closeServer() {
 
 		Set<String> ids = mapIdInfoMap.keySet(); 
 		for(String mapId : ids) {
@@ -260,7 +224,6 @@ synchronized (lock) {
 			}
 		}).start();
 
-		return Response.ok().build();
 	}
 
 	/**
@@ -268,56 +231,46 @@ synchronized (lock) {
 	 * @param id ID of node
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
 	 * @return a node model
+	 * @throws MapNotFoundException 
+	 * @throws NodeNotFoundException 
+	 * @throws IOException 
+	 * @throws JsonMappingException 
+	 * @throws JsonGenerationException 
 	 */
-	@GET
-	@Path("map/{mapId}/node/{nodeId}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public synchronized Response getNode(
-			@PathParam("mapId") String mapId,
-			@PathParam("nodeId") String nodeId, 
-			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) {
-
-		Response selectMapResponse = selectMap(mapId);
-		if (selectMapResponse != null){
-			return selectMapResponse;
-		}
+	public static GetNodeResponse getNode(GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
+		selectMap(request.getMapId());
 
 		ModeController modeController = getModeController();
-		boolean loadAllNodes = nodeCount == -1;
+		boolean loadAllNodes = request.getNodeCount() == -1;
 
 
-		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(nodeId);
+		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(request.getNodeId());
 
 		if(freeplaneNode == null) {
-			return Response.status(Status.BAD_REQUEST)
-					.entity(new NodeNotFoundException("Node with id '"+nodeId+"' not found.")).build();
+			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found.");
 		}
 
 		DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
 
 		if(!loadAllNodes) {
-			WebserviceHelper.loadNodesIntoModel(node, nodeCount);
+			WebserviceHelper.loadNodesIntoModel(node, request.getNodeCount());
 		}
 
-		return Response.ok(node).build();
+		return new GetNodeResponse(objectMapper.writeValueAsString(node));
 	}
 
+	public static AddNodeResponse addNode(AddNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
+		final String mapId = request.getMapId();
+		final String parentNodeId = request.getParentNodeId(); 
 
-	@POST
-	@Path("map/{mapId}/node/create")
-	@Produces(MediaType.APPLICATION_JSON)
-	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-	public synchronized Response addNode(@PathParam("mapId") String mapId, String parentNodeId) { 
-		Response selectMapResponse = selectMap(mapId);
-		if (selectMapResponse != null){
-			return selectMapResponse;
-		}
-
-		// TODO correct method handling
-		// TODO how to call method correctly?
+		System.out.println("Selecting Map.");
+		
+		selectMap(mapId);
+		
+		System.out.println("Map selected.");
 
 		ModeController modeController = getModeController();
-		MapController mapController = modeController.getMapController();
+		MMapController mapController = (MMapController) modeController.getMapController();
 		//get map
 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
 
@@ -325,27 +278,31 @@ synchronized (lock) {
 		NodeModel parentNode = mapController.getNodeFromID(parentNodeId);
 
 		if(parentNode == null)
-			return Response.status(Status.BAD_REQUEST).entity("Node with id '"+parentNodeId+"' not found").build();
+			throw new NodeNotFoundException("Node with id '"+parentNodeId+"' not found");
 
+		System.out.println("got parent node: " + parentNode.getID());
+		
 		//create new node
 		NodeModel node = modeController.getMapController().newNode("", mm);
 
 		//insert node
-		mapController.insertNodeIntoWithoutUndo(node, parentNode);
-		mapController.fireMapChanged(new MapChangeEvent(this, "node", "", ""));
+		mapController.insertNode(node, parentNode);
+		//mapController.fireMapChanged(new MapChangeEvent(new Object(), "node", "", ""));
 
 		node.createID();
-		return Response.ok(new DefaultNodeModel(node, false)).build();	
+		System.out.println("created node." + node.getID() + " with text: \"" + node.getText() + "\"");
+
+		return new AddNodeResponse(objectMapper.writeValueAsString(new DefaultNodeModel(node, false)));
+		//return Response.ok(new DefaultNodeModel(node, false)).build();	
 	}
 
-	@PUT
-	@Path("map/{mapId}/node")
-	@Consumes({MediaType.APPLICATION_JSON})
-	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response changeNode(@PathParam("mapId") String mapId, DefaultNodeModel node) {
-		Response response = selectMap(mapId);
-		if(response != null) 
-			return response;
+	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException, URISyntaxException {
+
+		final String mapId = request.getMapId();
+
+		final DefaultNodeModel node = objectMapper.readValue(request.getNodeAsJsonString(), DefaultNodeModel.class);
+
+		selectMap(mapId);
 
 		//get map
 		ModeController modeController = getModeController();
@@ -354,7 +311,7 @@ synchronized (lock) {
 		//get node
 		NodeModel freeplaneNode = mm.getNodeForID(node.id);
 		if(freeplaneNode == null)
-			return Response.status(Status.BAD_REQUEST).entity("Node with id '"+node.id+"' not found").build();
+			throw new NodeNotFoundException("Node with id '"+node.id+"' not found");
 
 		if(node.folded != null) {
 			freeplaneNode.setFolded(node.folded);
@@ -363,7 +320,21 @@ synchronized (lock) {
 			freeplaneNode.setXmlText(node.nodeText);
 		}
 		if(node.attributes != null) {
-			//TODO set attributes right
+			//TODO implement correctly
+//			NodeAttributeTableModel attrTable;
+//			AttributeController attrController = AttributeController.getController();
+//			
+//			if(node.attributes.size() > 0) {
+//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
+//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
+//					//attrController.performInsertRow(attrTable, row, name, value)
+//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
+//				}
+//				freeplaneNode.addExtension(attrTable);
+//			} else if (node.attributes.size() == 0) {
+//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
+//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
+//			}
 		}
 		if(node.hGap != null) {
 			updateLocationModel(freeplaneNode, node.hGap, null);
@@ -375,7 +346,15 @@ synchronized (lock) {
 			//TODO handle
 		}
 		if(node.link != null) {
-			//TODO handle
+			
+			NodeLinks nodeLinks = freeplaneNode.getExtension(NodeLinks.class);
+			
+			if(nodeLinks == null) {
+				nodeLinks = new NodeLinks();
+				freeplaneNode.addExtension(nodeLinks);				
+			}
+			
+			nodeLinks.setHyperLink(new URI(node.link));
 		}
 		if(node.nodeText != null) {
 			freeplaneNode.setText(node.nodeText);
@@ -383,57 +362,42 @@ synchronized (lock) {
 		if(node.shiftY != null) {
 			updateLocationModel(freeplaneNode, null, node.shiftY);
 		}
-
 		//only for gui
-		//freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
+		freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
 
 		refreshLockAccessTime(freeplaneNode);
 
-		//Response.ok(new DefaultNodeModel(node)).
-		return Response.ok().build();	
 	}
 
-	@DELETE
-	@Path("map/{mapId}/node")
-	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response removeNode(String id) throws NodeNotFoundException {
+	public static void removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
+		selectMap(request.getMapId());
 		ModeController modeController = getModeController();
-		NodeModel node = modeController.getMapController().getNodeFromID(id);
+		MMapController mapController = (MMapController) modeController.getMapController();
+		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
 		if(node == null)
-			throw new NodeNotFoundException("Node with id '"+id+"' not found");
+			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
 
-		//TODO works correct?
-		node.removeFromParent();
-		node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
-		return Response.ok(new Boolean(true).toString()).build();
+		try {
+		mapController.deleteNode(node);
+		} catch (RuntimeException e) {
+			e.printStackTrace();
+		}
+		//node.removeFromParent();
+		
+		//node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
 	}
 
-	@PUT
-	@Path("map/{mapId}/node/{nodeId}/refreshLock") 
-	public synchronized Response refreshLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
-		Response selectMapResponse = selectMap(mapId);
-		if (selectMapResponse != null){
-			return selectMapResponse;
-		}
+	public static void refreshLock (String mapId, String nodeId) throws MapNotFoundException{
+		selectMap(mapId);
+
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
 
-		//node.getExtension(LockModel.class).setLastAccess(System.currentTimeMillis());
 		refreshLockAccessTime(node);
-
-
-		return Response.ok().build();
 	}
 
-	@PUT
-	@Path("map/{mapId}/node/{nodeId}/requestLock") 
-	@Consumes(MediaType.APPLICATION_JSON)
-	public synchronized Response requestLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId, String username){
-		Response selectMapResponse = selectMap(mapId);
-		if (selectMapResponse != null){
-			return selectMapResponse;
-		}
-
+	public static void requestLock (String mapId, String nodeId, String username) throws MapNotFoundException{
+		selectMap(mapId);
 
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
@@ -442,9 +406,9 @@ synchronized (lock) {
 		LockModel lm = node.getExtension(LockModel.class);//.setLastAccess(System.currentTimeMillis());
 		if(lm != null) { //lock exists
 			if(lm.getUsername().equals(username)) {
-				return Response.ok().build();
+				return ;
 			} else {
-				return Response.status(Status.FORBIDDEN).entity("Node already locked.").build();
+				throw new AssertionError("Node already locked.");
 			}
 		}
 		//create lock
@@ -455,18 +419,10 @@ synchronized (lock) {
 		//add to lock list
 
 		getOpenMindMapInfo(mapId).getLockedNodes().add(node);
-
-		return Response.ok().build();
 	}
 
-	@DELETE
-	@Path("map/{mapId}/node/{nodeId}/releaseLock") 
-	public synchronized Response releaseLock (@PathParam("mapId") String mapId, @PathParam("nodeId") String nodeId){
-		Response selectMapResponse = selectMap(mapId);
-		if (selectMapResponse != null){
-			return selectMapResponse;
-		}
-
+	public static void releaseLock (String mapId, String nodeId) throws MapNotFoundException{
+		selectMap(mapId);
 
 		ModeController modeController = getModeController();
 		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
@@ -474,7 +430,7 @@ synchronized (lock) {
 
 		LockModel lm = node.getExtension(LockModel.class);//.setLastAccess(System.currentTimeMillis());
 		if(lm == null) { //lock exists
-			return Response.status(Status.BAD_REQUEST).entity("No lock present.").build();
+			throw new AssertionError("No lock present.");
 		}
 		//release lock
 		node.removeExtension(LockModel.class);
@@ -482,16 +438,11 @@ synchronized (lock) {
 
 		//remove form to lock list
 		getOpenMindMapInfo(mapId).getLockedNodes().remove(node);
-
-		return Response.ok().build();
 	}
 
-	@POST
-	@Path("map/{mapId}/unlockExpired/{sinceInMs}")
-	@Produces({ MediaType.APPLICATION_JSON })
-	public synchronized Response getExpiredLocks(@PathParam("mapId") String mapId, @PathParam("sinceInMs") int sinceInMs) {
+	public static String getExpiredLocks(String mapId, int sinceInMs) {
 		if (!mapIdInfoMap.containsKey(mapId)){
-			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
+			throw new AssertionError("Map not found.");
 		}
 		Set<NodeModel> nodes = getOpenMindMapInfo(mapId).getLockedNodes();
 		Set<NodeModel> newNodes = new HashSet<NodeModel>();
@@ -510,13 +461,24 @@ synchronized (lock) {
 			}
 		}
 		nodes = newNodes;
-		return Response.ok(expiredNodes.toArray()).build();
+
+
+		return buildJSON(expiredNodes.toArray());
 	}
 	
-	@POST
-	@Path("map/closeUnused/{thresholdInMs}")
-	public synchronized Response closeUnusesMaps() {
-		return null;
+	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) {
+		Set<String> ids = mapIdInfoMap.keySet(); 
+		for(String mapId : ids) {
+			try {
+				WebserviceHelper.closeMap(mapId);
+			} catch (Exception e) {
+
+			}
+		}
+	}
+
+	public static void closeUnusedMaps() {
+		//TODO close maps and tell ZooKeeper
 	}
 
 	static ModeController getModeController() {
@@ -532,27 +494,26 @@ synchronized (lock) {
 	/**
 	 * Select Map so getMapController() has right map. 
 	 * @param mapId Id of Map
-	 * @return
+	 * @throws MapNotFoundException 
 	 */
-	private Response selectMap(String mapId){
+	private static void selectMap(String mapId) throws MapNotFoundException{
 		if(!WebserviceHelper.selectMap(mapId)) {
-			return Response.status(Status.NOT_FOUND).entity("Map not found.").build();
+			throw new MapNotFoundException("MapId: " + mapId);
 		}
-		return null;
 	}
 
 	/**
 	 * refresh lastAccesTime of node lock  
 	 * @param node Node with lock
 	 */
-	private void refreshLockAccessTime(NodeModel node){
+	private static void refreshLockAccessTime(NodeModel node){
 		LockModel lm = node.getExtension(LockModel.class);
 		if(lm != null) {
 			lm.setLastAccess(System.currentTimeMillis());
 		}
 	}
 
-	private void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
+	private static void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
 		LocationModel lm = freeplaneNode.getExtension(LocationModel.class);
 		if(lm == null) {
 			lm = new LocationModel();
@@ -566,12 +527,25 @@ synchronized (lock) {
 			lm.setShiftY(Shifty);
 		}
 	}
-	
+
 	static OpenMindmapInfo getOpenMindMapInfo(String mapId) {
 		if(!mapIdInfoMap.containsKey(mapId)) {
 			return null;
 		}
 		return mapIdInfoMap.get(mapId);
+	}
+
+	private static String buildJSON(Object object) {
+		String result = null;
+
+		try {
+			result = objectMapper.writeValueAsString(object);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new AssertionError(e);
+		}		
+
+		return result;
 	}
 
 }

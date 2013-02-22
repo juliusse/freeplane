@@ -1,4 +1,4 @@
-<map version="docear 1.0" dcr_id="5" dcr_uri="workspace:/../../../../D:/HTW/docear/5.mm">
+<map version="docear 1.0" dcr_id="test_5" dcr_uri="workspace:/../../../../D:/HTW/docear/5.mm">
 <!--To view this file, download Docear - The Academic Literature Suite from http://www.docear.org -->
 <node TEXT="test_5 = MapID ; 5.mm = Title" LOCALIZED_STYLE_REF="AutomaticLayout.level.root" FOLDED="false" ID="ID_0" CREATED="1283093380553" MODIFIED="1355080206394"><hook NAME="MapStyle" zoom="0.751">
     <properties show_icon_for_attributes="true" show_note_icons="true"/>

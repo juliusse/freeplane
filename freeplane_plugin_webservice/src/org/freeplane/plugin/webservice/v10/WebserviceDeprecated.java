@@ -14,6 +14,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeChangeEvent;
@@ -21,7 +22,6 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.v10.exceptions.MapNotFoundException;
 import org.freeplane.plugin.webservice.v10.model.MapModel;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
