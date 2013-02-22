@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.tools.ant.util.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -37,7 +36,9 @@ import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.freeplane.features.link.NodeLinks;
+import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapWriter;
+import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.MapIO;
@@ -362,7 +363,7 @@ public class Webservice {
 			updateLocationModel(freeplaneNode, null, node.shiftY);
 		}
 		//only for gui
-		//freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
+		freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
 
 		refreshLockAccessTime(freeplaneNode);
 
@@ -376,7 +377,6 @@ public class Webservice {
 		if(node == null)
 			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
 
-		//TODO works correct?
 		try {
 		mapController.deleteNode(node);
 		} catch (RuntimeException e) {

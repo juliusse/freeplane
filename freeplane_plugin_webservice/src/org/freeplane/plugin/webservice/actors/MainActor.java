@@ -14,6 +14,7 @@ import org.docear.messages.Messages.RemoveNodeRequest;
 import org.freeplane.plugin.webservice.v10.Webservice;
 
 import akka.actor.ActorRef;
+import akka.actor.Status;
 import akka.actor.UntypedActor;
 
 public class MainActor extends UntypedActor {
@@ -87,7 +88,8 @@ public class MainActor extends UntypedActor {
 		}
 		catch(Exception e) {
 			System.out.println(e.getMessage());
-			sender.tell(new ErrorMessage(e),getSelf());
+			//sender.tell(new ErrorMessage(e),getSelf());
+			sender.tell(new Status.Failure(e),getSelf());
 
 		}
 	}
