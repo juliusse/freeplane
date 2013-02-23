@@ -114,7 +114,7 @@
 		<ant antfile="ant/build.xml" dir="${freeplane_plugin_webservice.location}" inheritAll="false" target="build" />
 	</target>
 
-	<target name="test" depends="build">
+	<target name="test">
 		<mkdir dir="${report.dir}" />
 		<junit fork="yes" printsummary="yes" haltonfailure="no" showoutput="no">
 			<formatter type="plain" />
@@ -123,7 +123,7 @@
 			<classpath refid="freeplane_plugin_webservice_tests.classpath" />
 		</junit>
 	</target>
-
+	
 	<target name="junitreport">
 		<junitreport todir="${report.dir}">
 			<fileset dir="${report.dir}" includes="TEST-*.xml" />
