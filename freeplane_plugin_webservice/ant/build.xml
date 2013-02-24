@@ -21,6 +21,26 @@
     <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
     <property name="build.dir" value="build" />
     <property name="src.dir" value="src" />
+	<property name="JOrtho_0.4_freeplane.location" value="${root}/../JOrtho_0.4_freeplane" />
+	<property name="freeplane.location" value="${root}/../freeplane" />
+	
+	
+	<path id="JOrtho_0.4_freeplane.classpath">
+		<pathelement location="${JOrtho_0.4_freeplane.location}/bin" />
+	</path>
+			
+	<path id="freeplane.classpath">
+		<fileset dir="${freeplane.location}/lib/" includes="**.jar"/>
+		<pathelement location="${freeplane.location}/bin/classes" />
+		<path refid="JOrtho_0.4_freeplane.classpath" />
+	</path>
+	
+	<path id="freeplane_plugin_webservice.classpath">
+		<pathelement location="bin" />
+		<pathelement location="ivy/ivy.jar" />
+		<fileset dir="${root}/lib/" includes="**.jar"/>
+		<path refid="freeplane.classpath" />
+	</path>
 
     <target name="install-ivy" description="adds ivy ant module to ant">
         <path id="ivy.lib.path">
@@ -39,12 +59,9 @@
 		<mkdir dir="${build}" />
 		<javac srcdir="${src}" destdir="${build}" debug="${debug}"
 			source="${java_source_version}" target="${java_target_version}" encoding="utf8">
-            <classpath>
-                <fileset dir="lib">
-                    <include name="**/*.jar" />
-                </fileset>
-                <pathelement path="${classpath}/"/>
-            </classpath>
+			<src path="src/" />
+			<src path="resources" />
+			<classpath refid="freeplane_plugin_webservice.classpath" />
 		</javac>
 	</target>
 
