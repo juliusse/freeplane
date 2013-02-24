@@ -26,6 +26,8 @@ import org.docear.messages.Messages.AddNodeResponse;
 import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.GetExpiredLocksRequest;
+import org.docear.messages.Messages.GetExpiredLocksResponse;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
 import org.docear.messages.Messages.MindmapAsJsonReponse;
@@ -33,8 +35,13 @@ import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.RefreshLockRequest;
+import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
+import org.docear.messages.Messages.RequestLockRequest;
+import org.docear.messages.exceptions.LockNotFoundException;
 import org.docear.messages.exceptions.MapNotFoundException;
+import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapWriter;
@@ -385,71 +392,70 @@ public class Webservice {
 		//node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
 	}
 
-	public static void refreshLock (String mapId, String nodeId) throws MapNotFoundException{
-		selectMap(mapId);
+	public static void refreshLock (RefreshLockRequest request) throws MapNotFoundException{
+		selectMap(request.getMapId());
 
 		ModeController modeController = getModeController();
-		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
+		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
 
 		refreshLockAccessTime(node);
 	}
 
-	public static void requestLock (String mapId, String nodeId, String username) throws MapNotFoundException{
-		selectMap(mapId);
+	public static void requestLock (RequestLockRequest request) throws MapNotFoundException, NodeAlreadyLockedException{
+		selectMap(request.getMapId());
 
 		ModeController modeController = getModeController();
-		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
+		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
 
 
 		LockModel lm = node.getExtension(LockModel.class);//.setLastAccess(System.currentTimeMillis());
-		if(lm != null) { //lock exists
-			if(lm.getUsername().equals(username)) {
+		if(lm != null) { 
+			// Lock exists. Check if it's own lock
+			if(lm.getUsername().equals(request.getUsername())) {
 				return ;
 			} else {
-				throw new AssertionError("Node already locked.");
+				throw new NodeAlreadyLockedException("Locked by " + lm.getUsername() + ".");
 			}
 		}
 		//create lock
-		lm = new LockModel(node,username,System.currentTimeMillis());
+		lm = new LockModel(node,request.getUsername(),System.currentTimeMillis());
 		node.addExtension(lm);
 
-
 		//add to lock list
-
-		getOpenMindMapInfo(mapId).getLockedNodes().add(node);
+		getOpenMindMapInfo(request.getMapId()).getLockedNodes().add(node);
 	}
 
-	public static void releaseLock (String mapId, String nodeId) throws MapNotFoundException{
-		selectMap(mapId);
+	public static void releaseLock (ReleaseLockRequest request) throws MapNotFoundException, LockNotFoundException{
+		selectMap(request.getMapId());
 
 		ModeController modeController = getModeController();
-		NodeModel node = modeController.getMapController().getNodeFromID(nodeId);
+		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
 
 
 		LockModel lm = node.getExtension(LockModel.class);//.setLastAccess(System.currentTimeMillis());
-		if(lm == null) { //lock exists
-			throw new AssertionError("No lock present.");
+		if(lm == null) { 
+			// No lock available
+			throw new LockNotFoundException("Lock for nodeId " + request.getNodeId() + " not found.");
 		}
 		//release lock
 		node.removeExtension(LockModel.class);
 
-
 		//remove form to lock list
-		getOpenMindMapInfo(mapId).getLockedNodes().remove(node);
+		getOpenMindMapInfo(request.getMapId()).getLockedNodes().remove(node);
 	}
 
-	public static String getExpiredLocks(String mapId, int sinceInMs) {
-		if (!mapIdInfoMap.containsKey(mapId)){
-			throw new AssertionError("Map not found.");
+	public static GetExpiredLocksResponse getExpiredLocks(GetExpiredLocksRequest request) throws MapNotFoundException, JsonGenerationException, JsonMappingException, IOException{
+		if (!mapIdInfoMap.containsKey(request.getMapId())){
+			throw new MapNotFoundException("MapId: " + request.getMapId());
 		}
-		Set<NodeModel> nodes = getOpenMindMapInfo(mapId).getLockedNodes();
+		Set<NodeModel> nodes = getOpenMindMapInfo(request.getMapId()).getLockedNodes();
 		Set<NodeModel> newNodes = new HashSet<NodeModel>();
 		List<NodeModel> expiredNodes = new ArrayList<NodeModel>(); 
 
 		for (NodeModel node : nodes){
 			LockModel lock = node.getExtension(LockModel.class);
 			long timeDiff = System.currentTimeMillis() - lock.getLastAccess();  
-			if (timeDiff < sinceInMs){
+			if (timeDiff < request.getDeltaTimeInMs()){
 				//Lock not expired
 				newNodes.add(node);
 			} else {
@@ -460,8 +466,7 @@ public class Webservice {
 		}
 		nodes = newNodes;
 
-
-		return buildJSON(expiredNodes.toArray());
+		return new GetExpiredLocksResponse(objectMapper.writeValueAsString(expiredNodes));
 	}
 	
 	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) {

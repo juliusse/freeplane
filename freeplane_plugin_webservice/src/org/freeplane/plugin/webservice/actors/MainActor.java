@@ -5,11 +5,15 @@ import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
+import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.RefreshLockRequest;
+import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
+import org.docear.messages.Messages.RequestLockRequest;
 import org.freeplane.plugin.webservice.v10.Webservice;
 
 import akka.actor.ActorRef;
@@ -78,6 +82,26 @@ public class MainActor extends UntypedActor {
 			//close server
 			else if(message instanceof CloseServerRequest) {
 				Webservice.closeServer();
+			}
+			
+			//refresh lock
+			else if(message instanceof RefreshLockRequest) {
+				Webservice.refreshLock((RefreshLockRequest)message);
+			}
+			
+			//release lock
+			else if(message instanceof ReleaseLockRequest) {
+				Webservice.releaseLock((ReleaseLockRequest)message);
+			}
+			
+			//request lock
+			else if(message instanceof RequestLockRequest) {
+				Webservice.requestLock((RequestLockRequest)message);
+			}
+			
+			//get expired locks
+			else if(message instanceof GetExpiredLocksRequest) {
+				response = Webservice.getExpiredLocks((GetExpiredLocksRequest)message);
 			}
 
 			if(response != null)
