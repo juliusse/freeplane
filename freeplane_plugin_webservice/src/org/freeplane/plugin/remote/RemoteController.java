@@ -1,14 +1,18 @@
 package org.freeplane.plugin.remote;
 
 import java.awt.Container;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.docear.messages.Messages.CloseUnusedMaps;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.plugin.remote.actors.MainActor;
+import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
@@ -20,22 +24,22 @@ import com.typesafe.config.ConfigFactory;
 
 
 
-public class WebserviceController {
+public class RemoteController {
 
 	private final ActorSystem system;
 	private final ActorRef mainActor;
 	private final Cancellable closeUnusedMapsJob;
-	private static WebserviceController webserviceController;
-
-
-	public static WebserviceController getInstance() {
-		return webserviceController;
+	private final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
+	
+	private static RemoteController instance;
+	public static RemoteController getInstance() {
+		if(instance == null)
+			instance = new RemoteController();
+		return instance;
 	}
 
-	WebserviceController() {
-		webserviceController = this;
-
-		LogUtils.info("starting Webservice Plugin...");
+	private RemoteController() {
+		LogUtils.info("starting Remote Plugin...");
 
 		//		int port = 8080;
 		//		try {
@@ -43,6 +47,8 @@ public class WebserviceController {
 		//		} catch (Exception e) {}
 
 		this.registerListeners();
+		
+		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
@@ -86,9 +92,16 @@ public class WebserviceController {
 	}
 
 
-	public ModeController getModeController() {
+	public static ModeController getModeController() {
 		//Controller.getCurrentController().selectMode(MModeController.getMModeController());
 		return MModeController.getMModeController();
 	}
+	
+	public static MapIO getMapIO() {
+		return getModeController().getExtension(MapIO.class);
+	}
 
+	public static Map<String, OpenMindmapInfo> getMapIdInfoMap() {
+		return getInstance().mapIdInfoMap;
+	}
 }

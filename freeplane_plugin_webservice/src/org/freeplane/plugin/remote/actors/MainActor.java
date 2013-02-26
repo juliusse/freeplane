@@ -20,7 +20,7 @@ import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.freeplane.core.util.LogUtils;
-import org.freeplane.plugin.remote.v10.Webservice;
+import org.freeplane.plugin.remote.v10.Actions;
 
 import akka.actor.ActorRef;
 import akka.actor.Status;
@@ -45,76 +45,76 @@ public class MainActor extends UntypedActor {
 		try {
 			//get map as json
 			if(message instanceof MindmapAsJsonRequest) {
-				response = Webservice.getMapModelJson((MindmapAsJsonRequest) message);
+				response = Actions.getMapModelJson((MindmapAsJsonRequest) message);
 			}
 			
 			//get map as xml
 			else if(message instanceof MindmapAsXmlRequest) {
-				response = Webservice.getMapModelXml((MindmapAsXmlRequest)message);
+				response = Actions.getMapModelXml((MindmapAsXmlRequest)message);
 			}
 
 			//add node to map
 			else if(message instanceof AddNodeRequest) {
-				response = Webservice.addNode((AddNodeRequest) message);			
+				response = Actions.addNode((AddNodeRequest) message);			
 			}
 			
 			//change node
 			else if(message instanceof ChangeNodeRequest) {
-				Webservice.changeNode((ChangeNodeRequest)message);
+				Actions.changeNode((ChangeNodeRequest)message);
 			}
 			
 			//remove node from map
 			else if(message instanceof RemoveNodeRequest) {
-				Webservice.removeNode((RemoveNodeRequest) message);			
+				Actions.removeNode((RemoveNodeRequest) message);			
 			}
 			
 			//get node from map
 			else if(message instanceof GetNodeRequest) {
-				response = Webservice.getNode((GetNodeRequest) message);			
+				response = Actions.getNode((GetNodeRequest) message);			
 			}
 			
 			else if (message instanceof OpenMindMapRequest){
-				Webservice.openMindmap((OpenMindMapRequest)message);
+				Actions.openMindmap((OpenMindMapRequest)message);
 			}
 			
 			//close map
 			else if(message instanceof CloseMapRequest) {
-				Webservice.closeMap((CloseMapRequest)message);
+				Actions.closeMap((CloseMapRequest)message);
 			}
 			
 			//close all maps
 			else if(message instanceof CloseAllOpenMapsRequest) {
-				Webservice.closeAllOpenMaps((CloseAllOpenMapsRequest)message);
+				Actions.closeAllOpenMaps((CloseAllOpenMapsRequest)message);
 			}
 			
 			//close server
 			else if(message instanceof CloseServerRequest) {
-				Webservice.closeServer();
+				Actions.closeServer();
 			}
 			
 			//refresh lock
 			else if(message instanceof RefreshLockRequest) {
-				Webservice.refreshLock((RefreshLockRequest)message);
+				Actions.refreshLock((RefreshLockRequest)message);
 			}
 			
 			//release lock
 			else if(message instanceof ReleaseLockRequest) {
-				Webservice.releaseLock((ReleaseLockRequest)message);
+				Actions.releaseLock((ReleaseLockRequest)message);
 			}
 			
 			//request lock
 			else if(message instanceof RequestLockRequest) {
-				Webservice.requestLock((RequestLockRequest)message);
+				Actions.requestLock((RequestLockRequest)message);
 			}
 			
 			//get expired locks
 			else if(message instanceof GetExpiredLocksRequest) {
-				response = Webservice.getExpiredLocks((GetExpiredLocksRequest)message);
+				response = Actions.getExpiredLocks((GetExpiredLocksRequest)message);
 			}
 			
 			//close unused maps
 			else if(message instanceof CloseUnusedMaps) {
-				Webservice.closeUnusedMaps((CloseUnusedMaps)message);
+				Actions.closeUnusedMaps((CloseUnusedMaps)message);
 			}
 
 			

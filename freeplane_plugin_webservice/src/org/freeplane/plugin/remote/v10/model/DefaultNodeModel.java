@@ -16,7 +16,7 @@ import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.RemoteController;
 
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -69,7 +69,7 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	public int loadChildren(boolean autoloadChildren) {
 		children = new ArrayList<DefaultNodeModel>();
 		
-		MapController mapController = WebserviceController.getInstance().getModeController().getMapController();
+		MapController mapController = RemoteController.getInstance().getModeController().getMapController();
 		
 		int totalCount = childrenIds.size();
 		for(String nodeId : childrenIds) {

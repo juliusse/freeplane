@@ -21,7 +21,7 @@ import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
-import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.MapModel;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
@@ -42,14 +42,14 @@ public class WebserviceDeprecated {
 	public MapModel getOpenMapAsJson( 
 			@QueryParam("nodeCount") @DefaultValue("-1") int nodeCount) throws MapNotFoundException {
 		boolean loadAllNodes = nodeCount == -1;
-		ModeController modeController = Webservice.getModeController();
+		ModeController modeController = Actions.getModeController();
 
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 
 		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
 		if(!loadAllNodes) {
-			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
+			Utils.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
 		return mm;
@@ -66,7 +66,7 @@ public class WebserviceDeprecated {
 	@Path("map.xml")
 	@Produces(MediaType.APPLICATION_ATOM_XML)
 	public String getOpenMapAsXml() throws MapNotFoundException, IOException {
-		ModeController modeController = Webservice.getModeController();
+		ModeController modeController = Actions.getModeController();
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 
 		StringWriter writer = new StringWriter();
@@ -79,8 +79,8 @@ public class WebserviceDeprecated {
 	@PUT
 	@Path("selectMindmap/{id}")
 	public Response selectMindmap(@PathParam("id") String id) {
-		URL mapUrl = Webservice.getOpenMindMapInfo(id).getMapUrl();
-		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
+		URL mapUrl = Actions.getOpenMindMapInfo(id).getMapUrl();
+		MapIO mio = RemoteController.getInstance().getModeController().getExtension(MapIO.class);
 		try {
 			mio.newMap(mapUrl);
 		} catch (Exception e) {
@@ -100,8 +100,8 @@ public class WebserviceDeprecated {
 	@Path("addNodeToRootNode")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String addNodeToRootNode( @DefaultValue("Sample Text") @QueryParam("text")String text) {
-		ModeController modeController = Webservice.getModeController();
-		org.freeplane.features.map.MapModel mm = Webservice.getOpenMap();
+		ModeController modeController = Actions.getModeController();
+		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
 		NodeModel root = modeController.getMapController().getRootNode();
 		NodeModel node = modeController.getMapController().newNode(text, mm);
 		root.insert(node);
@@ -115,8 +115,8 @@ public class WebserviceDeprecated {
 	@Path("addNodeToSelectedNode/query")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String addNodeToSelectedNodeQuery(@QueryParam("text")String text) {
-		ModeController modeController = Webservice.getModeController();
-		org.freeplane.features.map.MapModel mm = Webservice.getOpenMap();
+		ModeController modeController = Actions.getModeController();
+		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
 		NodeModel selectedNode = modeController.getMapController().getSelectedNodes().iterator().next();
 		if (text == null) text = "New Node.";
 		NodeModel node = modeController.getMapController().newNode(text, mm);
@@ -132,8 +132,8 @@ public class WebserviceDeprecated {
 	@Path("addNodeToRootNode/query")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String addNodeToRootNodeQuery(@QueryParam("text")String text) {
-		ModeController modeController = Webservice.getModeController();
-		org.freeplane.features.map.MapModel mm = Webservice.getOpenMap();
+		ModeController modeController = Actions.getModeController();
+		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
 		NodeModel root = modeController.getMapController().getRootNode();
 		if (text == null) text = "New Node.";
 		NodeModel node = modeController.getMapController().newNode(text, mm);
@@ -147,8 +147,8 @@ public class WebserviceDeprecated {
 	@Path("addNodeToSelectedNode")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String addNodeToSelectedNode(@DefaultValue("Sample Text") @QueryParam("text")String text) {
-		ModeController modeController = Webservice.getModeController();
-		org.freeplane.features.map.MapModel mm = Webservice.getOpenMap();
+		ModeController modeController = Actions.getModeController();
+		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
 		NodeModel selectedNode = modeController.getMapController().getSelectedNodes().iterator().next();
 		NodeModel node = modeController.getMapController().newNode(text, mm);
 		selectedNode.insert(node);
@@ -161,11 +161,11 @@ public class WebserviceDeprecated {
 	@Path("sampleNode")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Boolean sampleNode() {
-		ModeController modeController = Webservice.getModeController();
+		ModeController modeController = Actions.getModeController();
 
 
 
-		org.freeplane.features.map.MapModel mm = Webservice.getOpenMap();
+		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
 		NodeModel root = modeController.getMapController().getRootNode();
 		modeController.getMapController().select(modeController.getMapController().getRootNode());
 		NodeModel node = modeController.getMapController().newNode("Sample Text", mm);

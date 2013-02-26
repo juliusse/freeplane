@@ -529,6 +529,7 @@ public class AkkaTests {
 						assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 						
 						closeMindMapOnServer(5);
+						closeMindMapOnServer(5);
 						expectNoMsg();
 					}
 				};
@@ -555,6 +556,24 @@ public class AkkaTests {
 						assertThat(response.cause()).isInstanceOf(MapNotFoundException.class);
 
 						//no map closing needed, because it has been closed due to beeing unused
+					}
+				};
+			}
+		};
+	}
+	
+	@Test
+	public void testUseTestMapFromFreeplaneInstance() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("3 seconds")) {
+					@Override
+					public void run() {
+
+						//close maps that haven't been used for 1 ms
+						remoteActor.tell(new MindmapAsJsonRequest("test_5"), localActor);
+						expectMsgClass(MindmapAsJsonReponse.class);
 					}
 				};
 			}

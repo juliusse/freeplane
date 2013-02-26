@@ -1,23 +1,29 @@
 package org.freeplane.plugin.remote.v10;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.LinkedList;
-import java.util.logging.Level;
+import java.util.Random;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.io.IOUtils;
+import org.docear.messages.Messages.OpenMindMapRequest;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mapio.MapIO;
+import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
-import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.NodeModelBase;
+import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.w3c.dom.Document;
 
-public final class WebserviceHelper {
+public final class Utils {
 
 	public static void loadNodesIntoModel(NodeModelBase node, int nodeCount) {
 		LinkedList<NodeModelBase> nodeQueue = new LinkedList<NodeModelBase>();
@@ -49,15 +55,15 @@ public final class WebserviceHelper {
 	}
 
 	public static void selectMap(String id) throws MapNotFoundException {
-		if(!Webservice.mapIdInfoMap.containsKey(id)) {
+		if(!RemoteController.getMapIdInfoMap().containsKey(id)) {
 			throw new MapNotFoundException("Map with id "+ id+ " is not present.");
 		}
 		
 		LogUtils.info("Changing map to "+id);
-		URL pathURL = Webservice.getOpenMindMapInfo(id).getMapUrl();
+		URL pathURL = RemoteController.getMapIdInfoMap().get(id).getMapUrl();
 
 		try{
-			final MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
+			final MapIO mio = RemoteController.getMapIO();
 			mio.newMap(pathURL);
 		} catch (Exception e) {
 			LogUtils.severe(e);
@@ -66,12 +72,29 @@ public final class WebserviceHelper {
 	}
 
 	public static void closeMap(String id) throws MapNotFoundException {
-		ModeController modeController = Webservice.getModeController();
+		ModeController modeController = RemoteController.getModeController();
 		//select map
 		selectMap(id);
 		
 		//close and remove map
 		modeController.getController().close(true);
-		Webservice.mapIdInfoMap.remove(id);
+		RemoteController.getMapIdInfoMap().remove(id);
+	}
+	
+	public static void openTestMap(String id) {
+		try {
+			//create file
+			Random ran = new Random();
+			String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
+			File file = File.createTempFile(filename, ".mm");
+			file.deleteOnExit();
+
+			InputStream in = RemoteController.class.getResourceAsStream("/mindmaps/"+id+".mm");
+			StringWriter writer = new StringWriter();
+			IOUtils.copy(in, writer);
+			String xmlMap = writer.toString();
+			
+			Actions.openMindmap(new OpenMindMapRequest(xmlMap));
+		} catch (Exception e) {}
 	}
 }

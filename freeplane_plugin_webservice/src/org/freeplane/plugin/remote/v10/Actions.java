@@ -1,15 +1,12 @@
 package org.freeplane.plugin.remote.v10;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,21 +51,15 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.remote.v10.model.LockModel;
 import org.freeplane.plugin.remote.v10.model.MapModel;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 
-public class Webservice {
+public class Actions {
 
-	static final Object lock = new Object();
-	static final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
-	static final ObjectMapper objectMapper = new ObjectMapper();
-
-	public static String getStatus() {
-		return "Webservice V0.1";
-	}
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * returns a map as a JSON-Object
@@ -81,21 +72,9 @@ public class Webservice {
 		final int nodeCount = request.getNodeCount();
 		final String mapId = request.getId();
 
-		boolean loadAllNodes = nodeCount == -1;
-		ModeController modeController = getModeController();
-		
-		//check for debugging maps
-		if(!mapIdInfoMap.containsKey(mapId) && mapId.startsWith("test_")) {
-			//check if testmap exists
-			if(mapId.equals("test_1") || mapId.equals("test_2") || 
-			   mapId.equals("test_3") || mapId.equals("test_5")) {
-				openTestMap(mapId);
-			} else {
-				throw new MapNotFoundException("Map not found!\n"+
-					"Available test map ids: 'test_1','test_2','test_3','test_5'");
-			}
-		}
-		
+		final boolean loadAllNodes = nodeCount == -1;
+		final ModeController modeController = getModeController();
+				
 		selectMap(mapId);
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
@@ -107,43 +86,14 @@ public class Webservice {
 		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
 
 		if(!loadAllNodes) {
-			WebserviceHelper.loadNodesIntoModel(mm.root, nodeCount);
+			Utils.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
 		String result = buildJSON(mm); 
 		return new MindmapAsJsonReponse(result);
 	}
 
-	private static void openTestMap(String id) {
-		try {
-			//create file
-			Random ran = new Random();
-			String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
-			File file = File.createTempFile(filename, ".mm");
-			file.deleteOnExit();
-
-			InputStream in = Webservice.class.getResourceAsStream("/mindmaps/"+id+".mm");
-			//fill file from inputstream
-			FileOutputStream out = new FileOutputStream(file);
-			byte[] buffer = new byte[1024];
-			int length;
-			while((length = in.read(buffer, 0, buffer.length)) != -1) {
-				out.write(buffer, 0, length);
-			}
-			out.flush();
-			out.close();
-
-			//put map in openMap Collection
-			URL pathURL = file.toURI().toURL();
-			mapIdInfoMap.put(id, new OpenMindmapInfo(pathURL));
-
-			//open map
-			ModeController modeController = getModeController();
-
-			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
-			mio.newMap(pathURL);
-		} catch (Exception e) {}
-	}
+	
 
 	/** 
 	 * returns a map as a JSON-Object
@@ -158,49 +108,49 @@ public class Webservice {
 		
 		selectMap(mapId);
 
-		ModeController modeController = getModeController();
-		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
+		final ModeController modeController = getModeController();
+		final org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
 			throw new AssertionError("Current mode not MapMode");
 		}
 
-		StringWriter writer = new StringWriter();
+		final StringWriter writer = new StringWriter();
 		
-		modeController.getMapController().getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
-
+		modeController.getMapController()
+			.getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
 
 		return new MindmapAsXmlResponse(writer.toString());
 	}
-
+	
 	/**
 	 * closes a map on the server
 	 * @param id
 	 * @return
 	 */
-	public static void closeMap(CloseMapRequest request) throws Exception{
-		WebserviceHelper.closeMap(request.getMapId());
+	public static void closeMap(CloseMapRequest request) throws MapNotFoundException{
+		Utils.closeMap(request.getMapId());
 	}
 
 	public static void openMindmap(OpenMindMapRequest request) {
 		
 		try {
 			//create file
-			Random ran = new Random();
-			String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
-			File file = File.createTempFile(filename, ".mm");
+			final Random ran = new Random();
+			final String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
+			final File file = File.createTempFile(filename, ".mm");
 			file.deleteOnExit();
 
 			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
-
+			
 			//put map in openMap Collection
-			String mapId = WebserviceHelper.getMapIdFromFile(file);
-			URL pathURL = file.toURI().toURL();
-			mapIdInfoMap.put(mapId, new OpenMindmapInfo(pathURL));
+			final String mapId = Utils.getMapIdFromFile(file);
+			final URL pathURL = file.toURI().toURL();
+			getOpenMindmapInfoMap().put(mapId, new OpenMindmapInfo(pathURL));
 
+			LogUtils.info("Map with id "+mapId+" was temporarly saved at " +file.getPath());
+			
 			//open map
-			ModeController modeController = getModeController();
-
-			MMapIO mio = (MMapIO)modeController.getExtension(MapIO.class);
+			final MMapIO mio = (MMapIO)RemoteController.getMapIO();
 			mio.newMap(pathURL);
 		} catch (Exception e) {
 			throw new AssertionError(e);
@@ -209,11 +159,10 @@ public class Webservice {
 
 	
 	public static void closeServer() {
-
-		Set<String> ids = mapIdInfoMap.keySet(); 
+		Set<String> ids = getOpenMindmapInfoMap().keySet(); 
 		for(String mapId : ids) {
 			try {
-				WebserviceHelper.closeMap(mapId);
+				Utils.closeMap(mapId);
 			} catch (Exception e) {
 
 			}
@@ -249,20 +198,20 @@ public class Webservice {
 	public static GetNodeResponse getNode(GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
 		selectMap(request.getMapId());
 
-		ModeController modeController = getModeController();
-		boolean loadAllNodes = request.getNodeCount() == -1;
+		final ModeController modeController = getModeController();
+		final boolean loadAllNodes = request.getNodeCount() == -1;
 
 
-		NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(request.getNodeId());
+		final NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(request.getNodeId());
 
 		if(freeplaneNode == null) {
 			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found.");
 		}
 
-		DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
+		final DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
 
 		if(!loadAllNodes) {
-			WebserviceHelper.loadNodesIntoModel(node, request.getNodeCount());
+			Utils.loadNodesIntoModel(node, request.getNodeCount());
 		}
 
 		return new GetNodeResponse(objectMapper.writeValueAsString(node));
@@ -449,7 +398,7 @@ public class Webservice {
 	}
 
 	public static GetExpiredLocksResponse getExpiredLocks(GetExpiredLocksRequest request) throws MapNotFoundException, JsonGenerationException, JsonMappingException, IOException{
-		if (!mapIdInfoMap.containsKey(request.getMapId())){
+		if (!getOpenMindmapInfoMap().containsKey(request.getMapId())){
 			throw new MapNotFoundException("MapId: " + request.getMapId());
 		}
 		Set<NodeModel> nodes = getOpenMindMapInfo(request.getMapId()).getLockedNodes();
@@ -474,10 +423,10 @@ public class Webservice {
 	}
 	
 	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) {
-		Set<String> ids = mapIdInfoMap.keySet(); 
+		Set<String> ids = getOpenMindmapInfoMap().keySet(); 
 		for(String mapId : ids) {
 			try {
-				WebserviceHelper.closeMap(mapId);
+				Utils.closeMap(mapId);
 			} catch (Exception e) {
 
 			}
@@ -488,7 +437,7 @@ public class Webservice {
 
 		final long allowedMsSinceLastAccess = request.getUnusedSinceInMs();
 		final long now = System.currentTimeMillis();
-		for(Map.Entry<String, OpenMindmapInfo> entry : mapIdInfoMap.entrySet()) {
+		for(Map.Entry<String, OpenMindmapInfo> entry : getOpenMindmapInfoMap().entrySet()) {
 			final long lastAccessTime = entry.getValue().getLastAccessTime();
 			final long sinceLastAccess = now - lastAccessTime;
 			final long sinceLastAccessInMinutes = sinceLastAccess / 60000;
@@ -503,7 +452,7 @@ public class Webservice {
 	}
 
 	static ModeController getModeController() {
-		return WebserviceController.getInstance().getModeController();
+		return RemoteController.getInstance().getModeController();
 	}
 
 	static org.freeplane.features.map.MapModel getOpenMap() {
@@ -518,7 +467,26 @@ public class Webservice {
 	 * @throws MapNotFoundException 
 	 */
 	private static void selectMap(String mapId) throws MapNotFoundException{
-		WebserviceHelper.selectMap(mapId);
+		checkForDebugMap(mapId);
+		Utils.selectMap(mapId);
+	}
+	
+	/**
+	 * checks if requested map is a map used for debugging
+	 * @param mapId
+	 * @throws MapNotFoundException
+	 */
+	private static void checkForDebugMap(final String mapId) throws MapNotFoundException {
+		if(!getOpenMindmapInfoMap().containsKey(mapId) && mapId.startsWith("test_")) {
+			//check if testmap exists
+			if(mapId.equals("test_1") || mapId.equals("test_2") || 
+			   mapId.equals("test_3") || mapId.equals("test_5")) {
+				Utils.openTestMap(mapId);
+			} else {
+				throw new MapNotFoundException("Map not found!\n"+
+					"Available test map ids: 'test_1','test_2','test_3','test_5'");
+			}
+		}
 	}
 
 	/**
@@ -547,11 +515,15 @@ public class Webservice {
 		}
 	}
 
+	private static Map<String, OpenMindmapInfo> getOpenMindmapInfoMap() {
+		return RemoteController.getInstance().getMapIdInfoMap();
+	}
+	
 	static OpenMindmapInfo getOpenMindMapInfo(String mapId) {
-		if(!mapIdInfoMap.containsKey(mapId)) {
+		if(!getOpenMindmapInfoMap().containsKey(mapId)) {
 			return null;
 		}
-		return mapIdInfoMap.get(mapId);
+		return getOpenMindmapInfoMap().get(mapId);
 	}
 
 	private static String buildJSON(Object object) {
@@ -560,7 +532,7 @@ public class Webservice {
 		try {
 			result = objectMapper.writeValueAsString(object);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LogUtils.severe("Error while parsing object to JSON-String!", e);
 			throw new AssertionError(e);
 		}		
 
