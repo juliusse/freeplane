@@ -4,6 +4,7 @@ import static org.fest.assertions.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
@@ -60,7 +61,8 @@ public class AkkaTests {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
-		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
+		final String ip = InetAddress.getLocalHost().getHostAddress();
+		remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
 		//docear2
 		//remoteActor = system.actorFor("akka://freeplaneRemote@141.45.146.224:2553/user/main");
 		objectMapper = new ObjectMapper();
