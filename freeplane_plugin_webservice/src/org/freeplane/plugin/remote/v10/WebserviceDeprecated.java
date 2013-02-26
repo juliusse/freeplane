@@ -1,4 +1,4 @@
-package org.freeplane.plugin.webservice.v10;
+package org.freeplane.plugin.remote.v10;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -21,8 +21,8 @@ import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
-import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.v10.model.MapModel;
+import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.v10.model.MapModel;
 
 import com.sun.jersey.api.client.ClientResponse.Status;
 

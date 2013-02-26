@@ -1,4 +1,4 @@
-package org.freeplane.plugin.webservice;
+package org.freeplane.plugin.remote;
 
 import java.util.Hashtable;
 

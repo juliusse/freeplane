@@ -1,10 +1,11 @@
-package org.freeplane.plugin.webservice.actors;
+package org.freeplane.plugin.remote.actors;
 
 import org.docear.messages.Messages.AddNodeRequest;
 import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
+import org.docear.messages.Messages.CloseUnusedMaps;
 import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
@@ -14,7 +15,12 @@ import org.docear.messages.Messages.RefreshLockRequest;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.Messages.RequestLockRequest;
-import org.freeplane.plugin.webservice.v10.Webservice;
+import org.docear.messages.exceptions.LockNotFoundException;
+import org.docear.messages.exceptions.MapNotFoundException;
+import org.docear.messages.exceptions.NodeAlreadyLockedException;
+import org.docear.messages.exceptions.NodeNotFoundException;
+import org.freeplane.core.util.LogUtils;
+import org.freeplane.plugin.remote.v10.Webservice;
 
 import akka.actor.ActorRef;
 import akka.actor.Status;
@@ -31,8 +37,10 @@ public class MainActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		System.out.println(message.getClass().getName()+" received.");
-		ActorRef sender = getSender();
+		LogUtils.info(message.getClass().getName()+" received.");
+		
+		final ActorRef sender = getSender();
+		
 		Object response = null;
 		try {
 			//get map as json
@@ -103,18 +111,39 @@ public class MainActor extends UntypedActor {
 			else if(message instanceof GetExpiredLocksRequest) {
 				response = Webservice.getExpiredLocks((GetExpiredLocksRequest)message);
 			}
+			
+			//close unused maps
+			else if(message instanceof CloseUnusedMaps) {
+				Webservice.closeUnusedMaps((CloseUnusedMaps)message);
+			}
 
-			if(response != null)
-				sender.tell(response, getSelf());
 			
 			
+			
+		}
+		catch(MapNotFoundException e) {
+			LogUtils.warn("Map not found exception catched.",e);
+			response = new Status.Failure(e);
+		}
+		catch(NodeNotFoundException e) {
+			LogUtils.warn("Node not found exception catched.",e);
+			response = new Status.Failure(e);
+		}
+		catch(NodeAlreadyLockedException e) {
+			LogUtils.warn("Node already locked exception catched.",e);
+			response = new Status.Failure(e);
+		}
+		catch(LockNotFoundException e) {
+			LogUtils.warn("Lock not found exception catched.",e);
+			response = new Status.Failure(e);
 		}
 		catch(Exception e) {
-			System.out.println(e.getMessage());
-			//sender.tell(new ErrorMessage(e),getSelf());
-			sender.tell(new Status.Failure(e),getSelf());
-
+			LogUtils.severe("Unrecognized Exception:",e);
+			response = new Status.Failure(e);
 		}
+		
+		if(response != null)
+			sender.tell(response, getSelf());
 	}
 
 }

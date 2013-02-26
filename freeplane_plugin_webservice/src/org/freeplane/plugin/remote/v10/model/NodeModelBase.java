@@ -1,4 +1,4 @@
-package org.freeplane.plugin.webservice.v10.model;
+package org.freeplane.plugin.remote.v10.model;
 
 import java.io.Serializable;
 import java.net.URI;

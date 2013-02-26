@@ -1,4 +1,4 @@
-package org.freeplane.plugin.webservice.v10.model;
+package org.freeplane.plugin.remote.v10.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.plugin.webservice.WebserviceController;
+import org.freeplane.plugin.remote.WebserviceController;
 
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)

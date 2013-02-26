@@ -1,6 +1,7 @@
-package org.freeplane.plugin.webservice.v10;
+package org.freeplane.plugin.remote.v10;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.logging.Level;
@@ -8,11 +9,12 @@ import java.util.logging.Level;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
-import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.v10.model.NodeModelBase;
+import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.v10.model.NodeModelBase;
 import org.w3c.dom.Document;
 
 public final class WebserviceHelper {
@@ -46,33 +48,30 @@ public final class WebserviceHelper {
 		return null;
 	}
 
-	public static boolean selectMap(String id) {
+	public static void selectMap(String id) throws MapNotFoundException {
 		if(!Webservice.mapIdInfoMap.containsKey(id)) {
-			return false;
+			throw new MapNotFoundException("Map with id "+ id+ " is not present.");
 		}
-		LogUtils.getLogger().log(Level.INFO, "changing map to "+id);
+		
+		LogUtils.info("Changing map to "+id);
 		URL pathURL = Webservice.getOpenMindMapInfo(id).getMapUrl();
 
-		MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
 		try{
+			final MapIO mio = WebserviceController.getInstance().getModeController().getExtension(MapIO.class);
 			mio.newMap(pathURL);
-		} catch (Exception e){
-			return false;
+		} catch (Exception e) {
+			LogUtils.severe(e);
+			throw new MapNotFoundException("Could not open Map with id "+ id);
 		}
-
-		return true;
 	}
 
-	public static boolean closeMap(String id) throws Exception {
+	public static void closeMap(String id) throws MapNotFoundException {
 		ModeController modeController = Webservice.getModeController();
 		//select map
-		MapIO mio = modeController.getExtension(MapIO.class);
-		mio.newMap(Webservice.getOpenMindMapInfo(id).getMapUrl());
+		selectMap(id);
 		
 		//close and remove map
 		modeController.getController().close(true);
 		Webservice.mapIdInfoMap.remove(id);
-
-		return true;
 	}
 }

@@ -1,4 +1,4 @@
-package org.freeplane.plugin.webservice.v10;
+package org.freeplane.plugin.remote.v10;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,6 +26,7 @@ import org.docear.messages.Messages.AddNodeResponse;
 import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.CloseUnusedMaps;
 import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetExpiredLocksResponse;
 import org.docear.messages.Messages.GetNodeRequest;
@@ -43,6 +44,7 @@ import org.docear.messages.exceptions.LockNotFoundException;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeChangeEvent;
@@ -52,11 +54,11 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.plugin.webservice.WebserviceController;
-import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
-import org.freeplane.plugin.webservice.v10.model.LockModel;
-import org.freeplane.plugin.webservice.v10.model.MapModel;
-import org.freeplane.plugin.webservice.v10.model.OpenMindmapInfo;
+import org.freeplane.plugin.remote.WebserviceController;
+import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
+import org.freeplane.plugin.remote.v10.model.LockModel;
+import org.freeplane.plugin.remote.v10.model.MapModel;
+import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 
 public class Webservice {
 
@@ -82,17 +84,19 @@ public class Webservice {
 		boolean loadAllNodes = nodeCount == -1;
 		ModeController modeController = getModeController();
 		
-		if(!WebserviceHelper.selectMap(mapId)) {
-			if(mapId.startsWith("test_")) { //FOR DEBUGING
+		//check for debugging maps
+		if(!mapIdInfoMap.containsKey(mapId) && mapId.startsWith("test_")) {
+			//check if testmap exists
+			if(mapId.equals("test_1") || mapId.equals("test_2") || 
+			   mapId.equals("test_3") || mapId.equals("test_5")) {
 				openTestMap(mapId);
-				if(!WebserviceHelper.selectMap(mapId)) {
-					throw new MapNotFoundException("Map not found!\n"+
-							"Available test map ids: 'test_1','test_2','test_3','test_4','test_5'");
-				}
 			} else {
-				throw new MapNotFoundException("Map not found");
+				throw new MapNotFoundException("Map not found!\n"+
+					"Available test map ids: 'test_1','test_2','test_3','test_5'");
 			}
 		}
+		
+		selectMap(mapId);
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
@@ -480,8 +484,22 @@ public class Webservice {
 		}
 	}
 
-	public static void closeUnusedMaps() {
-		//TODO close maps and tell ZooKeeper
+	public static void closeUnusedMaps(CloseUnusedMaps request) throws Exception {
+
+		final long allowedMsSinceLastAccess = request.getUnusedSinceInMs();
+		final long now = System.currentTimeMillis();
+		for(Map.Entry<String, OpenMindmapInfo> entry : mapIdInfoMap.entrySet()) {
+			final long lastAccessTime = entry.getValue().getLastAccessTime();
+			final long sinceLastAccess = now - lastAccessTime;
+			final long sinceLastAccessInMinutes = sinceLastAccess / 60000;
+			
+			if(sinceLastAccess > allowedMsSinceLastAccess) {
+				//TODO tell ZooKeeper and save to hadoop
+				final String mapId = entry.getKey();
+				closeMap(new CloseMapRequest(mapId));
+				LogUtils.info("Map "+mapId+" was closed, because it havent been used for about "+sinceLastAccessInMinutes+" minutes.");
+			}
+		}
 	}
 
 	static ModeController getModeController() {
@@ -500,9 +518,7 @@ public class Webservice {
 	 * @throws MapNotFoundException 
 	 */
 	private static void selectMap(String mapId) throws MapNotFoundException{
-		if(!WebserviceHelper.selectMap(mapId)) {
-			throw new MapNotFoundException("MapId: " + mapId);
-		}
+		WebserviceHelper.selectMap(mapId);
 	}
 
 	/**

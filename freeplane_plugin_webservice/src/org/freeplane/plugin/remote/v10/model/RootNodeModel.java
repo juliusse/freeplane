@@ -1,4 +1,4 @@
-package org.freeplane.plugin.webservice.v10.model;
+package org.freeplane.plugin.remote.v10.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
-import org.freeplane.plugin.webservice.WebserviceController;
+import org.freeplane.plugin.remote.WebserviceController;
 
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -55,9 +55,9 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 		for(String nodeId : childrenIds) {
 			NodeModel child = mapController.getNodeFromID(nodeId);
 			if(child.isLeft()) {
-				this.leftChildren.add(new org.freeplane.plugin.webservice.v10.model.DefaultNodeModel(child,false));
+				this.leftChildren.add(new org.freeplane.plugin.remote.v10.model.DefaultNodeModel(child,false));
 			} else {
-				this.rightChildren.add(new org.freeplane.plugin.webservice.v10.model.DefaultNodeModel(child,false));
+				this.rightChildren.add(new org.freeplane.plugin.remote.v10.model.DefaultNodeModel(child,false));
 			}
 		}
 		

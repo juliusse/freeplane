@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: org.freeplane.plugin.remote
 Bundle-SymbolicName: org.freeplane.plugin.remote;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-Activator: org.freeplane.plugin.webservice.Activator
+Bundle-Activator: org.freeplane.plugin.remote.Activator
 Require-Bundle: org.freeplane.core;bundle-version="1.0.1"
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6

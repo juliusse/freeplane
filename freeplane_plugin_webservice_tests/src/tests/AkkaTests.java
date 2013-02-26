@@ -19,6 +19,7 @@ import org.docear.messages.Messages.AddNodeResponse;
 import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.CloseUnusedMaps;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
 import org.docear.messages.Messages.MindmapAsJsonReponse;
@@ -30,7 +31,7 @@ import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.fest.assertions.Fail;
-import org.freeplane.plugin.webservice.v10.model.DefaultNodeModel;
+import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -464,10 +465,9 @@ public class AkkaTests {
 						node.id = "ID_FAIL";
 						node.nodeText = "This is a new nodeText";
 						
-						ObjectMapper om = new ObjectMapper();
 						String nodeAsJSON = null;
 						try {
-							nodeAsJSON = om.writeValueAsString(node);
+							nodeAsJSON = objectMapper.writeValueAsString(node);
 						} catch (Exception e) {
 							Fail.fail("error parsing DefaultNodeModel");
 						}
@@ -529,9 +529,32 @@ public class AkkaTests {
 						assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 						
 						closeMindMapOnServer(5);
-						closeMindMapOnServer(5);
-						
 						expectNoMsg();
+					}
+				};
+			}
+		};
+	}
+	
+	@Test
+	public void testCloseNotAccessedMaps() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("3 seconds")) {
+					@Override
+					public void run() {
+						sendMindMapToServer(5);
+
+						//close maps that haven't been used for 1 ms
+						remoteActor.tell(new CloseUnusedMaps(1), localActor);
+						//expectNoMsg();
+
+						remoteActor.tell(new MindmapAsJsonRequest("5"), localActor);
+						Failure response = expectMsgClass(Failure.class);
+						assertThat(response.cause()).isInstanceOf(MapNotFoundException.class);
+
+						//no map closing needed, because it has been closed due to beeing unused
 					}
 				};
 			}
