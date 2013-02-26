@@ -517,12 +517,13 @@ public class AkkaTests {
 	public void sendMapGetAsJsonAndCloseOnServerTestDoubleClose() {
 		new JavaTestKit(system) {
 			{
+				localActor.tell(getRef(),getRef());
 				new Within(duration("3 seconds")) {
 					@Override
 					public void run() {
 						sendMindMapToServer(5);
 
-						remoteActor.tell(new MindmapAsJsonRequest("5"), getRef());
+						remoteActor.tell(new MindmapAsJsonRequest("5"), localActor);
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
@@ -530,7 +531,7 @@ public class AkkaTests {
 						
 						closeMindMapOnServer(5);
 						closeMindMapOnServer(5);
-						expectNoMsg();
+						assertThat(expectMsgClass(Failure.class).cause()).isInstanceOf(MapNotFoundException.class);
 					}
 				};
 			}
