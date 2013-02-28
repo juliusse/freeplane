@@ -4,6 +4,7 @@ import static org.fest.assertions.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -41,11 +42,15 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.Status.Failure;
 import akka.actor.UntypedActor;
+import akka.pattern.Patterns;
 import akka.testkit.JavaTestKit;
 
 import com.typesafe.config.ConfigFactory;
@@ -61,11 +66,42 @@ public class AkkaTests {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
-		final String ip = InetAddress.getLocalHost().getHostAddress();
-		remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
-		//docear2
-		//remoteActor = system.actorFor("akka://freeplaneRemote@141.45.146.224:2553/user/main");
+		
+		
+		localActor = system.actorOf(new Props(TheActor.class), "localActor_"+System.currentTimeMillis());
+		
+		setUpConnectionToFreeplane();
+
+
+		
 		objectMapper = new ObjectMapper();
+	}
+	
+	private static void setUpConnectionToFreeplane() {
+		long startTime = System.currentTimeMillis();
+		long endTime = startTime + 60000; // one minute
+		while(remoteActor == null && System.currentTimeMillis() < endTime) {
+			try {
+				final String ip = InetAddress.getLocalHost().getHostAddress();
+				remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
+				//docear2
+				//remoteActor = system.actorFor("akka://freeplaneRemote@141.45.146.224:2553/user/main");
+				
+				Future<Object> future = Patterns.ask(remoteActor, new MindmapAsJsonRequest("NOT_EXISTING"), 2000);
+				Await.result(future, Duration.create("2 second"));
+			} catch (MapNotFoundException e) {
+				//expected, good
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.err.println("Could not connect to Freeplane remote. Waiting 5 seconds.");
+				remoteActor = null;
+				Thread.sleep(5000); // 5 seconds
+			}
+		}
+			
+		if(remoteActor == null) {
+			Fail.fail("Could not connect to Freeplane Remote");
+		}
 	}
 
 	@AfterClass
@@ -75,7 +111,7 @@ public class AkkaTests {
 
 	@Before
 	public  void setUp() throws Exception {
-		localActor = system.actorOf(new Props(TheActor.class), "localActor_"+System.currentTimeMillis());
+		
 	}
 	
 	@After
