@@ -84,6 +84,7 @@ public class AkkaTests {
 			try {
 				final String ip = InetAddress.getLocalHost().getHostAddress();
 				remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
+				//remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 				//docear2
 				//remoteActor = system.actorFor("akka://freeplaneRemote@141.45.146.224:2553/user/main");
 				
@@ -93,9 +94,11 @@ public class AkkaTests {
 				//expected, good
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.err.println("Could not connect to Freeplane remote. Waiting 5 seconds.");
+				System.err.println("Could not connect to Freeplane remote. Waiting 10 seconds.");
 				remoteActor = null;
-				Thread.sleep(5000); // 5 seconds
+				try {
+					Thread.sleep(10000); // 10 seconds
+				} catch (InterruptedException e1) {} 
 			}
 		}
 			
@@ -140,6 +143,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					@Override
 					protected void run() {
+						
 						remoteActor.tell(new MindmapAsJsonRequest("test_5"), getRef());
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);

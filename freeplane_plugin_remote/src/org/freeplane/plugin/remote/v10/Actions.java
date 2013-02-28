@@ -138,8 +138,9 @@ public class Actions {
 			//create file
 			final Random ran = new Random();
 			final String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
-			final File file = File.createTempFile(filename, ".mm");
-			file.deleteOnExit();
+			final String tempDirPath = System.getProperty("java.io.tmpdir");
+			final File file = new File(tempDirPath+"/docear/"+filename+".mm");
+			//file.deleteOnExit();
 
 			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
 			
