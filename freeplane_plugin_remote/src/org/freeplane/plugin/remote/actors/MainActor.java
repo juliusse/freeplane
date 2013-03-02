@@ -29,7 +29,6 @@ import akka.actor.UntypedActor;
 public class MainActor extends UntypedActor {
 
 	public MainActor() {
-
 	}
 
 	public MainActor(ActorRef listener) {
@@ -73,6 +72,7 @@ public class MainActor extends UntypedActor {
 				response = Actions.getNode((GetNodeRequest) message);			
 			}
 			
+			// Open mindmap
 			else if (message instanceof OpenMindMapRequest){
 				Actions.openMindmap((OpenMindMapRequest)message);
 			}
@@ -116,10 +116,6 @@ public class MainActor extends UntypedActor {
 			else if(message instanceof CloseUnusedMaps) {
 				Actions.closeUnusedMaps((CloseUnusedMaps)message);
 			}
-
-			
-			
-			
 		}
 		catch(MapNotFoundException e) {
 			LogUtils.warn("Map not found exception catched.",e);

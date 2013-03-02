@@ -49,12 +49,10 @@ public class RemoteController {
 
 		this.registerListeners();
 		
-		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
-
-
+		
 		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
 		mainActor = system.actorOf(new Props(MainActor.class), "main");
 		LogUtils.info("Main Actor running at path=" + mainActor.path());
@@ -73,7 +71,7 @@ public class RemoteController {
 		//set back to original class loader
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
-
+	
 	/**
 	 * registers all listeners to react on necessary events like created nodes
 	 * Might belong into a new plugin, which sends changes to the server (And this IS the server)
