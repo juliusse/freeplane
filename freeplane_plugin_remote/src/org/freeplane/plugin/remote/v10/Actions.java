@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.logging.Level;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
@@ -67,7 +68,7 @@ public class Actions {
 	 * @return a map model
 	 */
 	public static MindmapAsJsonReponse getMapModelJson(MindmapAsJsonRequest request) throws MapNotFoundException {
-
+		
 		final int nodeCount = request.getNodeCount();
 		final String mapId = request.getId();
 
@@ -88,7 +89,8 @@ public class Actions {
 			Utils.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
-		String result = buildJSON(mm); 
+		String result = buildJSON(mm);
+		//LogUtils.getLogger().log(Level.FINE, "getMapModel called for mapId '"+request.getId()+"' with nodeCount: "+request.getNodeCount());
 		return new MindmapAsJsonReponse(result);
 	}
 
@@ -136,8 +138,9 @@ public class Actions {
 			//create file
 			final Random ran = new Random();
 			final String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
-			final File file = File.createTempFile(filename, ".mm");
-			file.deleteOnExit();
+			final String tempDirPath = System.getProperty("java.io.tmpdir");
+			final File file = new File(tempDirPath+"/docear/"+filename+".mm");
+			//file.deleteOnExit();
 
 			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
 			

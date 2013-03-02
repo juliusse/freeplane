@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.Hashtable;
 
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
@@ -24,7 +25,6 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
 
 	@Override
 	public void start(BundleContext context) {
-		
 		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
 		props.put("mode", new String[] { MModeController.MODENAME });
 		context.registerService(IModeControllerExtensionProvider.class.getName(),
@@ -33,7 +33,6 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
 			    	RemoteController.getInstance();
 			    }
 		    }, props);
-		
 		
 		final Bundle systemBundle = context.getBundle(0);
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -45,11 +44,6 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
 				} catch (BundleException e) {
 					e.printStackTrace();
 				}
-		    	/*try {
-					Thread.currentThread().join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}*/
 		    }
 		});
 		
@@ -81,10 +75,17 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
             }
         }
 	}
+
+	@Override
+	public void configure(BundleContext arg0, ActorSystem arg1) {
+		RemoteController.stop();
+	}
 	
 	@Override
 	public void stop(BundleContext context) {
 		System.err.println("STOPPING REMOTE");
+		RemoteController.stop();
+		super.stop(context);
 		
 		try{			 
     		File file = new File("RUNNING_PID");
@@ -94,10 +95,5 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
     	}catch(Exception e){
     		e.printStackTrace();
     	}
-	}
-	
-	@Override
-	public void configure(BundleContext arg0, ActorSystem arg1) {
-		RemoteController.stop();
 	}
 }

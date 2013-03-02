@@ -2,16 +2,20 @@ package org.freeplane.plugin.remote;
 
 import java.awt.Container;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.docear.messages.Messages.CloseUnusedMaps;
+import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.plugin.remote.actors.MainActor;
+import org.freeplane.plugin.remote.v10.Utils;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 
 import scala.concurrent.duration.Duration;
@@ -95,6 +99,18 @@ public class RemoteController {
 		controller.closeUnusedMapsJob.cancel();
 		controller.mainActor.tell(PoisonPill.getInstance(), null);
 		controller.system.shutdown();
+		controller.closeMapsAndDetroyFiles();
+	}
+	
+	private void closeMapsAndDetroyFiles() {
+		Set<String> idSet = new HashSet<String>(this.mapIdInfoMap.keySet());
+		for(String id: idSet) {
+			try {
+				Utils.closeMap(id);
+			} catch (MapNotFoundException e) {
+				LogUtils.warn("could not find map.");
+			}
+		}
 	}
 
 	public static ModeController getModeController() {

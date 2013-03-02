@@ -18,6 +18,7 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.NodeModelBase;
+import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.w3c.dom.Document;
 
 public final class Utils {
@@ -75,6 +76,16 @@ public final class Utils {
 		
 		//close and remove map
 		modeController.getController().close(true);
+		
+		//remove file from filesystem
+		try {
+			OpenMindmapInfo mmInfos = RemoteController.getMapIdInfoMap().get(id);
+			new File(mmInfos.getMapUrl().toURI()).delete();
+		} catch (Exception e) {
+			LogUtils.severe("could not delete map file.");
+		}
+		
+		
 		RemoteController.getMapIdInfoMap().remove(id);
 	}
 	
@@ -94,4 +105,5 @@ public final class Utils {
 			Actions.openMindmap(new OpenMindMapRequest(xmlMap));
 		} catch (Exception e) {}
 	}
+
 }
