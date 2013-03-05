@@ -38,6 +38,7 @@ import org.docear.messages.Messages.RefreshLockRequest;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.Messages.RequestLockRequest;
+import org.docear.messages.exceptions.CannotRetrieveMapIdException;
 import org.docear.messages.exceptions.LockNotFoundException;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeAlreadyLockedException;
@@ -69,15 +70,15 @@ public class Actions {
 	 * @return a map model
 	 */
 	public static MindmapAsJsonReponse getMapModelJson(MindmapAsJsonRequest request) throws MapNotFoundException {
-		
+
 		final int nodeCount = request.getNodeCount();
 		final String mapId = request.getId();
 
 		final boolean loadAllNodes = nodeCount == -1;
-		
+
 		logger().debug("getMapModelJson => mapId:'{}'; nodeCount:{}; loadAllNodes:{}",mapId,nodeCount,loadAllNodes);
 		final ModeController modeController = getModeController();
-				
+
 		logger().debug("getMapModelJson => selecting map");
 		selectMap(mapId);
 
@@ -103,7 +104,7 @@ public class Actions {
 		return new MindmapAsJsonReponse(result);
 	}
 
-	
+
 
 	/** 
 	 * returns a map as a JSON-Object
@@ -116,7 +117,7 @@ public class Actions {
 	public static MindmapAsXmlResponse getMapModelXml(final MindmapAsXmlRequest request) throws MapNotFoundException, IOException {
 		final String mapId = request.getMapId();
 		logger().debug("getMapModelXml => mapId:'{}'",mapId);
-		
+
 		logger().debug("getMapModelXml => selecting map");
 		selectMap(mapId);
 
@@ -127,16 +128,16 @@ public class Actions {
 			throw new AssertionError("Current mode not MapMode");
 		}
 
-		
+
 		logger().debug("getMapModelXml => serialising map to XML");
 		final StringWriter writer = new StringWriter();
 		modeController.getMapController()
-			.getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
+		.getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
 
 		logger().debug("getMapModelXml => returning map as XML string");
 		return new MindmapAsXmlResponse(writer.toString());
 	}
-	
+
 	/**
 	 * closes a map on the server
 	 * @param id
@@ -147,8 +148,8 @@ public class Actions {
 		Utils.closeMap(request.getMapId());
 	}
 
-	public static void openMindmap(OpenMindMapRequest request) {
-		
+	public static void openMindmap(OpenMindMapRequest request) throws CannotRetrieveMapIdException {
+
 		logger().debug("openMindmap => mindmapFileContent:'{}...'",request.getMindmapFileContent().substring(0, 20));
 		try {
 			//create file
@@ -157,31 +158,33 @@ public class Actions {
 			final String tempDirPath = System.getProperty("java.io.tmpdir");
 			final File file = new File(tempDirPath+"/docear/"+filename+".mm");
 			logger().debug("openMindmap => temporary file '{}' was created",file.getAbsolutePath());
-			
+
 			logger().debug("openMindmap => writing mindmap content to file");
 			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
-			
+
 			//put map in openMap Collection
 			final String mapId = Utils.getMapIdFromFile(file);
 			final URL pathURL = file.toURI().toURL();
 			final OpenMindmapInfo ommi = new OpenMindmapInfo(pathURL);
 			getOpenMindmapInfoMap().put(mapId, ommi);
 			logger().debug("openMindmap => mindmap was put into openMindmapInfoMap ({} => {})",mapId,ommi.getMapUrl());
-			
+
 			//open map
 			logger().debug("openMindmap => opening mindmap...");
 			final MMapIO mio = (MMapIO)RemoteController.getMapIO();
 			mio.newMap(pathURL);
 			logger().debug("openMindmap => map successfully loaded and opened!");
+		} catch(CannotRetrieveMapIdException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new AssertionError(e);
 		}
 	}
 
-	
+
 	public static void closeServer(CloseServerRequest request) {
 		logger().debug("closeServer => no parameters");
-		
+
 		logger().debug("closeServer => closing open maps");
 		Set<String> ids = getOpenMindmapInfoMap().keySet(); 
 		for(String mapId : ids) {
@@ -198,7 +201,7 @@ public class Actions {
 			public void run() {
 				try {
 					Thread.sleep(2000);
-					
+
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -221,106 +224,123 @@ public class Actions {
 	 * @throws JsonMappingException 
 	 * @throws JsonGenerationException 
 	 */
-	public static GetNodeResponse getNode(GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
-		selectMap(request.getMapId());
+	public static GetNodeResponse getNode(final GetNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
+		final String mapId = request.getMapId();
+		final String nodeId = request.getNodeId();
+		final int nodeCount = request.getNodeCount();
+		final boolean loadAllNodes = nodeCount == -1;
 
-		final ModeController modeController = getModeController();
-		final boolean loadAllNodes = request.getNodeCount() == -1;
+		logger().debug("getNode => mapId:'{}'; nodeId:'{}'; nodeCount:{}; loadAllNodes:{}",mapId,nodeId,nodeCount,loadAllNodes);
 
+		logger().debug("getNode => selecting map");
+		selectMap(mapId);
 
-		final NodeModel freeplaneNode = modeController.getMapController().getNodeFromID(request.getNodeId());
+		logger().debug("getNode => retrieving freeplane node");
+		final NodeModel freeplaneNode = getModeController().getMapController().getNodeFromID(request.getNodeId());
 
 		if(freeplaneNode == null) {
+			logger().error("getNode => requested node not found; throwing exception");
 			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found.");
 		}
 
-		final DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
 
+		logger().debug("getNode => loading into model to convert to JSON");
+		final DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
 		if(!loadAllNodes) {
 			Utils.loadNodesIntoModel(node, request.getNodeCount());
 		}
 
-		return new GetNodeResponse(objectMapper.writeValueAsString(node));
+		logger().debug("getNode => returning node as JSON");
+		return new GetNodeResponse(buildJSON(node));
 	}
 
 	public static AddNodeResponse addNode(AddNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonGenerationException, JsonMappingException, IOException {
 		final String mapId = request.getMapId();
 		final String parentNodeId = request.getParentNodeId(); 
+		logger().debug("addNode => mapId:'{}'; parentNodeId:'{}'",mapId,parentNodeId);
 
-		System.out.println("Selecting Map.");
-		
+		logger().debug("addNode => selecting map");
 		selectMap(mapId);
-		
-		System.out.println("Map selected.");
 
-		ModeController modeController = getModeController();
-		MMapController mapController = (MMapController) modeController.getMapController();
+		final ModeController modeController = getModeController();
+		final MMapController mapController = (MMapController) modeController.getMapController();
+
 		//get map
+		logger().debug("addNode => retrieving freeplane map");
 		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
 
 		//get parent Node
+		logger().debug("addNode => retrieving freeplane parent node");
 		NodeModel parentNode = mapController.getNodeFromID(parentNodeId);
-
-		if(parentNode == null)
+		if(parentNode == null) {
+			logger().error("addNode => parent node not found, throwing exception"); 
 			throw new NodeNotFoundException("Node with id '"+parentNodeId+"' not found");
+		}
 
-		System.out.println("got parent node: " + parentNode.getID());
-		
 		//create new node
-		NodeModel node = modeController.getMapController().newNode("", mm);
+		logger().debug("addNode => creating new node");
+		NodeModel node = mapController.newNode("", mm);
 
 		//insert node
+		logger().debug("addNode => inserting new node");
 		mapController.insertNode(node, parentNode);
 		//mapController.fireMapChanged(new MapChangeEvent(new Object(), "node", "", ""));
 
 		node.createID();
-		System.out.println("created node." + node.getID() + " with text: \"" + node.getText() + "\"");
+		logger().debug("addNode => node with id '{}' successfully created",node.getID()); 
 
-		return new AddNodeResponse(objectMapper.writeValueAsString(new DefaultNodeModel(node, false)));
-		//return Response.ok(new DefaultNodeModel(node, false)).build();	
+		logger().debug("addNode => returning response with new node as json");
+		return new AddNodeResponse(buildJSON(new DefaultNodeModel(node, false)));
 	}
 
-	public static void changeNode(ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException, URISyntaxException {
-
+	public static void changeNode(final ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException, URISyntaxException {
 		final String mapId = request.getMapId();
-
 		final DefaultNodeModel node = objectMapper.readValue(request.getNodeAsJsonString(), DefaultNodeModel.class);
+		logger().debug("changeNode => mapId:'{}'; nodeAsJson:'{}'",mapId,request.getNodeAsJsonString());
 
+		logger().debug("changeNode => selecting map");
 		selectMap(mapId);
 
 		//get map
-		ModeController modeController = getModeController();
-		org.freeplane.features.map.MapModel mm = modeController.getController().getMap();
+		logger().debug("changeNode => retrieving map");
+		org.freeplane.features.map.MapModel mm = getModeController().getController().getMap();
 
 		//get node
+		logger().debug("changeNode => retrieving node");
 		NodeModel freeplaneNode = mm.getNodeForID(node.id);
-		if(freeplaneNode == null)
+		if(freeplaneNode == null) {
+			logger().error("changeNode => node not found, throwing exception"); 
 			throw new NodeNotFoundException("Node with id '"+node.id+"' not found");
+		}
 
 		if(node.folded != null) {
+			logger().debug("changeNode => folded changed to {}",node.folded);
 			freeplaneNode.setFolded(node.folded);
 		}
 		if(node.isHtml != null) {
+			logger().debug("changeNode => isHtml changed to {}",node.isHtml);
 			freeplaneNode.setXmlText(node.nodeText);
 		}
 		if(node.attributes != null) {
+			logger().error("changeNode => attributes are not implemented yet");
 			//TODO implement correctly
-//			NodeAttributeTableModel attrTable;
-//			AttributeController attrController = AttributeController.getController();
-//			
-//			if(node.attributes.size() > 0) {
-//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
-//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
-//					//attrController.performInsertRow(attrTable, row, name, value)
-//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
-//				}
-//				freeplaneNode.addExtension(attrTable);
-//			} else if (node.attributes.size() == 0) {
-//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
-//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
-//			}
+			//			NodeAttributeTableModel attrTable;
+			//			AttributeController attrController = AttributeController.getController();
+			//			
+			//			if(node.attributes.size() > 0) {
+			//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
+			//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
+			//					//attrController.performInsertRow(attrTable, row, name, value)
+			//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
+			//				}
+			//				freeplaneNode.addExtension(attrTable);
+			//			} else if (node.attributes.size() == 0) {
+			//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
+			//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
+			//			}
 		}
 		if(node.hGap != null) {
+			logger().debug("changeNode => hGap changed to {}",node.hGap);
 			updateLocationModel(freeplaneNode, node.hGap, null);
 		}
 		if(node.icons != null) {
@@ -330,52 +350,65 @@ public class Actions {
 			//TODO handle
 		}
 		if(node.link != null) {
-			
+			logger().debug("changeNode => link changed to {}",node.link);
 			NodeLinks nodeLinks = freeplaneNode.getExtension(NodeLinks.class);
-			
+
 			if(nodeLinks == null) {
 				nodeLinks = new NodeLinks();
 				freeplaneNode.addExtension(nodeLinks);				
 			}
-			
+
 			nodeLinks.setHyperLink(new URI(node.link));
 		}
 		if(node.nodeText != null) {
+			logger().debug("changeNode => nodeText changed to {}",node.nodeText);
 			freeplaneNode.setText(node.nodeText);
 		}
 		if(node.shiftY != null) {
+			logger().debug("changeNode => shiftY changed to {}",node.shiftY);
 			updateLocationModel(freeplaneNode, null, node.shiftY);
 		}
 		//only for gui
-		freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
+		//freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
 
+		logger().debug("changeNode => refreshing lock access time");
 		refreshLockAccessTime(freeplaneNode);
-
 	}
 
 	public static void removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
-		selectMap(request.getMapId());
-		ModeController modeController = getModeController();
-		MMapController mapController = (MMapController) modeController.getMapController();
-		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
-		if(node == null)
-			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
+		final String mapId = request.getMapId();
+		final String nodeId = request.getNodeId();
+		logger().debug("removeNode => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
 
-		try {
-		mapController.deleteNode(node);
-		} catch (RuntimeException e) {
-			e.printStackTrace();
+		logger().debug("removeNode => selecting map");
+		selectMap(request.getMapId());
+
+		logger().debug("removeNode => retrieving node");
+		final MMapController mapController = (MMapController) getModeController().getMapController();
+		NodeModel node = mapController.getNodeFromID(request.getNodeId());
+		if(node == null) {
+			logger().error("removeNode => node not found, throwing exception");
+			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
 		}
-		//node.removeFromParent();
-		
-		//node.fireNodeChanged(new NodeChangeEvent(node, "parent", "", ""));
+
+		logger().debug("removeNode => deleting node");
+		mapController.deleteNode(node);
 	}
 
-	public static void refreshLock (RefreshLockRequest request) throws MapNotFoundException{
+	public static void refreshLock (RefreshLockRequest request) throws MapNotFoundException, NodeNotFoundException{
+		final String mapId = request.getMapId();
+		final String nodeId = request.getNodeId();
+		logger().debug("refreshLock => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
+		
+		logger().debug("refreshLock => selecting map");
 		selectMap(request.getMapId());
 
-		ModeController modeController = getModeController();
-		NodeModel node = modeController.getMapController().getNodeFromID(request.getNodeId());
+		logger().debug("refreshLock => retrieving node");
+		NodeModel node = getModeController().getMapController().getNodeFromID(request.getNodeId());
+		if(node == null) {
+			logger().error("refreshLock => node not found, throwing exception");
+			throw new NodeNotFoundException("Node with id '"+request.getNodeId()+"' not found");
+		}
 
 		refreshLockAccessTime(node);
 	}
@@ -447,7 +480,7 @@ public class Actions {
 
 		return new GetExpiredLocksResponse(objectMapper.writeValueAsString(expiredNodes));
 	}
-	
+
 	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) {
 		Set<String> ids = getOpenMindmapInfoMap().keySet(); 
 		for(String mapId : ids) {
@@ -467,7 +500,7 @@ public class Actions {
 			final long lastAccessTime = entry.getValue().getLastAccessTime();
 			final long sinceLastAccess = now - lastAccessTime;
 			final long sinceLastAccessInMinutes = sinceLastAccess / 60000;
-			
+
 			if(sinceLastAccess > allowedMsSinceLastAccess) {
 				//TODO tell ZooKeeper and save to hadoop
 				final String mapId = entry.getKey();
@@ -496,7 +529,7 @@ public class Actions {
 		checkForDebugMap(mapId);
 		Utils.selectMap(mapId);
 	}
-	
+
 	/**
 	 * checks if requested map is a map used for debugging
 	 * @param mapId
@@ -506,11 +539,11 @@ public class Actions {
 		if(!getOpenMindmapInfoMap().containsKey(mapId) && mapId.startsWith("test_")) {
 			//check if testmap exists
 			if(mapId.equals("test_1") || mapId.equals("test_2") || 
-			   mapId.equals("test_3") || mapId.equals("test_5")) {
+					mapId.equals("test_3") || mapId.equals("test_5")) {
 				Utils.openTestMap(mapId);
 			} else {
 				throw new MapNotFoundException("Map not found!\n"+
-					"Available test map ids: 'test_1','test_2','test_3','test_5'");
+						"Available test map ids: 'test_1','test_2','test_3','test_5'");
 			}
 		}
 	}
@@ -544,7 +577,7 @@ public class Actions {
 	private static Map<String, OpenMindmapInfo> getOpenMindmapInfoMap() {
 		return RemoteController.getMapIdInfoMap();
 	}
-	
+
 	static OpenMindmapInfo getOpenMindMapInfo(String mapId) {
 		if(!getOpenMindmapInfoMap().containsKey(mapId)) {
 			return null;
@@ -564,7 +597,7 @@ public class Actions {
 
 		return result;
 	}
-	
+
 	private static Logger logger() {
 		return RemoteController.getLogger();
 	}
