@@ -35,9 +35,9 @@ public class MainActor extends UntypedActor {
 	@Override
 	public void onReceive(Object message) throws Exception {
 		final Logger logger  = RemoteController.getLogger();  
-		logger.info("'{}' received.",message.getClass().getName());
+		logger.info("MainActor.onReceive => '{}' received.",message.getClass().getName());
 		final ActorRef sender = getSender();
-		logger.info("Sender: '{}'",sender.path());
+		logger.info("MainActor.onReceive => Sender: '{}'",sender.path());
 		
 		Object response = null;
 		try {
@@ -117,31 +117,31 @@ public class MainActor extends UntypedActor {
 			}
 		}
 		catch(MapNotFoundException e) {
-			logger.warn("Map not found exception catched.",e);
+			logger.warn("MainActor.onReceive => Map not found exception catched. ",e);
 			response = new Status.Failure(e);
 		}
 		catch(NodeNotFoundException e) {
-			logger.warn("Node not found exception catched.",e);
+			logger.warn("MainActor.onReceive => Node not found exception catched. ",e);
 			response = new Status.Failure(e);
 		}
 		catch(NodeAlreadyLockedException e) {
-			logger.warn("Node already locked exception catched.",e);
+			logger.warn("MainActor.onReceive => Node already locked exception catched. ",e);
 			response = new Status.Failure(e);
 		}
 		catch(LockNotFoundException e) {
-			logger.warn("Lock not found exception catched.",e);
+			logger.warn("MainActor.onReceive => Lock not found exception catched. ",e);
 			response = new Status.Failure(e);
 		}
 		catch(Exception e) {
-			logger.error("Unrecognized Exception!",e);
+			logger.error("MainActor.onReceive => Unrecognized Exception! ",e);
 			response = new Status.Failure(e);
 		}
 		
 		if(response != null) {
-			logger.info("sending '{}' as response.",response.getClass().getName());
+			logger.info("MainActor.onReceive => sending '{}' as response.",response.getClass().getName());
 			sender.tell(response, getSelf());
 		} else {
-			logger.info("No response available");
+			logger.info("MainActor.onReceive => No response available");
 		}
 	}
 

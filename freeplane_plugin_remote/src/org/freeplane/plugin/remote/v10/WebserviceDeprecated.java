@@ -4,11 +4,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 
 import org.docear.messages.exceptions.MapNotFoundException;
-import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.MapWriter;
-import org.freeplane.features.map.NodeChangeEvent;
-import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.mode.ModeController;
+import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.MapModel;
 
 //@Path("/v1")
@@ -28,7 +26,7 @@ public class WebserviceDeprecated {
 			//@QueryParam("nodeCount") @DefaultValue("-1") 
 			int nodeCount) throws MapNotFoundException {
 		boolean loadAllNodes = nodeCount == -1;
-		ModeController modeController = Actions.getModeController();
+		ModeController modeController = RemoteController.getModeController();
 
 
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
@@ -52,7 +50,7 @@ public class WebserviceDeprecated {
 //	@Path("map.xml")
 //	@Produces(MediaType.APPLICATION_ATOM_XML)
 	public String getOpenMapAsXml() throws MapNotFoundException, IOException {
-		ModeController modeController = Actions.getModeController();
+		ModeController modeController = RemoteController.getModeController();
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 
 		StringWriter writer = new StringWriter();
@@ -147,36 +145,36 @@ public class WebserviceDeprecated {
 //	@GET
 //	@Path("sampleNode")
 //	@Produces({ MediaType.APPLICATION_JSON })
-	public Boolean sampleNode() {
-		ModeController modeController = Actions.getModeController();
-
-
-
-		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
-		NodeModel root = modeController.getMapController().getRootNode();
-		modeController.getMapController().select(modeController.getMapController().getRootNode());
-		NodeModel node = modeController.getMapController().newNode("Sample Text", mm);
-		modeController.getMapController().insertNodeIntoWithoutUndo(node, root);
-		modeController.getMapController().fireMapChanged(new MapChangeEvent(this, node, null, node));
-		//					AFreeplaneAction action = modeController.getAction("NewChildAction");
-		//					action.actionPerformed(null);
-
-		node.setUserObject("3 Seconds to deletion");
-		node.fireNodeChanged(new NodeChangeEvent(node, "userObject", "blub", "bla"));
-		modeController.getMapController().fireMapChanged(new MapChangeEvent(this, node, null, node));
-		try {Thread.sleep(1000);} catch(Throwable t) {}
-
-		node.setUserObject("2 Seconds to deletion");
-		node.fireNodeChanged(new NodeChangeEvent(node, "userObject", "blub", "bla"));
-		try {Thread.sleep(1000);} catch(Throwable t) {}
-		node.setUserObject("1 Seconds to deletion");
-		node.fireNodeChanged(new NodeChangeEvent(node, "userObject", "blub", "bla"));
-		try {Thread.sleep(1000);} catch(Throwable t) {}
-
-		node.removeFromParent();
-		modeController.getMapController().fireMapChanged(new MapChangeEvent(this, node, null, node));
-		try {Thread.sleep(3000);} catch(Throwable t) {}		
-		return Boolean.TRUE;
-	}
+//	public Boolean sampleNode() {
+//		ModeController modeController = RemoteController.getModeController();
+//
+//
+//
+//		org.freeplane.features.map.MapModel mm = Actions.getOpenMap();
+//		NodeModel root = modeController.getMapController().getRootNode();
+//		modeController.getMapController().select(modeController.getMapController().getRootNode());
+//		NodeModel node = modeController.getMapController().newNode("Sample Text", mm);
+//		modeController.getMapController().insertNodeIntoWithoutUndo(node, root);
+//		modeController.getMapController().fireMapChanged(new MapChangeEvent(this, node, null, node));
+//		//					AFreeplaneAction action = modeController.getAction("NewChildAction");
+//		//					action.actionPerformed(null);
+//
+//		node.setUserObject("3 Seconds to deletion");
+//		node.fireNodeChanged(new NodeChangeEvent(node, "userObject", "blub", "bla"));
+//		modeController.getMapController().fireMapChanged(new MapChangeEvent(this, node, null, node));
+//		try {Thread.sleep(1000);} catch(Throwable t) {}
+//
+//		node.setUserObject("2 Seconds to deletion");
+//		node.fireNodeChanged(new NodeChangeEvent(node, "userObject", "blub", "bla"));
+//		try {Thread.sleep(1000);} catch(Throwable t) {}
+//		node.setUserObject("1 Seconds to deletion");
+//		node.fireNodeChanged(new NodeChangeEvent(node, "userObject", "blub", "bla"));
+//		try {Thread.sleep(1000);} catch(Throwable t) {}
+//
+//		node.removeFromParent();
+//		modeController.getMapController().fireMapChanged(new MapChangeEvent(this, node, null, node));
+//		try {Thread.sleep(3000);} catch(Throwable t) {}		
+//		return Boolean.TRUE;
+//	}
 	
 }

@@ -78,7 +78,7 @@ public class RemoteController {
 							@Override
 							public void run() {
 								logger.info("Scheduling closing of unused maps.");
-								mainActor.tell(new CloseUnusedMaps(1), null);
+								mainActor.tell(new CloseUnusedMaps(600000), null); // ten minutes
 							}
 						}, system.dispatcher());
 

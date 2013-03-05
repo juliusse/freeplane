@@ -37,67 +37,65 @@ public final class Utils {
 	}
 
 	public static String getMapIdFromFile(File mindmapFile) throws CannotRetrieveMapIdException {
-		logger().debug("getMapIdFromFile => retrieving mapId from '{}'",mindmapFile.getAbsolutePath());
+		logger().debug("Utils.getMapIdFromFile => retrieving mapId from '{}'",mindmapFile.getAbsolutePath());
 		try {
-			logger().debug("getMapIdFromFile => parsing document as XML");
+			logger().debug("Utils.getMapIdFromFile => parsing document as XML");
 			DocumentBuilderFactory dbFactory =  DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(mindmapFile);
 
 			doc.getDocumentElement().normalize();
-			logger().debug("getMapIdFromFile => sending value of attribute 'dcr_id'");
+			logger().debug("Utils.getMapIdFromFile => sending value of attribute 'dcr_id'");
 			return doc.getDocumentElement().getAttribute("dcr_id");
 
 		} catch(Exception e) {
-			logger().error("getMapIdFromFile => exception catched, CannotRetrieveMapIdException thrown");
+			logger().error("Utils.getMapIdFromFile => exception catched, CannotRetrieveMapIdException thrown");
 			throw new CannotRetrieveMapIdException("Cannot retrieve map id from file",e);
 		}
 	}
 
 	public static void selectMap(final String mapId) throws MapNotFoundException {
-		logger().debug("selectMap => mapId:'{}'",mapId);
+		logger().debug("Utils.selectMap => mapId:'{}'",mapId);
 		
 		if(!RemoteController.getMapIdInfoMap().containsKey(mapId)) {
-			logger().error("selectMap => map not found");
+			logger().error("Utils.selectMap => map not found");
 			throw new MapNotFoundException("Map with id "+ mapId+ " is not present.");
 		}
 		
-		logger().debug("selectMap => Changing map to '{}'",mapId);
+		logger().debug("Utils.selectMap => Changing map to '{}'",mapId);
 		URL pathURL = RemoteController.getMapIdInfoMap().get(mapId).getMapUrl();
 
 		try{
 			final MapIO mio = RemoteController.getMapIO();
 			mio.newMap(pathURL);
-			logger().debug("selectMap => Map succesfully selected");
+			logger().debug("Utils.selectMap => Map succesfully selected");
 		} catch (Exception e) {
-			logger().error("selectMap => Error while selecting map with id '{}'",mapId);
+			logger().error("Utils.selectMap => Error while selecting map with id '{}'",mapId);
 			throw new MapNotFoundException("Could not open Map with id "+ mapId,e);
 		}
 	}
 
 	public static void closeMap(final String mapId) throws MapNotFoundException {
-		logger().debug("closeMap => mapId:'{}'",mapId);
-		
-		
+		logger().debug("Utils.closeMap => mapId:'{}'",mapId);
 		
 		//select map
-		logger().debug("closeMap => selecting map");
+		logger().debug("Utils.closeMap => selecting map");
 		selectMap(mapId);
 		
 		//close and remove map
-		logger().debug("closeMap => closing map");
+		logger().debug("Utils.closeMap => closing map");
 		RemoteController.getModeController().getController().close(true);
 		
 		//remove file from filesystem
 		try {
 			final OpenMindmapInfo mmInfos = RemoteController.getMapIdInfoMap().get(mapId);
-			logger().debug("closeMap => removing temporary file '{}' from file system",mmInfos.getMapUrl());
+			logger().debug("Utils.closeMap => removing temporary file '{}' from file system",mmInfos.getMapUrl());
 			new File(mmInfos.getMapUrl().toURI()).delete();
 		} catch (Exception e) {
-			logger().error("closeMap => could not delete map file.",e);
+			logger().error("Utils.closeMap => could not delete map file.",e);
 		}
 		
-		logger().debug("closeMap => removing map info from MapIdInfoMap");
+		logger().debug("Utils.closeMap => removing map info from MapIdInfoMap");
 		RemoteController.getMapIdInfoMap().remove(mapId);
 	}
 	
