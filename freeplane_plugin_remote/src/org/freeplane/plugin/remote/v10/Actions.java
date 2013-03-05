@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.logging.Level;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
@@ -24,6 +23,7 @@ import org.docear.messages.Messages.AddNodeResponse;
 import org.docear.messages.Messages.ChangeNodeRequest;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
+import org.docear.messages.Messages.CloseServerRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
 import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetExpiredLocksResponse;
@@ -56,6 +56,7 @@ import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.remote.v10.model.LockModel;
 import org.freeplane.plugin.remote.v10.model.MapModel;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
+import org.slf4j.Logger;
 
 public class Actions {
 
@@ -73,24 +74,32 @@ public class Actions {
 		final String mapId = request.getId();
 
 		final boolean loadAllNodes = nodeCount == -1;
+		
+		logger().debug("getMapModelJson => mapId:'{}'; nodeCount:{}; loadAllNodes:{}",mapId,nodeCount,loadAllNodes);
 		final ModeController modeController = getModeController();
 				
+		logger().debug("getMapModelJson => selecting map");
 		selectMap(mapId);
 
+		logger().debug("getMapModelJson => retrieving freeplane map");
 		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
+			logger().error("getMapModelJson => Current mode not MapMode!");
 			throw new AssertionError("Current mode not MapMode");
 		}
 
 		//create the MapModel for JSON
+		logger().debug("getMapModelJson => creating mapmodel for JSON-convertion");
 		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
 
 		if(!loadAllNodes) {
 			Utils.loadNodesIntoModel(mm.root, nodeCount);
 		}
 
+		logger().debug("getMapModelJson => creating JSON string");
 		String result = buildJSON(mm);
 		//LogUtils.getLogger().log(Level.FINE, "getMapModel called for mapId '"+request.getId()+"' with nodeCount: "+request.getNodeCount());
+		logger().debug("getMapModelJson => returning JSON string");
 		return new MindmapAsJsonReponse(result);
 	}
 
@@ -104,22 +113,27 @@ public class Actions {
 	 * @throws MapNotFoundException 
 	 * @throws IOException 
 	 */
-	public static MindmapAsXmlResponse getMapModelXml( MindmapAsXmlRequest request) throws MapNotFoundException, IOException {
+	public static MindmapAsXmlResponse getMapModelXml(final MindmapAsXmlRequest request) throws MapNotFoundException, IOException {
 		final String mapId = request.getMapId();
+		logger().debug("getMapModelXml => mapId:'{}'",mapId);
 		
+		logger().debug("getMapModelXml => selecting map");
 		selectMap(mapId);
 
 		final ModeController modeController = getModeController();
 		final org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
 		if(freeplaneMap == null) { //when not mapMode
+			logger().error("getMapModelXml => current mode not MapMode!");
 			throw new AssertionError("Current mode not MapMode");
 		}
 
-		final StringWriter writer = new StringWriter();
 		
+		logger().debug("getMapModelXml => serialising map to XML");
+		final StringWriter writer = new StringWriter();
 		modeController.getMapController()
 			.getMapWriter().writeMapAsXml(freeplaneMap, writer, MapWriter.Mode.EXPORT, true, true);
 
+		logger().debug("getMapModelXml => returning map as XML string");
 		return new MindmapAsXmlResponse(writer.toString());
 	}
 	
@@ -128,39 +142,47 @@ public class Actions {
 	 * @param id
 	 * @return
 	 */
-	public static void closeMap(CloseMapRequest request) throws MapNotFoundException{
+	public static void closeMap(final CloseMapRequest request) throws MapNotFoundException{
+		logger().debug("closeMap => mapId:'{}'",request.getMapId());
 		Utils.closeMap(request.getMapId());
 	}
 
 	public static void openMindmap(OpenMindMapRequest request) {
 		
+		logger().debug("openMindmap => mindmapFileContent:'{}...'",request.getMindmapFileContent().substring(0, 20));
 		try {
 			//create file
 			final Random ran = new Random();
 			final String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
 			final String tempDirPath = System.getProperty("java.io.tmpdir");
 			final File file = new File(tempDirPath+"/docear/"+filename+".mm");
-			//file.deleteOnExit();
-
+			logger().debug("openMindmap => temporary file '{}' was created",file.getAbsolutePath());
+			
+			logger().debug("openMindmap => writing mindmap content to file");
 			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
 			
 			//put map in openMap Collection
 			final String mapId = Utils.getMapIdFromFile(file);
 			final URL pathURL = file.toURI().toURL();
-			getOpenMindmapInfoMap().put(mapId, new OpenMindmapInfo(pathURL));
-
-			LogUtils.info("Map with id "+mapId+" was temporarly saved at " +file.getPath());
+			final OpenMindmapInfo ommi = new OpenMindmapInfo(pathURL);
+			getOpenMindmapInfoMap().put(mapId, ommi);
+			logger().debug("openMindmap => mindmap was put into openMindmapInfoMap ({} => {})",mapId,ommi.getMapUrl());
 			
 			//open map
+			logger().debug("openMindmap => opening mindmap...");
 			final MMapIO mio = (MMapIO)RemoteController.getMapIO();
 			mio.newMap(pathURL);
+			logger().debug("openMindmap => map successfully loaded and opened!");
 		} catch (Exception e) {
 			throw new AssertionError(e);
 		}
 	}
 
 	
-	public static void closeServer() {
+	public static void closeServer(CloseServerRequest request) {
+		logger().debug("closeServer => no parameters");
+		
+		logger().debug("closeServer => closing open maps");
 		Set<String> ids = getOpenMindmapInfoMap().keySet(); 
 		for(String mapId : ids) {
 			try {
@@ -169,17 +191,19 @@ public class Actions {
 
 			}
 		}
-
+		logger().debug("closeServer => Starting Thread to shutdown App in 2 seconds");
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
 					Thread.sleep(2000);
+					
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				System.exit(0);
+				logger().debug("closeServer => shutting down");
+				System.exit(15);
 
 			}
 		}).start();
@@ -539,6 +563,10 @@ public class Actions {
 		}		
 
 		return result;
+	}
+	
+	private static Logger logger() {
+		return RemoteController.getLogger();
 	}
 
 }

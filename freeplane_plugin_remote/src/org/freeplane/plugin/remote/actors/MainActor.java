@@ -19,8 +19,9 @@ import org.docear.messages.exceptions.LockNotFoundException;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
-import org.freeplane.core.util.LogUtils;
+import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.Actions;
+import org.slf4j.Logger;
 
 import akka.actor.ActorRef;
 import akka.actor.Status;
@@ -31,14 +32,12 @@ public class MainActor extends UntypedActor {
 	public MainActor() {
 	}
 
-	public MainActor(ActorRef listener) {
-	}
-
 	@Override
 	public void onReceive(Object message) throws Exception {
-		LogUtils.info(message.getClass().getName()+" received.");
-		
+		final Logger logger  = RemoteController.getLogger();  
+		logger.info("'{}' received.",message.getClass().getName());
 		final ActorRef sender = getSender();
+		logger.info("Sender: '{}'",sender.path());
 		
 		Object response = null;
 		try {
@@ -89,7 +88,7 @@ public class MainActor extends UntypedActor {
 			
 			//close server
 			else if(message instanceof CloseServerRequest) {
-				Actions.closeServer();
+				Actions.closeServer((CloseServerRequest)message);
 			}
 			
 			//refresh lock
@@ -118,28 +117,32 @@ public class MainActor extends UntypedActor {
 			}
 		}
 		catch(MapNotFoundException e) {
-			LogUtils.warn("Map not found exception catched.",e);
+			logger.warn("Map not found exception catched.",e);
 			response = new Status.Failure(e);
 		}
 		catch(NodeNotFoundException e) {
-			LogUtils.warn("Node not found exception catched.",e);
+			logger.warn("Node not found exception catched.",e);
 			response = new Status.Failure(e);
 		}
 		catch(NodeAlreadyLockedException e) {
-			LogUtils.warn("Node already locked exception catched.",e);
+			logger.warn("Node already locked exception catched.",e);
 			response = new Status.Failure(e);
 		}
 		catch(LockNotFoundException e) {
-			LogUtils.warn("Lock not found exception catched.",e);
+			logger.warn("Lock not found exception catched.",e);
 			response = new Status.Failure(e);
 		}
 		catch(Exception e) {
-			LogUtils.severe("Unrecognized Exception:",e);
+			logger.error("Unrecognized Exception!",e);
 			response = new Status.Failure(e);
 		}
 		
-		if(response != null)
+		if(response != null) {
+			logger.info("sending '{}' as response.",response.getClass().getName());
 			sender.tell(response, getSelf());
+		} else {
+			logger.info("No response available");
+		}
 	}
 
 }

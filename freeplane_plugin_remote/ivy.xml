@@ -1,7 +1,7 @@
 <ivy-module version="2.0">
 	<info organisation="org.freeplane" module="webservice" />
 	<dependencies>
-		<dependency org="com.sun.jersey" name="jersey-bundle" rev="1.16">
+		<!-- <dependency org="com.sun.jersey" name="jersey-bundle" rev="1.16">
 			<exclude module="org.eclipse.persistence.moxy" />
 			<exclude module="jettison" />
 		</dependency>
@@ -9,7 +9,7 @@
 			rev="1.16">
 			<exclude module="org.eclipse.persistence.moxy" />
 			<exclude module="jettison" />
-		</dependency>
+		</dependency>  -->
 		<dependency org="com.typesafe.akka" name="akka-actor_2.10"
 			rev="2.1.0">
 			<exclude module="org.eclipse.persistence.moxy" />
@@ -27,7 +27,9 @@
 		</dependency>
 		
 		<dependency org="org.apache.commons" name="commons-io" rev="1.3.2"/>
-		
+		<dependency org="ch.qos.logback" name="logback-classic" rev="1.0.9"/>
+		<dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.9.12"/>
+            
 
 		<!-- <dependency org="org.ops4j.pax.exam" name="pax-exam-container-native" rev="2.6.0"> 
 			<exclude module="org.eclipse.persistence.moxy" />

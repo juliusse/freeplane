@@ -23,6 +23,7 @@ freeplane_plugin_remote/META-INF/MANIFEST.MF
 freeplane_plugin_remote/lib/
 freeplane_framework/temp
 freeplane_plugin_remote/.classpath
+freeplane_plugin_remote/resources/logback_test.xml
 freeplane_plugin_remote/.project
 freeplane_plugin_remote/.settings/
 freeplane_plugin_remote/META-INF/MANIFEST.MF.bak

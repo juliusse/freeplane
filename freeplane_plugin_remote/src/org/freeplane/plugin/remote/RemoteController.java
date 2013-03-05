@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.docear.messages.Messages.CloseUnusedMaps;
 import org.docear.messages.exceptions.MapNotFoundException;
-import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
@@ -17,6 +16,8 @@ import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.plugin.remote.actors.MainActor;
 import org.freeplane.plugin.remote.v10.Utils;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
@@ -31,6 +32,8 @@ import com.typesafe.config.ConfigFactory;
 
 public class RemoteController {
 
+	private final Logger logger;
+	
 	private final ActorSystem system;
 	private final ActorRef mainActor;
 	private final Cancellable closeUnusedMapsJob;
@@ -44,22 +47,28 @@ public class RemoteController {
 	}
 
 	private RemoteController() {
-		LogUtils.info("starting Remote Plugin...");
+		
 
 		//		int port = 8080;
 		//		try {
 		//			port = Integer.parseInt(System.getenv("webservice_port"));
 		//		} catch (Exception e) {}
 
-		this.registerListeners();
+		
 		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
+		//create logger
+		logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+		
+		logger.info("starting Remote Plugin...");
+		
+		
 		
 		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
 		mainActor = system.actorOf(new Props(MainActor.class), "main");
-		LogUtils.info("Main Actor running at path=" + mainActor.path());
+		logger.info("Main Actor running at path='{}'", mainActor.path());
 
 		closeUnusedMapsJob = 
 				system.scheduler().schedule(
@@ -68,10 +77,13 @@ public class RemoteController {
 						new Runnable() {
 							@Override
 							public void run() {
+								logger.info("Scheduling closing of unused maps.");
 								mainActor.tell(new CloseUnusedMaps(1), null);
 							}
 						}, system.dispatcher());
 
+		
+		this.registerListeners();
 		//set back to original class loader
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
@@ -95,20 +107,21 @@ public class RemoteController {
 	}
 
 	public static void stop() {
+		getLogger().info("Shutting down remote plugin...");
 		RemoteController controller = getInstance();
 		controller.closeUnusedMapsJob.cancel();
 		controller.mainActor.tell(PoisonPill.getInstance(), null);
 		controller.system.shutdown();
-		controller.closeMapsAndDetroyFiles();
+		controller.closeMapsAndDestroyFiles();
 	}
 	
-	private void closeMapsAndDetroyFiles() {
+	private void closeMapsAndDestroyFiles() {
 		Set<String> idSet = new HashSet<String>(this.mapIdInfoMap.keySet());
 		for(String id: idSet) {
 			try {
 				Utils.closeMap(id);
 			} catch (MapNotFoundException e) {
-				LogUtils.warn("could not find map.");
+				logger.warn("could not find map with id '{}'",id);
 			}
 		}
 	}
@@ -124,5 +137,9 @@ public class RemoteController {
 
 	public static Map<String, OpenMindmapInfo> getMapIdInfoMap() {
 		return getInstance().mapIdInfoMap;
+	}
+	
+	public static Logger getLogger() {
+		return getInstance().logger;
 	}
 }
