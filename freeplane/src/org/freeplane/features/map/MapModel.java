@@ -117,7 +117,11 @@ public class MapModel {
 			 * The prefix is to enable the id to be an ID in the sense of
 			 * XML/DTD.
 			 */
-			returnValue = prefix + Integer.toString(ran.nextInt(UNDEFINED_NODE_ID));
+			int randNumber = ran.nextInt(UNDEFINED_NODE_ID);
+			if (randNumber < 0) {
+				randNumber *= -1;
+			}
+			returnValue = prefix + Integer.toString(randNumber);
 		} while (nodes.containsKey(returnValue));
 		return returnValue;
 	}
