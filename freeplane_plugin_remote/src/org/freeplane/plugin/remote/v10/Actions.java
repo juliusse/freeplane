@@ -58,6 +58,8 @@ import org.freeplane.plugin.remote.v10.model.MapModel;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.slf4j.Logger;
 
+import scala.collection.mutable.HashMap;
+
 public class Actions {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -477,7 +479,7 @@ public class Actions {
 
 	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) throws MapNotFoundException {
 		logger().debug("Actions.closeAllOpenMaps => no parameters");
-		Set<String> ids = getOpenMindmapInfoMap().keySet(); 
+		Set<String> ids = new HashSet<String>(getOpenMindmapInfoMap().keySet()); 
 		for(String mapId : ids) {
 			logger().debug("Actions.closeAllOpenMaps => closing map with id '{}'",mapId);
 			Utils.closeMap(mapId);
@@ -489,15 +491,15 @@ public class Actions {
 		logger().debug("Actions.closeUnusedMaps => max ms since last access:'{}'",allowedMsSinceLastAccess);
 
 		final long now = System.currentTimeMillis();
-		for(Map.Entry<String, OpenMindmapInfo> entry : getOpenMindmapInfoMap().entrySet()) {
-			final long lastAccessTime = entry.getValue().getLastAccessTime();
+		for(final String mapId : new HashSet<String>(getOpenMindmapInfoMap().keySet())) {
+			final OpenMindmapInfo omi = getOpenMindMapInfo(mapId);
+			final long lastAccessTime = omi.getLastAccessTime();
 			final long sinceLastAccess = now - lastAccessTime;
 			final long sinceLastAccessInMinutes = sinceLastAccess / 60000;
-			logger().debug("Actions.closeUnusedMaps => mapId:'{}'; lastAccess:{}; sinceLastAccess:{}",entry.getKey(),lastAccessTime,sinceLastAccess);
+			logger().debug("Actions.closeUnusedMaps => mapId:'{}'; lastAccess:{}; sinceLastAccess:{}",mapId,lastAccessTime,sinceLastAccess);
 
 			if(sinceLastAccess > allowedMsSinceLastAccess) {
 				//TODO tell ZooKeeper and save to hadoop
-				final String mapId = entry.getKey();
 				closeMap(new CloseMapRequest(mapId));
 				logger().info("Actions.closeUnusedMaps => map was closed, because it havent been used for about {} minutes.",sinceLastAccessInMinutes);
 			}

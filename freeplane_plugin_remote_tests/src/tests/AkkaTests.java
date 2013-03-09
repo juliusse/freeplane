@@ -82,8 +82,8 @@ public class AkkaTests {
 		while(remoteActor == null && System.currentTimeMillis() < endTime) {
 			try {
 				final String ip = InetAddress.getLocalHost().getHostAddress();
-				remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
-				//remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
+				//remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
+				remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 				
 				Future<Object> future = Patterns.ask(remoteActor, new MindmapAsJsonRequest("NOT_EXISTING"), 2000);
 				Await.result(future, Duration.create("2 second"));
@@ -457,6 +457,7 @@ public class AkkaTests {
 						} catch (Exception e) {
 							Fail.fail("error parsing DefaultNodeModel");
 						}
+						System.out.println(nodeAsJSON);
 						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
 
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
@@ -588,6 +589,10 @@ public class AkkaTests {
 					@Override
 					public void run() {
 						sendMindMapToServer(5);
+						sendMindMapToServer(1);
+						sendMindMapToServer(2);
+						sendMindMapToServer(3);
+						
 
 						//close maps that haven't been used for 1 ms
 						remoteActor.tell(new CloseUnusedMaps(1), localActor);
