@@ -4,7 +4,6 @@ import static org.fest.assertions.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -85,8 +84,6 @@ public class AkkaTests {
 				final String ip = InetAddress.getLocalHost().getHostAddress();
 				remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
 				//remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
-				//docear2
-				//remoteActor = system.actorFor("akka://freeplaneRemote@141.45.146.224:2553/user/main");
 				
 				Future<Object> future = Patterns.ask(remoteActor, new MindmapAsJsonRequest("NOT_EXISTING"), 2000);
 				Await.result(future, Duration.create("2 second"));
@@ -143,12 +140,13 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					@Override
 					protected void run() {
-						
-						remoteActor.tell(new MindmapAsJsonRequest("test_5"), getRef());
+						sendMindMapToServer(5);
+						remoteActor.tell(new MindmapAsJsonRequest("5"), getRef());
 
 						MindmapAsJsonReponse response = expectMsgClass(MindmapAsJsonReponse.class);
 						System.out.println(response.getJsonString());
 						assertThat(response.getJsonString()).contains("\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
+						closeMindMapOnServer(5);
 					}
 				};
 			}
@@ -517,7 +515,8 @@ public class AkkaTests {
 						
 						Failure response = expectMsgClass(Failure.class);
 					
-						assertThat(response.cause() instanceof NodeNotFoundException).isTrue();
+						assertThat(response.cause()).isInstanceOf(NodeNotFoundException.class);
+						
 					}
 				};
 			}

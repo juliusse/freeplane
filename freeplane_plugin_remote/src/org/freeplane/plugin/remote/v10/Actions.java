@@ -66,7 +66,7 @@ public class Actions {
 	 * returns a map as a JSON-Object
 	 * @param id ID of map
 	 * @param nodeCount soft limit of node count. When limit is reached, it only loads the outstanding child nodes of the current node.
-	 * @return a map model
+	 * @return a map model 
 	 */
 	public static MindmapAsJsonReponse getMapModelJson(MindmapAsJsonRequest request) throws MapNotFoundException {
 
@@ -97,13 +97,11 @@ public class Actions {
 		}
 
 		logger().debug("Actions.getMapModelJson => creating JSON string");
-		String result = buildJSON(mm);
-		//LogUtils.getLogger().log(Level.FINE, "getMapModel called for mapId '"+request.getId()+"' with nodeCount: "+request.getNodeCount());
+		String result = mm.toJsonString();
+		
 		logger().debug("Actions.getMapModelJson => returning JSON string");
 		return new MindmapAsJsonReponse(result);
 	}
-
-
 
 	/** 
 	 * returns a map as a JSON-Object

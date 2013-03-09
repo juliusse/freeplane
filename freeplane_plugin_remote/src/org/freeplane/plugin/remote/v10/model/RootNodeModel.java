@@ -81,5 +81,21 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 		return list;
 	}
 
-	
+	public String toJsonString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("{"+getJsonStringParts()+",\"leftChildren\":[");
+		for(int i = 0; i < leftChildren.size(); i ++) {
+			builder.append(leftChildren.get(i).toJsonString());
+			if(i < leftChildren.size()-1)
+				builder.append(",");
+		}
+		builder.append("],\"rightChildren\":[");
+		for(int i = 0; i < rightChildren.size(); i ++) {
+			builder.append(rightChildren.get(i).toJsonString());
+			if(i < rightChildren.size()-1)
+				builder.append(",");
+		}
+		builder.append("]}");
+		return builder.toString();
+	}
 }

@@ -11,6 +11,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.io.JsonStringEncoder;
 import org.freeplane.features.attribute.Attribute;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.MapController;
@@ -69,7 +70,7 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	public int loadChildren(boolean autoloadChildren) {
 		children = new ArrayList<DefaultNodeModel>();
 		
-		MapController mapController = RemoteController.getInstance().getModeController().getMapController();
+		MapController mapController = RemoteController.getModeController().getMapController();
 		
 		int totalCount = childrenIds.size();
 		for(String nodeId : childrenIds) {
@@ -91,6 +92,30 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	@Override
 	public List<DefaultNodeModel> getAllChildren() {
 		return children;
+	}
+	
+	public String toJsonString() {
+		String childrenList = "";
+		if(children != null && children.size() > 0) {
+			for(DefaultNodeModel node : children) {
+				childrenList += ","+node.toJsonString();
+			}
+			childrenList = childrenList.substring(1);
+		}
+		
+		
+		StringBuilder builder = new StringBuilder();
+		builder.append("{"+getJsonStringParts()+",");
+		if(children != null) {
+			builder.append("\"children\":["+childrenList+"],");
+		}
+		builder.append("\"attributes\":\"NOT IMPLEMENTED\",");
+		builder.append("\"hGap\":\""+hGap+"\",");
+		builder.append("\"shiftY\":\""+shiftY+"\"");
+		builder.append("}");
+		
+		//return "{}"
+		return builder.toString();
 	}
 
 }

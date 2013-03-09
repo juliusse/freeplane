@@ -8,6 +8,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.freeplane.features.map.NodeModel;
 
+import com.sun.accessibility.internal.resources.accessibility;
+
 @XmlRootElement(name = "mapModel")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class MapModel implements Serializable {
@@ -26,5 +28,8 @@ public class MapModel implements Serializable {
 		root = new RootNodeModel(rootNodeFreeplane, autoloadChildren);
 	}
 	
+	public String toJsonString() {
+		return "{\"id\":\""+id+"\",\"isReadonly\":\""+isReadonly+"\",\"root\":"+root.toJsonString()+"}";
+	}
 	
 }

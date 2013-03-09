@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
+import org.codehaus.jackson.io.JsonStringEncoder;
 import org.freeplane.features.icon.MindIcon;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.NodeModel;
@@ -57,7 +58,7 @@ abstract public class NodeModelBase implements Serializable {
 
 		URI uri = NodeLinks.getValidLink(freeplaneNode);
 		this.link = uri != null ? uri.toString() : null;
-		
+
 		LockModel lm = freeplaneNode.getExtension(LockModel.class);
 		this.locked = lm != null ? lm.getUsername() : null;
 
@@ -101,4 +102,24 @@ abstract public class NodeModelBase implements Serializable {
 	public abstract int loadChildren(boolean autoloadChildren);
 
 	public abstract List<DefaultNodeModel> getAllChildren();
+
+	protected String getJsonStringParts() {
+		String childrenList = "";
+		if(childrenIds != null) {
+			for(String cId : childrenIds) {
+				childrenList += ",\""+cId+"\"";
+			}
+			childrenList = childrenList.substring(1);
+		}
+
+		return  "\"id\":\""+id+"\"," +
+		"\"nodeText\":\""+new String(JsonStringEncoder.getInstance().quoteAsString(nodeText))+"\"," +
+		"\"isHtml\":\""+isHtml.toString()+"\"," +
+		"\"link\":\""+(link != null ? new String(JsonStringEncoder.getInstance().quoteAsString(link)) : "")+"\"," +
+		"\"folded\":\""+folded+"\"," +
+		"\"locked\":\""+(locked != null ? new String(JsonStringEncoder.getInstance().quoteAsString(locked)) : "")+"\"," +
+		(childrenIds != null && childrenIds.size() > 0 ? "\"childrenIds\":["+childrenList+"]," : "") +
+		"\"image\":\""+"NOT IMPLEMENTED"+"\"," +
+		"\"icons\":\""+"NOT IMPLEMENTED"+"\"";
+	}
 }
