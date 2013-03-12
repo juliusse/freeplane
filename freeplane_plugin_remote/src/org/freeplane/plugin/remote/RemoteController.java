@@ -16,6 +16,7 @@ import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.plugin.remote.actors.MainActor;
 import org.freeplane.plugin.remote.v10.Utils;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
+import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +29,6 @@ import akka.actor.Props;
 
 import com.typesafe.config.ConfigFactory;
 
-
-
 public class RemoteController {
 
 	private final Logger logger;
@@ -40,13 +39,13 @@ public class RemoteController {
 	private final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
 	
 	private static RemoteController instance;
-	public static RemoteController getInstance() {
+	public static RemoteController getInstance() throws ChannelException{
 		if(instance == null)
 			instance = new RemoteController();
 		return instance;
 	}
 
-	private RemoteController() {		
+	private RemoteController() throws ChannelException{		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
@@ -54,16 +53,8 @@ public class RemoteController {
 		logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 		
 		logger.info("starting Remote Plugin...");
-		
-		ActorSystem preSystem = null;
-		try {
-			preSystem = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
-		} catch (org.jboss.netty.channel.ChannelException ex) {
-			logger.error(ex.getMessage());
-			System.exit(1);
-		}
-		
-		system = preSystem;
+	
+		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));;
 		mainActor = system.actorOf(new Props(MainActor.class), "main");
 		logger.info("Main Actor running at path='{}'", mainActor.path());
 
@@ -101,6 +92,10 @@ public class RemoteController {
 			public void onViewCreated(Container nodeView) {				
 			}
 		});
+	}
+	
+	public static boolean isStarted(){
+		return instance != null;
 	}
 
 	public static void stop() {

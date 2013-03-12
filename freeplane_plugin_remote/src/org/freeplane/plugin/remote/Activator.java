@@ -10,6 +10,7 @@ import java.util.Hashtable;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
+import org.jboss.netty.channel.ChannelException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -20,15 +21,25 @@ public class Activator implements BundleActivator{
 	@Override
 	public void start(BundleContext context) {
 		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
+		final Bundle systemBundle = context.getBundle(0);
 		props.put("mode", new String[] { MModeController.MODENAME });
 		context.registerService(IModeControllerExtensionProvider.class.getName(),
 		    new IModeControllerExtensionProvider() {
 			    public void installExtension(ModeController modeController) {
-			    	RemoteController.getInstance();
+			    	try {
+			    		RemoteController.getInstance();
+			    	} catch (ChannelException e){
+			    		try {
+							systemBundle.stop();
+							throw e;
+						} catch (BundleException e1) {
+							e1.printStackTrace();
+						}
+			    	}
 			    }
 		    }, props);
 		
-		final Bundle systemBundle = context.getBundle(0);
+		
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override 	
 		    public void run() {
@@ -78,7 +89,9 @@ public class Activator implements BundleActivator{
 	@Override
 	public void stop(BundleContext context) {
 		System.err.println("STOPPING REMOTE");
-		RemoteController.stop();
+		if (RemoteController.isStarted()){
+			RemoteController.stop();
+		}
 
 		try{			 
     		File file = new File("./RUNNING_PID");
