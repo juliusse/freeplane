@@ -15,12 +15,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
-import akka.actor.ActorSystem;
-import akka.osgi.ActorSystemActivator;
-
-
-
-public class Activator extends ActorSystemActivator implements BundleActivator{
+public class Activator implements BundleActivator{
 
 	@Override
 	public void start(BundleContext context) {
@@ -37,7 +32,7 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override 	
 		    public void run() {
-		    	System.err.println("Shutdown HOOK");
+		    	System.err.println("Shutdown hook for remote called.");
 		    	try {
 					systemBundle.stop();
 				} catch (BundleException e) {
@@ -74,18 +69,12 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
             }
         }
 	}
-
-	@Override
-	public void configure(BundleContext arg0, ActorSystem arg1) {
-		RemoteController.stop();
-	}
 	
 	@Override
 	public void stop(BundleContext context) {
 		System.err.println("STOPPING REMOTE");
 		RemoteController.stop();
-		super.stop(context);
-		
+
 		try{			 
     		File file = new File("RUNNING_PID");
     		if(!file.delete()){
