@@ -10,7 +10,7 @@
 
 	<appender name="FILE"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>/local_home/freeplane/logs/remote.log</file>
+                <file>/var/log/mindmap-backend/mindmap-backend.log</file>
 		<!-- <file>c:/temp/logs/remote.log</file> -->
 
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
