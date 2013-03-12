@@ -7,7 +7,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.Hashtable;
 
-import org.codehaus.groovy.tools.shell.commands.ExitCommand;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
@@ -63,8 +62,10 @@ public class Activator implements BundleActivator{
             fileWriter = new FileWriter(pidFile);
             fileWriter.write(pid.toString());
             fileWriter.close();
-        } catch (IOException | BundleException ex) {
+        } catch (IOException ex){
         	System.err.println(ex.getMessage());
+		} catch (BundleException e) {
+			e.printStackTrace();
 		} finally {
             try {
                 fileWriter.close();

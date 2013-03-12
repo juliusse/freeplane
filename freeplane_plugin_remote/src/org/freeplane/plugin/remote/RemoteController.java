@@ -55,9 +55,15 @@ public class RemoteController {
 		
 		logger.info("starting Remote Plugin...");
 		
+		ActorSystem preSystem = null;
+		try {
+			preSystem = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
+		} catch (org.jboss.netty.channel.ChannelException ex) {
+			logger.error(ex.getMessage());
+			System.exit(1);
+		}
 		
-		
-		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
+		system = preSystem;
 		mainActor = system.actorOf(new Props(MainActor.class), "main");
 		logger.info("Main Actor running at path='{}'", mainActor.path());
 
@@ -78,7 +84,7 @@ public class RemoteController {
 		//set back to original class loader
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
-	
+
 	/**
 	 * registers all listeners to react on necessary events like created nodes
 	 * Might belong into a new plugin, which sends changes to the server (And this IS the server)
