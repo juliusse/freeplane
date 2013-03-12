@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.Hashtable;
 
+import org.codehaus.groovy.tools.shell.commands.ExitCommand;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
@@ -41,12 +42,10 @@ public class Activator implements BundleActivator{
 		    }
 		});
 		
-		generatePIDFile();
-		
-		//registerMindMapModeExtension(context);
+		generatePIDFile(systemBundle);
 	}
 	
-	private void generatePIDFile(){
+	private void generatePIDFile(Bundle systemBundle){
 		RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
 		String name = rtb.getName();
 		Integer pid = Integer.parseInt(name.substring(0, name.indexOf("@")));
@@ -55,13 +54,18 @@ public class Activator implements BundleActivator{
 		
         FileWriter fileWriter = null;
         try {
-            File pidFile = new File("RUNNING_PID");
+            File pidFile = new File("./RUNNING_PID");
+            if (pidFile.exists()){
+            	System.err.println("RUNNING_PID already exists. Abort start.");
+            	systemBundle.stop();
+            	System.exit(1);
+            }
             fileWriter = new FileWriter(pidFile);
             fileWriter.write(pid.toString());
             fileWriter.close();
-        } catch (IOException ex) {
+        } catch (IOException | BundleException ex) {
         	System.err.println(ex.getMessage());
-        } finally {
+		} finally {
             try {
                 fileWriter.close();
             } catch (IOException ex) {
@@ -76,12 +80,17 @@ public class Activator implements BundleActivator{
 		RemoteController.stop();
 
 		try{			 
-    		File file = new File("RUNNING_PID");
+    		File file = new File("./RUNNING_PID");
     		if(!file.delete()){
     			System.out.println("Error while deleting RUNNING_PID");
     		}
     	}catch(Exception e){
     		e.printStackTrace();
     	}
+	}
+	
+	public void stopSilent() {
+		System.err.println("STOPPING REMOTE silent.");
+		RemoteController.stop();
 	}
 }

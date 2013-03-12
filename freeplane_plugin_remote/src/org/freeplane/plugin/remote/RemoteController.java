@@ -46,16 +46,7 @@ public class RemoteController {
 		return instance;
 	}
 
-	private RemoteController() {
-		
-
-		//		int port = 8080;
-		//		try {
-		//			port = Integer.parseInt(System.getenv("webservice_port"));
-		//		} catch (Exception e) {}
-
-		
-		
+	private RemoteController() {		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
