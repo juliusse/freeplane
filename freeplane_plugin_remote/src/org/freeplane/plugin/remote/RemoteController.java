@@ -17,7 +17,6 @@ import org.freeplane.plugin.remote.actors.MainActor;
 import org.freeplane.plugin.remote.v10.Utils;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
@@ -31,8 +30,6 @@ import com.typesafe.config.ConfigFactory;
 
 
 public class RemoteController {
-
-	private final Logger logger;
 	
 	private final ActorSystem system;
 	private final ActorRef mainActor;
@@ -55,12 +52,10 @@ public class RemoteController {
 		//		} catch (Exception e) {}
 
 		
-		
+		final Logger logger = org.freeplane.plugin.remote.Logger.getLogger();
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
-		//create logger
-		logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 		
 		logger.info("starting Remote Plugin...");
 		
@@ -121,7 +116,7 @@ public class RemoteController {
 			try {
 				Utils.closeMap(id);
 			} catch (MapNotFoundException e) {
-				logger.warn("could not find map with id '{}'",id);
+				org.freeplane.plugin.remote.Logger.getLogger().warn("could not find map with id '{}'",id);
 			}
 		}
 	}
@@ -140,6 +135,6 @@ public class RemoteController {
 	}
 	
 	public static Logger getLogger() {
-		return getInstance().logger;
+		return org.freeplane.plugin.remote.Logger.getLogger();
 	}
 }

@@ -50,7 +50,7 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 		leftChildren = new ArrayList<DefaultNodeModel>();
 		rightChildren = new ArrayList<DefaultNodeModel>();
 		
-		MapController mapController = RemoteController.getInstance().getModeController().getMapController(); 
+		MapController mapController = RemoteController.getModeController().getMapController(); 
 		int totalCount = childrenIds.size();
 		for(String nodeId : childrenIds) {
 			NodeModel child = mapController.getNodeFromID(nodeId);
