@@ -22,22 +22,22 @@ public class WebserviceDeprecated {
 //	@GET
 //	@Path("map.json")
 //	@Produces(MediaType.APPLICATION_JSON)
-	public MapModel getOpenMapAsJson( 
-			//@QueryParam("nodeCount") @DefaultValue("-1") 
-			int nodeCount) throws MapNotFoundException {
-		boolean loadAllNodes = nodeCount == -1;
-		ModeController modeController = RemoteController.getModeController();
-
-
-		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
-
-		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
-		if(!loadAllNodes) {
-			Utils.loadNodesIntoModel(mm.root, nodeCount);
-		}
-
-		return mm;
-	}
+//	public MapModel getOpenMapAsJson( 
+//			//@QueryParam("nodeCount") @DefaultValue("-1") 
+//			int nodeCount) throws MapNotFoundException {
+//		boolean loadAllNodes = nodeCount == -1;
+//		ModeController modeController = RemoteController.getModeController();
+//
+//
+//		org.freeplane.features.map.MapModel freeplaneMap = modeController.getController().getMap();
+//
+//		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
+//		if(!loadAllNodes) {
+//			Utils.loadNodesIntoModel(mm.root, nodeCount);
+//		}
+//
+//		return mm;
+//	}
 	
 	/**
 	 * returns a map as a JSON-Object

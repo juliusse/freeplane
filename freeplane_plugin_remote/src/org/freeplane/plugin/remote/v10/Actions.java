@@ -92,7 +92,8 @@ public class Actions {
 
 		//create the MapModel for JSON
 		logger().debug("Actions.getMapModelJson => creating mapmodel for JSON-convertion");
-		MapModel mm = new MapModel(freeplaneMap,loadAllNodes);
+		final String mapName = RemoteController.getMapIdInfoMap().get(mapId).getName();
+		MapModel mm = new MapModel(freeplaneMap,mapName,loadAllNodes);
 
 		if(!loadAllNodes) {
 			Utils.loadNodesIntoModel(mm.root, nodeCount);
@@ -147,9 +148,11 @@ public class Actions {
 		Utils.closeMap(request.getMapId());
 	}
 
-	public static void openMindmap(OpenMindMapRequest request) throws CannotRetrieveMapIdException {
-
-		logger().debug("Actions.openMindmap => mindmapFileContent:'{}...'",request.getMindmapFileContent().substring(0, 20));
+	public static void openMindmap(final OpenMindMapRequest request) throws CannotRetrieveMapIdException {
+		final String mapContent = request.getMindmapFileContent();
+		final String mapName = request.getMindmapFileName();
+		
+		logger().debug("Actions.openMindmap => mindmapFileContent:'{}...'",mapContent.substring(0,Math.min(mapContent.length(), 20)));
 		try {
 			//create file
 			final Random ran = new Random();
@@ -159,12 +162,12 @@ public class Actions {
 			logger().debug("Actions.openMindmap => temporary file '{}' was created",file.getAbsolutePath());
 
 			logger().debug("Actions.openMindmap => writing mindmap content to file");
-			FileUtils.writeStringToFile(file, request.getMindmapFileContent());
+			FileUtils.writeStringToFile(file, mapContent);
 
 			//put map in openMap Collection
 			final String mapId = Utils.getMapIdFromFile(file);
 			final URL pathURL = file.toURI().toURL();
-			final OpenMindmapInfo ommi = new OpenMindmapInfo(pathURL);
+			final OpenMindmapInfo ommi = new OpenMindmapInfo(pathURL,mapName);
 			getOpenMindmapInfoMap().put(mapId, ommi);
 			logger().debug("Actions.openMindmap => mindmap was put into openMindmapInfoMap ({} => {})",mapId,ommi.getMapUrl());
 

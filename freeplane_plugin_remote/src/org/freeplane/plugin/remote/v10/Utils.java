@@ -112,7 +112,7 @@ public final class Utils {
 			IOUtils.copy(in, writer);
 			String xmlMap = writer.toString();
 			
-			Actions.openMindmap(new OpenMindMapRequest(xmlMap));
+			Actions.openMindmap(new OpenMindMapRequest(xmlMap,file.getName()));
 		} catch (Exception e) {}
 	}
 	

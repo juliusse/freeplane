@@ -12,9 +12,11 @@ public class OpenMindmapInfo implements Serializable {
 	private final URL mapUrl;
 	private final Set<NodeModel> lockedNodes;
 	private long lastAccessTime;
+	private final String name;
 
-	public OpenMindmapInfo(URL mapUrl) {
+	public OpenMindmapInfo(URL mapUrl, String name) {
 		this.mapUrl = mapUrl;
+		this.name = name;
 		this.lockedNodes = new HashSet<NodeModel>();
 		updateAccessTime();
 	}
@@ -35,6 +37,10 @@ public class OpenMindmapInfo implements Serializable {
 	
 	private void updateAccessTime() {
 		lastAccessTime = System.currentTimeMillis();
+	}
+
+	public String getName() {
+		return name;
 	}
 	
 }

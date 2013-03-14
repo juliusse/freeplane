@@ -686,7 +686,7 @@ public class AkkaTests {
 		try {
 			final File f = new File(pathURL.toURI());
 			String mapContent = FileUtils.readFileToString(f);
-			final OpenMindMapRequest request = new OpenMindMapRequest(mapContent);
+			final OpenMindMapRequest request = new OpenMindMapRequest(mapContent,id+".mm");
 
 			assertThat(f).isNotNull();
 
