@@ -16,38 +16,44 @@ import org.freeplane.core.util.Compat;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
+import org.jboss.netty.channel.ChannelException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
-import akka.actor.ActorSystem;
-import akka.osgi.ActorSystemActivator;
-
-
-
-public class Activator extends ActorSystemActivator implements BundleActivator{
+public class Activator implements BundleActivator{
 
 	@Override
 	public void start(BundleContext context) {
-
+		final Bundle systemBundle = context.getBundle(0);
+		
 		saveAutoProperties();
 		registerToFreeplaneStart(context);
 
 
 		registerShutDownHook(context);
 
-		generatePIDFile();
+		generatePIDFile(systemBundle);
 
 	}
 	
-	private void registerToFreeplaneStart(BundleContext context) {
+	private void registerToFreeplaneStart(final BundleContext context) {
 		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
+		final Bundle systemBundle = context.getBundle(0);
+		
 		props.put("mode", new String[] { MModeController.MODENAME });
 		context.registerService(IModeControllerExtensionProvider.class.getName(),
 				new IModeControllerExtensionProvider() {
 			public void installExtension(ModeController modeController) {
-				RemoteController.getInstance();
+				try {
+					RemoteController.getInstance();
+				} catch(ChannelException e) {
+					Logger.getLogger().error("Error while starting RemotePlugin!\n",e);
+					stop(context);
+					try{systemBundle.stop();} catch(Exception e1) {}
+					System.exit(1);
+				}
 			}
 		}, props);
 	}
@@ -87,48 +93,59 @@ public class Activator extends ActorSystemActivator implements BundleActivator{
 		}
 	}
 
-	private void generatePIDFile(){
+//	@Override
+//	public void configure(BundleContext arg0, ActorSystem arg1) {
+//		RemoteController.stop();
+//	}
+	
+	private void generatePIDFile(Bundle systemBundle){
 		RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
 		String name = rtb.getName();
 		Integer pid = Integer.parseInt(name.substring(0, name.indexOf("@")));
-
-		Logger.getLogger().info("osgi running with pid: {}",pid);
-
-		FileWriter fileWriter = null;
-		try {
-			File pidFile = new File("RUNNING_PID");
-			fileWriter = new FileWriter(pidFile);
-			fileWriter.write(pid.toString());
-			fileWriter.close();
-		} catch (IOException ex) {
-			System.err.println(ex.getMessage());
+		
+		Logger.getLogger().info("OSGI pid: {}",pid);
+		
+		
+        FileWriter fileWriter = null;
+        try {
+            File pidFile = new File("RUNNING_PID");
+            Logger.getLogger().info("Path of RUNNING_PID = '{}'",pidFile.getAbsolutePath());
+            if (pidFile.exists()){
+            	Logger.getLogger().error("RUNNING_PID already exists. Abort start.");
+            	systemBundle.stop();
+            	System.exit(1);
+            }
+            fileWriter = new FileWriter(pidFile);
+            fileWriter.write(pid.toString());
+            fileWriter.close();
+        } catch (IOException ex){
+        	System.err.println(ex.getMessage());
+		} catch (BundleException e) {
+			e.printStackTrace();
 		} finally {
-			try {
-				fileWriter.close();
-			} catch (IOException ex) {
-				System.err.println(ex.getMessage());
-			}
-		}
+            try {
+                fileWriter.close();
+            } catch (IOException ex) {
+            	System.err.println(ex.getMessage());
+            }
+        }
 	}
-
-	@Override
-	public void configure(BundleContext arg0, ActorSystem arg1) {
-		RemoteController.stop();
-	}
-
+	
 	@Override
 	public void stop(BundleContext context) {
-		System.err.println("STOPPING REMOTE");
-		RemoteController.stop();
-		super.stop(context);
+		Logger.getLogger().info("Activator.stop => stopping remote plugin.");
+		
+		if (RemoteController.isStarted()){
+			RemoteController.stop();
+		}
 
 		try{			 
-			File file = new File("RUNNING_PID");
-			if(!file.delete()){
-				System.out.println("Error while deleting RUNNING_PID");
-			}
-		}catch(Exception e){
-			e.printStackTrace();
-		}
+    		File file = new File("./RUNNING_PID");
+    		if(!file.delete()){
+    			Logger.getLogger().error("Error while deleting RUNNING_PID");
+    		}
+    	}catch(Exception e){
+    		Logger.getLogger().error("Error while deleting RUNNING_PID",e);
+    	}
 	}
 }

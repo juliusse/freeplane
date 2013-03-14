@@ -181,7 +181,7 @@ then
 	cp /etc/freeplane/patterns.xml "${userfpdir}/patterns.xml"
 fi
 
-#--------- Call (at last) Freeplane -------------------------------------
+#--------- Call (at last) Freeplane ------------------------------------
 fwdir="${freedir}/fwdir"
 
 if [ "${JAVA_TYPE}" != "sun" ]

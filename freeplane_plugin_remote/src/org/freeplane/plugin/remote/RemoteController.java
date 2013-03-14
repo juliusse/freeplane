@@ -16,6 +16,7 @@ import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.plugin.remote.actors.MainActor;
 import org.freeplane.plugin.remote.v10.Utils;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
+import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
 
 import scala.concurrent.duration.Duration;
@@ -27,8 +28,6 @@ import akka.actor.Props;
 
 import com.typesafe.config.ConfigFactory;
 
-
-
 public class RemoteController {
 	
 	private final ActorSystem system;
@@ -37,31 +36,22 @@ public class RemoteController {
 	private final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
 	
 	private static RemoteController instance;
-	public static RemoteController getInstance() {
+	public static RemoteController getInstance() throws ChannelException{
 		if(instance == null)
 			instance = new RemoteController();
 		return instance;
 	}
 
 	private RemoteController() {
-		
-
-		//		int port = 8080;
-		//		try {
-		//			port = Integer.parseInt(System.getenv("webservice_port"));
-		//		} catch (Exception e) {}
-
-		
 		final Logger logger = org.freeplane.plugin.remote.Logger.getLogger();
+		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
 		
 		logger.info("starting Remote Plugin...");
-		
-		
-		
-		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
+	
+		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));;
 		mainActor = system.actorOf(new Props(MainActor.class), "main");
 		logger.info("Main Actor running at path='{}'", mainActor.path());
 
@@ -82,7 +72,7 @@ public class RemoteController {
 		//set back to original class loader
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
-	
+
 	/**
 	 * registers all listeners to react on necessary events like created nodes
 	 * Might belong into a new plugin, which sends changes to the server (And this IS the server)
@@ -99,6 +89,10 @@ public class RemoteController {
 			public void onViewCreated(Container nodeView) {				
 			}
 		});
+	}
+	
+	public static boolean isStarted(){
+		return instance != null;
 	}
 
 	public static void stop() {
