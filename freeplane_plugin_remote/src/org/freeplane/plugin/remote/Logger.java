@@ -13,7 +13,7 @@ public class Logger {
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
-
+		System.out.println("Starting logger.");
 		//create logger
 		logger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 
