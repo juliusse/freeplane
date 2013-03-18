@@ -10,7 +10,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.Hashtable;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.freeplane.core.util.Compat;
 import org.freeplane.features.mode.ModeController;
@@ -49,9 +48,11 @@ public class Activator implements BundleActivator{
 				try {
 					RemoteController.getInstance();
 				} catch(ChannelException e) {
-					Logger.getLogger().error("Error while starting RemotePlugin!\n",e);
+					Logger.getLogger().error("Activator.registerToFreeplaneStart => Error while starting RemotePlugin!\n",e);
+					Logger.getLogger().info("Activator.registerToFreeplaneStart => Stop Remote.");
 					stop(context);
 					try{systemBundle.stop();} catch(Exception e1) {}
+					Logger.getLogger().info("Activator.registerToFreeplaneStart => OSGI SystemBundle stopped. Exit.");
 					System.exit(1);
 				}
 			}
@@ -63,7 +64,7 @@ public class Activator implements BundleActivator{
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override 	
 			public void run() {
-				Logger.getLogger().info("Shutdown initiated...");
+				Logger.getLogger().info("Activator.registerShutDownHook => Shutdown hook called.");
 				try {
 					systemBundle.stop();
 				} catch (BundleException e) {
@@ -92,11 +93,6 @@ public class Activator implements BundleActivator{
 			IOUtils.closeQuietly(out);
 		}
 	}
-
-//	@Override
-//	public void configure(BundleContext arg0, ActorSystem arg1) {
-//		RemoteController.stop();
-//	}
 	
 	private void generatePIDFile(Bundle systemBundle){
 		RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
@@ -109,10 +105,11 @@ public class Activator implements BundleActivator{
         FileWriter fileWriter = null;
         try {
             File pidFile = new File("RUNNING_PID");
-            Logger.getLogger().info("Path of RUNNING_PID = '{}'",pidFile.getAbsolutePath());
+            Logger.getLogger().info("Activator.generatePIDFile => Path of RUNNING_PID = '{}'",pidFile.getAbsolutePath());
             if (pidFile.exists()){
-            	Logger.getLogger().error("RUNNING_PID already exists. Abort start.");
+            	Logger.getLogger().error("Activator.generatePIDFile => RUNNING_PID already exists. Abort start.");
             	systemBundle.stop();
+            	Logger.getLogger().info("Activator.generatePIDFile => OSGI SystemBundle stopped. Exit.");
             	System.exit(1);
             }
             fileWriter = new FileWriter(pidFile);
@@ -133,19 +130,23 @@ public class Activator implements BundleActivator{
 	
 	@Override
 	public void stop(BundleContext context) {
-		Logger.getLogger().info("Activator.stop => stopping remote plugin.");
+		Logger.getLogger().info("Activator.stop => Activator.stop called.");
 		
 		if (RemoteController.isStarted()){
+			Logger.getLogger().info("Activator.stop => Stop running Remote.");
 			RemoteController.stop();
 		}
 
-		try{			 
+		try{		
+			Logger.getLogger().info("Activator.stop => Delete RUNNING_PID.");
     		File file = new File("./RUNNING_PID");
     		if(!file.delete()){
-    			Logger.getLogger().error("Error while deleting RUNNING_PID");
+    			Logger.getLogger().error("Activator.stop => Error while deleting RUNNING_PID");
+    		} else {
+    			Logger.getLogger().info("Activator.stop => Deleted RUNNING_PID.");
     		}
     	}catch(Exception e){
-    		Logger.getLogger().error("Error while deleting RUNNING_PID",e);
+    		Logger.getLogger().error("Activator.stop => Error while deleting RUNNING_PID",e);
     	}
 	}
 }
