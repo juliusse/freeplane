@@ -8,9 +8,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.util.Date;
 import java.util.Hashtable;
-
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.util.FS;
 import org.freeplane.core.util.Compat;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
@@ -27,9 +34,9 @@ public class Activator implements BundleActivator{
 	public void start(BundleContext context) {
 		final Bundle systemBundle = context.getBundle(0);
 		
+		logGit();
 		saveAutoProperties();
 		registerToFreeplaneStart(context);
-
 
 		registerShutDownHook(context);
 
@@ -37,6 +44,27 @@ public class Activator implements BundleActivator{
 
 	}
 	
+	private void logGit() {
+		try {
+	        File gitDir = new File(".git");
+	        Repository repo = RepositoryCache.open(RepositoryCache.FileKey.lenient(gitDir, FS.DETECTED), true);
+	        Git git = new Git(repo);
+	        RevCommit commit = git.log().call().iterator().next();
+	        Logger.getLogger().info("Activator.logGit => Latest Commit id '" + commit.getId()+"'");
+	        Logger.getLogger().info("Activator.logGit => Latest commit by '" + commit.getCommitterIdent().getName()+"'");
+	        Logger.getLogger().info("Activator.logGit => Latest commit at " + new Date(commit.getCommitTime() * 1000L));
+	        Logger.getLogger().info("Activator.logGit => Latest commit message '" + commit.getShortMessage()+"'");
+	        repo.close();
+		} catch (IOException ex) {
+			// The repository exists, but is inaccessible!
+			Logger.getLogger().error("Activator.logGit => IOException", ex);
+		} catch (NoHeadException e) {
+			Logger.getLogger().error("Activator.logGit => NoHeadException", e);
+		} catch (GitAPIException e) {
+			Logger.getLogger().error("Activator.logGit => GitAPIException", e);
+		}
+    }
+
 	private void registerToFreeplaneStart(final BundleContext context) {
 		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
 		final Bundle systemBundle = context.getBundle(0);
