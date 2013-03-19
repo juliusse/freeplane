@@ -21,6 +21,8 @@ import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
 
+import com.sun.xml.internal.ws.util.StreamUtils;
+
 public final class Utils {
 
 	public static void loadNodesIntoModel(NodeModelBase node, int nodeCount) {
@@ -100,20 +102,19 @@ public final class Utils {
 	}
 	
 	public static void openTestMap(String id) {
+		InputStream in = null;
 		try {
-			//create file
-			Random ran = new Random();
-			String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
-			File file = File.createTempFile(filename, ".mm");
-			file.deleteOnExit();
-
-			InputStream in = RemoteController.class.getResourceAsStream("/mindmaps/"+id+".mm");
+			final String mapName = id+".mm";
+			in = RemoteController.class.getResourceAsStream("/mindmaps/"+mapName);
 			StringWriter writer = new StringWriter();
 			IOUtils.copy(in, writer);
-			String xmlMap = writer.toString();
+			final String xmlMap = writer.toString();
 			
-			Actions.openMindmap(new OpenMindMapRequest(xmlMap,file.getName()));
+			Actions.openMindmap(new OpenMindMapRequest(xmlMap,mapName));
 		} catch (Exception e) {}
+		finally {
+			try{in.close();}catch(Exception e){}
+		}
 	}
 	
 	private static Logger logger() {
