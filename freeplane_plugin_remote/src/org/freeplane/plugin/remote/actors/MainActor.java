@@ -8,6 +8,8 @@ import org.docear.messages.Messages.CloseServerRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
 import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetNodeRequest;
+import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
+import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.OpenMindMapRequest;
@@ -26,6 +28,7 @@ import org.slf4j.Logger;
 import akka.actor.ActorRef;
 import akka.actor.Status;
 import akka.actor.UntypedActor;
+import akka.dispatch.OnSuccess;
 
 public class MainActor extends UntypedActor {
 
@@ -111,6 +114,13 @@ public class MainActor extends UntypedActor {
 				response = Actions.getExpiredLocks((GetExpiredLocksRequest)message);
 			}
 			
+			//listen if update occurs
+			else if(message instanceof ListenToUpdateOccurrenceRequest) {
+				final SendResult<ListenToUpdateOccurrenceRespone> onSuccess = new SendResult<ListenToUpdateOccurrenceRespone>(sender,getSelf());
+				Actions.listenIfUpdateOccurs((ListenToUpdateOccurrenceRequest) message).onSuccess(onSuccess, RemoteController.getActorSystem().dispatcher());
+				
+			}
+			
 			//close unused maps
 			else if(message instanceof CloseUnusedMaps) {
 				Actions.closeUnusedMaps((CloseUnusedMaps)message);
@@ -138,11 +148,30 @@ public class MainActor extends UntypedActor {
 		}
 		
 		if(response != null) {
+			
 			logger.info("MainActor.onReceive => sending '{}' as response.",response.getClass().getName());
 			sender.tell(response, getSelf());
 		} else {
 			logger.info("MainActor.onReceive => No response available");
 		}
+	}
+	
+	
+	public final static class SendResult<T> extends OnSuccess<T> {
+		private final ActorRef remote, me;
+		
+		public SendResult(ActorRef remote, ActorRef me) {
+			super();
+			this.remote = remote;
+			this.me = me;
+		}
+
+		@Override
+		public void onSuccess(T arg0) throws Throwable {
+			org.freeplane.plugin.remote.Logger.getLogger().info("MainActor.onReceive => sending '{}' as response.",arg0.getClass().getName());
+			remote.tell(arg0,me);
+		}
+		
 	}
 
 }

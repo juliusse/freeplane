@@ -131,4 +131,8 @@ public class RemoteController {
 	public static Logger getLogger() {
 		return org.freeplane.plugin.remote.Logger.getLogger();
 	}
+	
+	public static ActorSystem getActorSystem() {
+		return getInstance().system;
+	}
 }

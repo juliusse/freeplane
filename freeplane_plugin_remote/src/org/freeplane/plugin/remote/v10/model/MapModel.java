@@ -17,21 +17,23 @@ public class MapModel implements Serializable {
 	public Boolean isReadonly;
 	public RootNodeModel root;
 	public String name;
+	public Long revision;
 
 	public MapModel() {
 	}
 	
-	public MapModel(org.freeplane.features.map.MapModel freeplaneMap,String name, boolean autoloadChildren) {
+	public MapModel(org.freeplane.features.map.MapModel freeplaneMap,String name, Long revision, boolean autoloadChildren) {
 		id = freeplaneMap.getTitle();
 		isReadonly = freeplaneMap.isReadOnly();
 		this.name = name;
+		this.revision = revision;
 		
 		NodeModel rootNodeFreeplane = freeplaneMap.getRootNode();
 		root = new RootNodeModel(rootNodeFreeplane, autoloadChildren);
 	}
 	
 	public String toJsonString() {
-		return "{\"id\":\""+id+"\",\"name\":\""+name+"\",\"isReadonly\":\""+isReadonly+"\",\"root\":"+root.toJsonString()+"}";
+		return "{\"id\":\""+id+"\",\"name\":\""+name+"\",\"revision\":\""+revision+"\",\"isReadonly\":\""+isReadonly+"\",\"root\":"+root.toJsonString()+"}";
 	}
 	
 }

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
@@ -29,6 +30,8 @@ import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetExpiredLocksResponse;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
+import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
+import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
 import org.docear.messages.Messages.MindmapAsJsonReponse;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
@@ -58,7 +61,8 @@ import org.freeplane.plugin.remote.v10.model.MapModel;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.slf4j.Logger;
 
-import scala.collection.mutable.HashMap;
+import scala.concurrent.Future;
+import akka.dispatch.Futures;
 
 public class Actions {
 
@@ -92,8 +96,10 @@ public class Actions {
 
 		//create the MapModel for JSON
 		logger().debug("Actions.getMapModelJson => creating mapmodel for JSON-convertion");
-		final String mapName = RemoteController.getMapIdInfoMap().get(mapId).getName();
-		MapModel mm = new MapModel(freeplaneMap,mapName,loadAllNodes);
+		final OpenMindmapInfo info = RemoteController.getMapIdInfoMap().get(mapId);
+		final String mapName = info.getName();
+		final Long revision = info.getCurrentRevision();
+		MapModel mm = new MapModel(freeplaneMap,mapName,revision, loadAllNodes);
 
 		if(!loadAllNodes) {
 			Utils.loadNodesIntoModel(mm.root, nodeCount);
@@ -101,7 +107,7 @@ public class Actions {
 
 		logger().debug("Actions.getMapModelJson => creating JSON string");
 		String result = mm.toJsonString();
-		
+
 		logger().debug("Actions.getMapModelJson => returning JSON string");
 		return new MindmapAsJsonReponse(result);
 	}
@@ -151,7 +157,7 @@ public class Actions {
 	public static void openMindmap(final OpenMindMapRequest request) throws CannotRetrieveMapIdException {
 		final String mapContent = request.getMindmapFileContent();
 		final String mapName = request.getMindmapFileName();
-		
+
 		logger().debug("Actions.openMindmap => mindmapFileContent:'{}...'",mapContent.substring(0,Math.min(mapContent.length(), 20)));
 		try {
 			//create file
@@ -183,6 +189,36 @@ public class Actions {
 		}
 	}
 
+	public static Future<ListenToUpdateOccurrenceRespone> listenIfUpdateOccurs(ListenToUpdateOccurrenceRequest request) throws MapNotFoundException {
+		final String mapId = request.getMapId();
+		final OpenMindmapInfo info = getOpenMindMapInfo(mapId); 
+		if(info == null)
+			throw new MapNotFoundException("Map with id "+mapId+" was not present");
+
+		//Polling to check for changes
+		final long revision = info.getCurrentRevision();
+		Future<ListenToUpdateOccurrenceRespone> future = Futures.future(new Callable<ListenToUpdateOccurrenceRespone>() {
+
+			@Override
+			public ListenToUpdateOccurrenceRespone call() throws Exception {
+				final long pollingStart = System.currentTimeMillis();
+				final long pollingDuration = 60000;
+				final long pollingInterval = 25;
+
+				while(System.currentTimeMillis() - pollingStart < pollingDuration) {
+					if(info.getCurrentRevision() != revision) {
+						logger().debug("listenIfUpdateOccurs => update occured at map {}",mapId);
+						return new ListenToUpdateOccurrenceRespone(true);
+					}
+					Thread.sleep(pollingInterval);
+				}
+				return new ListenToUpdateOccurrenceRespone(false);
+			}
+		}, RemoteController.getActorSystem().dispatcher());
+
+
+		return future;
+	}
 
 	public static void closeServer(CloseServerRequest request) {
 		logger().debug("Actions.closeServer => no parameters");
@@ -296,7 +332,7 @@ public class Actions {
 		//get node
 		logger().debug("Actions.changeNode => retrieving node");
 		final NodeModel freeplaneNode = getNodeFromOpenMapById(node.id);
-		
+
 
 		if(node.folded != null) {
 			logger().debug("Actions.changeNode => folded changed to {}",node.folded);
@@ -358,6 +394,9 @@ public class Actions {
 
 		logger().debug("Actions.changeNode => refreshing lock access time");
 		refreshLockAccessTime(freeplaneNode);
+		
+		final DefaultNodeModel changedNode = new DefaultNodeModel(freeplaneNode, false);
+		RemoteController.getMapIdInfoMap().get(mapId).addUpdate(changedNode.toJsonString());
 	}
 
 	public static void removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
@@ -526,7 +565,7 @@ public class Actions {
 			logger().error("Actions.getNodeFromOpenMapById => requested node not found; throwing exception");
 			throw new NodeNotFoundException("Node with id '"+nodeId+"' not found.");
 		}
-		
+
 		return freeplaneNode;
 	}
 
