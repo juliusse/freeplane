@@ -10,6 +10,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.Date;
 import java.util.Hashtable;
+
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -19,6 +20,7 @@ import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.FS;
 import org.freeplane.core.util.Compat;
+import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;
@@ -28,10 +30,17 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
+import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
+
 public class Activator implements BundleActivator{
 
 	@Override
 	public void start(BundleContext context) {
+		//first thing: start logger and redirect out and err
+		Logger.getLogger();
+		SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
+		
+		
 		final Bundle systemBundle = context.getBundle(0);
 		
 		logGit();
@@ -41,9 +50,9 @@ public class Activator implements BundleActivator{
 		registerShutDownHook(context);
 
 		generatePIDFile(systemBundle);
-
 	}
-	
+
+
 	private void logGit() {
 		try {
 	        File gitDir = new File(".git");
