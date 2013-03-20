@@ -11,7 +11,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.codehaus.jackson.io.JsonStringEncoder;
 import org.freeplane.features.attribute.Attribute;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.MapController;
@@ -22,6 +21,8 @@ import org.freeplane.plugin.remote.RemoteController;
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class DefaultNodeModel extends NodeModelBase implements Serializable{
+	private static final long serialVersionUID = 1L;
+
 	@XmlElement(name="children")
 	public List<DefaultNodeModel> children;
 

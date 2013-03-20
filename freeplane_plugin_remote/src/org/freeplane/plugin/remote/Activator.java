@@ -20,7 +20,6 @@ import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.util.FS;
 import org.freeplane.core.util.Compat;
-import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.main.osgi.IModeControllerExtensionProvider;

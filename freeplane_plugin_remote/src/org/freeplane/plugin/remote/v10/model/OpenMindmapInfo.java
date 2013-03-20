@@ -10,6 +10,7 @@ import java.util.Set;
 import org.freeplane.features.map.NodeModel;
 
 public class OpenMindmapInfo implements Serializable {
+	private static final long serialVersionUID = 1L;
 
 	private final URL mapUrl;
 	private final Set<NodeModel> lockedNodes;

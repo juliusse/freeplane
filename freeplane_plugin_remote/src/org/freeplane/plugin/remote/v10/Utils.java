@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.LinkedList;
-import java.util.Random;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,8 +19,6 @@ import org.freeplane.plugin.remote.v10.model.NodeModelBase;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
-
-import com.sun.xml.internal.ws.util.StreamUtils;
 
 public final class Utils {
 

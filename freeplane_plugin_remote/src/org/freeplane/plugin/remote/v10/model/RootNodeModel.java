@@ -16,6 +16,7 @@ import org.freeplane.plugin.remote.RemoteController;
 @XmlRootElement(name="node")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RootNodeModel extends NodeModelBase implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
 	//@XmlElement(required=true,nillable=true)
 	@XmlElement(name="leftChildren")

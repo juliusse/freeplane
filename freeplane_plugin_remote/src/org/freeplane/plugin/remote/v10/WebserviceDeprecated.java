@@ -7,7 +7,6 @@ import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.plugin.remote.RemoteController;
-import org.freeplane.plugin.remote.v10.model.MapModel;
 
 //@Path("/v1")
 //@Produces(MediaType.APPLICATION_JSON)

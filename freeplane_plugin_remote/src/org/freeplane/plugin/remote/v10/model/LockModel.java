@@ -6,7 +6,8 @@ import org.freeplane.core.extension.IExtension;
 import org.freeplane.features.map.NodeModel;
 
 public class LockModel implements IExtension, Serializable {
-
+	private static final long serialVersionUID = 1L;
+	
 	private NodeModel nodeId;
 	private String username;
 	private long lastAccess;

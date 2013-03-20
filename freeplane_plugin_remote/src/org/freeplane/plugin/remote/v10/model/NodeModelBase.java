@@ -17,6 +17,7 @@ import org.freeplane.features.map.NodeModel;
 @XmlTransient
 @XmlSeeAlso(value={DefaultNodeModel.class,RootNodeModel.class})
 abstract public class NodeModelBase implements Serializable {
+	private static final long serialVersionUID = 1L;
 
 	public String id;
 	public String nodeText;

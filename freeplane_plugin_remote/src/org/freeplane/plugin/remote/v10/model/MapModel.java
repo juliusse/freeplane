@@ -8,11 +8,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.freeplane.features.map.NodeModel;
 
-import com.sun.accessibility.internal.resources.accessibility;
-
 @XmlRootElement(name = "mapModel")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class MapModel implements Serializable {
+	private static final long serialVersionUID = 1L;
+	
 	public String id;
 	public Boolean isReadonly;
 	public RootNodeModel root;

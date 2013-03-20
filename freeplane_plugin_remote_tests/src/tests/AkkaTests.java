@@ -4,7 +4,6 @@ import static org.fest.assertions.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
@@ -81,8 +80,6 @@ public class AkkaTests {
 		long endTime = startTime + 60000; // one minute
 		while(remoteActor == null && System.currentTimeMillis() < endTime) {
 			try {
-				final String ip = InetAddress.getLocalHost().getHostAddress();
-				//remoteActor = system.actorFor("akka://freeplaneRemote@"+ip+":2553/user/main");
 				remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 				
 				Future<Object> future = Patterns.ask(remoteActor, new MindmapAsJsonRequest("NOT_EXISTING"), 2000);
