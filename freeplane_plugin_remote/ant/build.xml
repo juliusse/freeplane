@@ -67,7 +67,7 @@
 		</javac>
 	</target> -->
 
-	<target name="build" depends="lib_fileset">
+	<target name="build" depends="lib_fileset,git.revision">
 		<mkdir dir="${build}" />
 		<javac srcdir="${src}" destdir="${build}" debug="${debug}" source="${java_source_version}" target="${java_target_version}" encoding="utf8">
 			<classpath>
@@ -135,6 +135,23 @@
 		<delete>
 			<fileset defaultexcludes="no" dir="${src}" includes="**/*~" />
 		</delete>
+	</target>
+	
+	<available file="../.git" type="dir" property="git.present"/>
+	<target name="git.revision"  if="git.present">
+		<exec executable="git" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
+			<arg value="rev-parse"/>
+			<arg value="HEAD"/>
+		</exec>
+		<condition property="repository.version" value="${git.revision}" else="unknown">
+			<and>
+				<isset property="git.revision"/>
+				<length string="${git.revision}" trim="yes" length="0" when="greater"/>
+			</and>
+		</condition>
+		<propertyfile file="git.commit">
+			<entry  key="commit" value="${repository.version}"/>
+		</propertyfile>
 	</target>
 
 </project>
