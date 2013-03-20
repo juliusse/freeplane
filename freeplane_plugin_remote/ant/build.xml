@@ -87,11 +87,13 @@
 		<pathconvert pathsep=",${line.separator} " property="resolved.jars.path" refid="resolved_jars">
 			<map from="${basedir}/" to="" />
 		</pathconvert>
+        <delete file="${basedir}/META-INF/MANIFEST.MF" quiet="true"/>
 		<copy tofile="${basedir}/META-INF/MANIFEST.MF" file="${basedir}/META-INF/MANIFEST.MF.template">
 			<filterset>
 				<filter token="DEPENDENCY_JARS" value="${resolved.jars.path}" />
 			</filterset>
 		</copy>
+        <echo message="resolved"></echo>
 	</target>
 
 	<target name="dist" depends="build">
