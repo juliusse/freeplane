@@ -149,7 +149,7 @@
 				<length string="${git.revision}" trim="yes" length="0" when="greater"/>
 			</and>
 		</condition>
-		<propertyfile file="git.commit">
+		<propertyfile file="${build}/git.commit">
 			<entry  key="commit" value="${repository.version}"/>
 		</propertyfile>
 	</target>
