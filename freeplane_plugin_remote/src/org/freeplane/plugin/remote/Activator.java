@@ -55,16 +55,19 @@ public class Activator implements BundleActivator{
 	private void logGit() {
 		try {
 	        File gitDir = new File(".git");
-	        Repository repo = RepositoryCache.open(RepositoryCache.FileKey.lenient(gitDir, FS.DETECTED), true);
-	        Git git = new Git(repo);
-	        RevCommit commit = git.log().call().iterator().next();
-	        Logger.getLogger().info("Activator.logGit => Latest Commit id '" + commit.getId()+"'");
-	        Logger.getLogger().info("Activator.logGit => Latest commit by '" + commit.getCommitterIdent().getName()+"'");
-	        Logger.getLogger().info("Activator.logGit => Latest commit at " + new Date(commit.getCommitTime() * 1000L));
-	        Logger.getLogger().info("Activator.logGit => Latest commit message '" + commit.getShortMessage()+"'");
-	        repo.close();
+	        if (gitDir.exists()){
+		        Repository repo = RepositoryCache.open(RepositoryCache.FileKey.lenient(gitDir, FS.DETECTED), true);
+		        Git git = new Git(repo);
+		        RevCommit commit = git.log().call().iterator().next();
+		        Logger.getLogger().info("Activator.logGit => Latest Commit id '" + commit.getId()+"'");
+		        Logger.getLogger().info("Activator.logGit => Latest commit by '" + commit.getCommitterIdent().getName()+"'");
+		        Logger.getLogger().info("Activator.logGit => Latest commit at " + new Date(commit.getCommitTime() * 1000L));
+		        Logger.getLogger().info("Activator.logGit => Latest commit message '" + commit.getShortMessage()+"'");
+		        repo.close();
+	        } else {
+	        	Logger.getLogger().info("Activator.logGit => No git file to log.");	
+	        }
 		} catch (IOException ex) {
-			// The repository exists, but is inaccessible!
 			Logger.getLogger().error("Activator.logGit => IOException", ex);
 		} catch (NoHeadException e) {
 			Logger.getLogger().error("Activator.logGit => NoHeadException", e);
