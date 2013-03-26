@@ -60,6 +60,7 @@ import com.typesafe.config.ConfigFactory;
 public class AkkaTests {
 
 	private final static String USERNAME1 = "USER1";
+	@SuppressWarnings("unused")
 	private final static String USERNAME2 = "USER2";
 	
 	private static ActorSystem system;

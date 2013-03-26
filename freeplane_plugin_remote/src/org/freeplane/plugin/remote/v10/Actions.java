@@ -634,7 +634,7 @@ public class Actions {
 	private static String addLockToNode(String mapId, NodeModel freeplaneNode, String username) {
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
 		if(freeplaneNode.getExtension(LockModel.class) == null) {
-			final LockModel lockModel = new LockModel(freeplaneNode,username,System.currentTimeMillis());
+			final LockModel lockModel = new LockModel(username,System.currentTimeMillis());
 			
 			//add node to locked list
 			logger().debug("Actions.addLockToNode => adding node to locked node list");
