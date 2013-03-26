@@ -6,16 +6,14 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -28,8 +26,6 @@ import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
-import org.docear.messages.Messages.GetExpiredLocksRequest;
-import org.docear.messages.Messages.GetExpiredLocksResponse;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
@@ -39,8 +35,6 @@ import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
-import org.docear.messages.Messages.RefreshLockRequest;
-import org.docear.messages.Messages.RefreshLockResponse;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.ReleaseLockResponse;
 import org.docear.messages.Messages.RemoveNodeRequest;
@@ -60,6 +54,7 @@ import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
+import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.remote.v10.model.LockModel;
@@ -439,20 +434,20 @@ public class Actions {
 		return new RemoveNodeResponse(true);
 	}
 
-	public static RefreshLockResponse refreshLock (RefreshLockRequest request) throws MapNotFoundException, NodeNotFoundException{
-		final String mapId = request.getMapId();
-		final String nodeId = request.getNodeId();
-		logger().debug("Actions.refreshLock => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
-
-		logger().debug("Actions.refreshLock => selecting map");
-		selectMap(request.getMapId());
-
-		logger().debug("Actions.refreshLock => retrieving node");
-		final NodeModel node = getNodeFromOpenMapById(nodeId);
-
-		refreshLockAccessTime(node);
-		return new RefreshLockResponse(true);
-	}
+//	public static RefreshLockResponse refreshLock (RefreshLockRequest request) throws MapNotFoundException, NodeNotFoundException{
+//		final String mapId = request.getMapId();
+//		final String nodeId = request.getNodeId();
+//		logger().debug("Actions.refreshLock => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
+//
+//		logger().debug("Actions.refreshLock => selecting map");
+//		selectMap(request.getMapId());
+//
+//		logger().debug("Actions.refreshLock => retrieving node");
+//		final NodeModel node = getNodeFromOpenMapById(nodeId);
+//
+//		refreshLockAccessTime(node);
+//		return new RefreshLockResponse(true);
+//	}
 
 	public static RequestLockResponse requestLock (RequestLockRequest request) throws MapNotFoundException, NodeAlreadyLockedException, NodeNotFoundException{
 		final String mapId = request.getMapId();
@@ -469,41 +464,23 @@ public class Actions {
 		logger().debug("Actions.requestLock => retrieving lock model");
 		final LockModel lockModel = node.getExtension(LockModel.class);
 
-		if(lockModel != null) {
-			return new RequestLockResponse(false, null);
-			//			// Lock exists. Check if it's own lock
-			//			if(lockModel.getUsername().equals(request.getUsername())) {
-			//				logger().info("Actions.requestLock => user requested lock for node he already locks");
-			//				
-			//			} else {
-			//				logger().info("Actions.requestLock => node already locked"); 
-			//				throw new NodeAlreadyLockedException("Locked by " + lockModel.getUsername() + ".");
-			//			}
-		} else {
+		if(lockModel == null) { //no lock present
 			logger().debug("Actions.requestLock => no lock on node, creating lock...");
-			//create lock
-			final LockModel newLock = new LockModel(node,username,System.currentTimeMillis());
-			node.addExtension(newLock);
-
-			//add to lock list
-			logger().debug("Actions.requestLock => adding node to locked node list");
-			final String nodeAsJson = new DefaultNodeModel(node,false).toJsonString();
-			final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
-			info.addLockedNode(node);
-
-			//add node to revision list
-			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));	
-
-			return new RequestLockResponse(true, nodeAsJson);
+			final String changedNodeJson = addLockToNode(mapId, node, username);
+			return new RequestLockResponse(true, changedNodeJson);
+		} else if(username.equals(lockModel.getUsername())) { //refresh from locking user 
+			refreshLockAccessTime(node);
+			return new RequestLockResponse(true, null);
+		} else { //already locked by someone else
+			return new RequestLockResponse(false, null);
 		}
 	}
 
-	//TODO: Maybe send username as some kind of validation, too? (js)
 	public static ReleaseLockResponse releaseLock (ReleaseLockRequest request) throws MapNotFoundException, LockNotFoundException, NodeNotFoundException{
 		final String mapId = request.getMapId();
 		final String nodeId = request.getNodeId();
 		final String username = request.getUsername();
-		logger().debug("Actions.releaseLock => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
+		logger().debug("Actions.releaseLock => mapId:'{}'; nodeId:'{}'; username: {}",mapId,nodeId,username);
 
 		logger().debug("Actions.releaseLock => selecting map");
 		selectMap(mapId);
@@ -514,26 +491,17 @@ public class Actions {
 		logger().debug("Actions.releaseLock => retrieving lock");
 		final LockModel lm = node.getExtension(LockModel.class);
 		if(lm == null) { 
-			// No lock available
-			logger().error("Actions.releaseLock => lock not found, throwing exception");
-			throw new LockNotFoundException("Lock for nodeId " + request.getNodeId() + " not found.");
+			// No lock available, nothing to release... just quit
+			logger().warn("Actions.releaseLock => no lock present");
+			//throw new LockNotFoundException("Lock for nodeId " + request.getNodeId() + " not found.");
+			return new ReleaseLockResponse(true, null);
 		}
 
 		//check if correct user
 		if(username.equals(lm.getUsername())) {
 			//release lock
 			logger().debug("Actions.releaseLock => releasing lock");
-			node.removeExtension(LockModel.class);
-
-
-			final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
-			final String nodeAsJson = new DefaultNodeModel(node, false).toJsonString(); 
-			//remove form to lock list
-			logger().debug("Actions.releaseLock => remove node from locked list");
-			info.removeLockedNode(node);
-
-			//add to revision list
-			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));
+			final String nodeAsJson = releaseLockFromNode(mapId, node);
 
 			return new ReleaseLockResponse(true, nodeAsJson);
 		} else {
@@ -541,30 +509,24 @@ public class Actions {
 		}
 	}
 
-	//TODO naming varies from action
-	public static GetExpiredLocksResponse getExpiredLocks(GetExpiredLocksRequest request) throws MapNotFoundException, JsonGenerationException, JsonMappingException, IOException{
-		if (!getOpenMindmapInfoMap().containsKey(request.getMapId())){
-			throw new MapNotFoundException("MapId: " + request.getMapId());
-		}
-		Set<NodeModel> nodes = getOpenMindMapInfo(request.getMapId()).getLockedNodes();
-		Set<NodeModel> newNodes = new HashSet<NodeModel>();
-		List<NodeModel> expiredNodes = new ArrayList<NodeModel>(); 
 
-		for (NodeModel node : nodes){
-			LockModel lock = node.getExtension(LockModel.class);
-			long timeDiff = System.currentTimeMillis() - lock.getLastAccess();  
-			if (timeDiff < request.getDeltaTimeInMs()){
-				//Lock not expired
-				newNodes.add(node);
-			} else {
-				//Lock expired
-				node.removeExtension(LockModel.class);
-				expiredNodes.add(node);
+	public static void releaseTimedOutLocks(ReleaseTimedOutLocks request) throws MapNotFoundException, JsonGenerationException, JsonMappingException, IOException{
+		final Long millisSinceRequest = request.getMillisecondsSinceRequest();
+
+		for(Entry<String, OpenMindmapInfo> entry : getOpenMindmapInfoMap().entrySet()) {
+			final String mapId = entry.getKey();
+			final OpenMindmapInfo info = entry.getValue();
+			final Set<NodeModel> lockedNodes = new HashSet<NodeModel>(info.getLockedNodes());
+
+			for(NodeModel lockedNode : lockedNodes) {
+				LockModel lock = lockedNode.getExtension(LockModel.class);
+				long timeDiff = System.currentTimeMillis() - lock.getLastAccess();  
+				if (timeDiff > millisSinceRequest){
+					releaseLockFromNode(mapId, lockedNode);
+				} 
 			}
-		}
-		nodes = newNodes;
 
-		return new GetExpiredLocksResponse(objectMapper.writeValueAsString(expiredNodes));
+		}
 	}
 
 	public static void closeAllOpenMaps(CloseAllOpenMapsRequest request) throws MapNotFoundException {
@@ -657,6 +619,45 @@ public class Actions {
 		LockModel lm = node.getExtension(LockModel.class);
 		if(lm != null) {
 			lm.setLastAccess(System.currentTimeMillis());
+		}
+	}
+
+	private static String addLockToNode(String mapId, NodeModel freeplaneNode, String username) {
+		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
+		if(freeplaneNode.getExtension(LockModel.class) == null) {
+			final LockModel lockModel = new LockModel(freeplaneNode,username,System.currentTimeMillis());
+			
+			//add node to locked list
+			logger().debug("Actions.addLockToNode => adding node to locked node list");
+			info.addLockedNode(freeplaneNode);
+			//add lock
+			freeplaneNode.addExtension(lockModel);
+
+			final String nodeAsJson = new DefaultNodeModel(freeplaneNode,false).toJsonString();
+			//add change to revision list
+			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));
+			return nodeAsJson;
+		} else {
+			throw new AssertionError("Tried to add Lock to a Node with a Lock present");
+		}
+	}
+
+	private static String releaseLockFromNode(String mapId, NodeModel freeplaneNode) {
+		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
+		if(freeplaneNode.getExtension(LockModel.class) != null) {
+			
+			//remove node from locked list
+			logger().debug("Actions.releaseLockFromNode => remove node from locked list");
+			info.removeLockedNode(freeplaneNode);
+			//remove lock
+			freeplaneNode.removeExtension(LockModel.class);
+
+			final String nodeAsJson = new DefaultNodeModel(freeplaneNode,false).toJsonString();
+			//add change to revision list
+			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));
+			return nodeAsJson;
+		} else {
+			throw new AssertionError("Tried to remove Lock from a Node without a Lock");
 		}
 	}
 

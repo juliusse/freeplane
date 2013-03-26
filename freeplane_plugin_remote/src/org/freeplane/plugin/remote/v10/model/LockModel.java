@@ -8,7 +8,7 @@ import org.freeplane.features.map.NodeModel;
 public class LockModel implements IExtension, Serializable {
 	private static final long serialVersionUID = 1L;
 	
-	private NodeModel nodeId;
+	private NodeModel node;
 	private String username;
 	private long lastAccess;
 	
@@ -16,18 +16,18 @@ public class LockModel implements IExtension, Serializable {
 		
 	}
 	
-	public LockModel(NodeModel nodeId, String username, long lastAccess) {
+	public LockModel(NodeModel node, String username, long lastAccess) {
 		super();
-		this.nodeId = nodeId;
+		this.node = node;
 		this.username = username;
 		this.lastAccess = lastAccess;
 	}
-	public NodeModel getNodeId() {
-		return nodeId;
-	}
-	public void setNodeId(NodeModel nodeId) {
-		this.nodeId = nodeId;
-	}
+//	public NodeModel getNodeId() {
+//		return node;
+//	}
+//	public void setNodeId(NodeModel nodeId) {
+//		this.node = nodeId;
+//	}
 	public String getUsername() {
 		return username;
 	}

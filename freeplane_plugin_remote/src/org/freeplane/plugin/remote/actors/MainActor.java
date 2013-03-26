@@ -6,14 +6,12 @@ import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
-import org.docear.messages.Messages.GetExpiredLocksRequest;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.OpenMindMapRequest;
-import org.docear.messages.Messages.RefreshLockRequest;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.Messages.RequestLockRequest;
@@ -21,6 +19,7 @@ import org.docear.messages.exceptions.LockNotFoundException;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
+import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.Actions;
 import org.slf4j.Logger;
@@ -94,11 +93,6 @@ public class MainActor extends UntypedActor {
 				Actions.closeServer((CloseServerRequest)message);
 			}
 			
-			//refresh lock
-			else if(message instanceof RefreshLockRequest) {
-				response = Actions.refreshLock((RefreshLockRequest)message);
-			}
-			
 			//release lock
 			else if(message instanceof ReleaseLockRequest) {
 				response = Actions.releaseLock((ReleaseLockRequest)message);
@@ -109,10 +103,7 @@ public class MainActor extends UntypedActor {
 				response = Actions.requestLock((RequestLockRequest)message);
 			}
 			
-			//get expired locks
-			else if(message instanceof GetExpiredLocksRequest) {
-				response = Actions.getExpiredLocks((GetExpiredLocksRequest)message);
-			}
+			
 			
 			//listen if update occurs
 			else if(message instanceof ListenToUpdateOccurrenceRequest) {
@@ -124,6 +115,11 @@ public class MainActor extends UntypedActor {
 			//close unused maps
 			else if(message instanceof CloseUnusedMaps) {
 				Actions.closeUnusedMaps((CloseUnusedMaps)message);
+			}
+			
+			//release timed out Locks
+			else if(message instanceof ReleaseTimedOutLocks) {
+				Actions.releaseTimedOutLocks((ReleaseTimedOutLocks)message);
 			}
 		}
 		catch(MapNotFoundException e) {

@@ -13,6 +13,7 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
+import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
 import org.freeplane.plugin.remote.actors.MainActor;
 import org.freeplane.plugin.remote.v10.Utils;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
@@ -33,6 +34,7 @@ public class RemoteController {
 	private final ActorSystem system;
 	private final ActorRef mainActor;
 	private final Cancellable closeUnusedMapsJob;
+	private final Cancellable releaseExpiredLocksJob;
 	private final Map<String, OpenMindmapInfo> mapIdInfoMap = new HashMap<String, OpenMindmapInfo>();
 	
 	private static RemoteController instance;
@@ -64,6 +66,18 @@ public class RemoteController {
 							public void run() {
 								logger.info("Scheduling closing of unused maps.");
 								mainActor.tell(new CloseUnusedMaps(600000), null); // ten minutes
+							}
+						}, system.dispatcher());
+		
+		releaseExpiredLocksJob = 
+				system.scheduler().schedule(
+						Duration.Zero(), 
+						Duration.apply(10, TimeUnit.MINUTES), 
+						new Runnable() {
+							@Override
+							public void run() {
+								logger.info("Scheduling closing of unused maps.");
+								mainActor.tell(new ReleaseTimedOutLocks(15000l), null); // 15 seconds
 							}
 						}, system.dispatcher());
 
@@ -99,6 +113,7 @@ public class RemoteController {
 		getLogger().info("Shutting down remote plugin...");
 		RemoteController controller = getInstance();
 		controller.closeUnusedMapsJob.cancel();
+		controller.releaseExpiredLocksJob.cancel();
 		controller.mainActor.tell(PoisonPill.getInstance(), null);
 		controller.system.shutdown();
 		controller.closeMaps();
