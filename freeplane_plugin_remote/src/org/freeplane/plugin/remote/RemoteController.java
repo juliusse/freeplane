@@ -101,10 +101,10 @@ public class RemoteController {
 		controller.closeUnusedMapsJob.cancel();
 		controller.mainActor.tell(PoisonPill.getInstance(), null);
 		controller.system.shutdown();
-		controller.closeMapsAndDestroyFiles();
+		controller.closeMaps();
 	}
 	
-	private void closeMapsAndDestroyFiles() {
+	private void closeMaps() {
 		Set<String> idSet = new HashSet<String>(this.mapIdInfoMap.keySet());
 		for(String id: idSet) {
 			try {

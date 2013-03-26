@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -165,25 +166,26 @@ public class Actions {
 	public static void openMindmap(final OpenMindMapRequest request) throws CannotRetrieveMapIdException {
 		final String mapContent = request.getMindmapFileContent();
 		final String mapName = request.getMindmapFileName();
-
 		logger().debug("Actions.openMindmap => mindmapFileContent:'{}...'",mapContent.substring(0,Math.min(mapContent.length(), 20)));
-		try {
-			//create file
-			final Random ran = new Random();
-			final String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
-			final String tempDirPath = System.getProperty("java.io.tmpdir");
-			final File file = new File(tempDirPath+"/docear/"+filename+".mm");
-			logger().debug("Actions.openMindmap => temporary file '{}' was created",file.getAbsolutePath());
 
+
+		//create file
+		final Random ran = new Random();
+		final String filename = ""+System.currentTimeMillis()+ran.nextInt(100);
+		final String tempDirPath = System.getProperty("java.io.tmpdir");
+		final File file = new File(tempDirPath+"/docear/"+filename+".mm");
+		logger().debug("Actions.openMindmap => temporary file '{}' was created",file.getAbsolutePath());
+
+		try {
 			logger().debug("Actions.openMindmap => writing mindmap content to file");
 			FileUtils.writeStringToFile(file, mapContent);
 
 			//put map in openMap Collection
 			final String mapId = Utils.getMapIdFromFile(file);
 			final URL pathURL = file.toURI().toURL();
-			final OpenMindmapInfo ommi = new OpenMindmapInfo(pathURL,mapName);
-			getOpenMindmapInfoMap().put(mapId, ommi);
-			logger().debug("Actions.openMindmap => mindmap was put into openMindmapInfoMap ({} => {})",mapId,ommi.getMapUrl());
+			final OpenMindmapInfo info = new OpenMindmapInfo(pathURL,mapName);
+			getOpenMindmapInfoMap().put(mapId, info);
+			logger().debug("Actions.openMindmap => mindmap was put into openMindmapInfoMap ({} => {})",mapId,info.getMapUrl());
 
 			//open map
 			logger().debug("Actions.openMindmap => opening mindmap...");
@@ -194,6 +196,9 @@ public class Actions {
 			throw e;
 		} catch (Exception e) {
 			throw new AssertionError(e);
+		} finally {
+			logger().debug("Utils.closeMap => removing temporary file from file system");
+			file.delete();
 		}
 	}
 
@@ -427,10 +432,10 @@ public class Actions {
 
 		logger().debug("Actions.removeNode => deleting node");
 		mapController.deleteNode(node);
-		
+
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
 		info.addUpdate(new DeleteNodeUpdate(nodeId));
-		
+
 		return new RemoveNodeResponse(true);
 	}
 
@@ -526,10 +531,10 @@ public class Actions {
 			//remove form to lock list
 			logger().debug("Actions.releaseLock => remove node from locked list");
 			info.removeLockedNode(node);
-			
+
 			//add to revision list
 			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));
-			
+
 			return new ReleaseLockResponse(true, nodeAsJson);
 		} else {
 			return new ReleaseLockResponse(false, null);
@@ -632,7 +637,11 @@ public class Actions {
 			//check if testmap exists
 			if(mapId.equals("test_1") || mapId.equals("test_2") || 
 					mapId.equals("test_3") || mapId.equals("test_5")) {
-				Utils.openTestMap(mapId);
+				try {
+					Utils.openTestMap(mapId);
+				} catch (CannotRetrieveMapIdException e) {
+					throw new AssertionError(e);
+				}
 			} else {
 				throw new MapNotFoundException("Map not found!\n"+
 						"Available test map ids: 'test_1','test_2','test_3','test_5'");

@@ -1,6 +1,7 @@
 package org.freeplane.plugin.remote.v10;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
@@ -16,7 +17,6 @@ import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.NodeModelBase;
-import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;
 
@@ -85,20 +85,11 @@ public final class Utils {
 		logger().debug("Utils.closeMap => closing map");
 		RemoteController.getModeController().getController().close(true);
 		
-		//remove file from filesystem
-		try {
-			final OpenMindmapInfo mmInfos = RemoteController.getMapIdInfoMap().get(mapId);
-			logger().debug("Utils.closeMap => removing temporary file '{}' from file system",mmInfos.getMapUrl());
-			new File(mmInfos.getMapUrl().toURI()).delete();
-		} catch (Exception e) {
-			logger().error("Utils.closeMap => could not delete map file.",e);
-		}
-		
 		logger().debug("Utils.closeMap => removing map info from MapIdInfoMap");
 		RemoteController.getMapIdInfoMap().remove(mapId);
 	}
 	
-	public static void openTestMap(String id) {
+	public static void openTestMap(String id) throws CannotRetrieveMapIdException {
 		InputStream in = null;
 		try {
 			final String mapName = id+".mm";
@@ -108,9 +99,9 @@ public final class Utils {
 			final String xmlMap = writer.toString();
 			
 			Actions.openMindmap(new OpenMindMapRequest(xmlMap,mapName));
-		} catch (Exception e) {}
+		} catch (IOException e) {}
 		finally {
-			try{in.close();}catch(Exception e){}
+			IOUtils.closeQuietly(in);
 		}
 	}
 	
