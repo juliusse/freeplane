@@ -8,7 +8,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonParseException;
@@ -28,8 +27,12 @@ import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.ReleaseLockRequest;
+import org.docear.messages.Messages.ReleaseLockResponse;
 import org.docear.messages.Messages.RemoveNodeRequest;
 import org.docear.messages.Messages.RemoveNodeResponse;
+import org.docear.messages.Messages.RequestLockRequest;
+import org.docear.messages.Messages.RequestLockResponse;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.fest.assertions.Fail;
@@ -56,10 +59,14 @@ import com.typesafe.config.ConfigFactory;
 
 public class AkkaTests {
 
+	private final static String USERNAME1 = "USER1";
+	private final static String USERNAME2 = "USER2";
+	
 	private static ActorSystem system;
 	private static ActorRef remoteActor;
 	private static ActorRef localActor;
 	private static ObjectMapper objectMapper;
+	
 
 
 	@BeforeClass
@@ -235,7 +242,7 @@ public class AkkaTests {
 					protected void run() {
 						try {
 							sendMindMapToServer(5);
-							remoteActor.tell(new AddNodeRequest("5", "ID_0"), localActor);
+							remoteActor.tell(new AddNodeRequest("5", "ID_0",USERNAME1), localActor);
 
 							AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
 
@@ -270,7 +277,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new AddNodeRequest("5", "ID_FAIL"), localActor);
+						remoteActor.tell(new AddNodeRequest("5", "ID_FAIL",USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof NodeNotFoundException).isTrue();
@@ -292,7 +299,7 @@ public class AkkaTests {
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						remoteActor.tell(new AddNodeRequest("16", "ID_FAIL"), localActor);
+						remoteActor.tell(new AddNodeRequest("16", "ID_FAIL",USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof MapNotFoundException).isTrue();
@@ -374,7 +381,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new RemoveNodeRequest("5", "ID_1"), localActor);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_1",USERNAME1), localActor);
 						RemoveNodeResponse rmNodeResponse = expectMsgClass(RemoveNodeResponse.class);
 						assertThat(rmNodeResponse.getDeleted()).isEqualTo(true);
 
@@ -401,7 +408,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new RemoveNodeRequest("5", "ID_FAIL"), localActor);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_FAIL",USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof NodeNotFoundException).isTrue();
@@ -458,9 +465,15 @@ public class AkkaTests {
 							Fail.fail("error parsing DefaultNodeModel");
 						}
 						System.out.println(nodeAsJSON);
-						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
+						//requesting lock on node
+						requestLock("5", nodeId, USERNAME1);
+						
+						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON,USERNAME1), localActor);
 						ChangeNodeResponse response = expectMsgClass(ChangeNodeResponse.class);
 						System.out.println(response.getNode());
+						
+						//release lock
+						releaseLock("5", nodeId, USERNAME1);
 
 						try {
 							final DefaultNodeModel receivedNode = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
@@ -511,7 +524,7 @@ public class AkkaTests {
 						} catch (Exception e) {
 							Fail.fail("error parsing DefaultNodeModel");
 						}
-						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
+						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON,USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 
@@ -715,8 +728,34 @@ public class AkkaTests {
 				};
 			}
 		};
-
-
+	}
+	
+	public void requestLock(final String mapId, final String nodeId, final String username) {
+		new JavaTestKit(system) {
+			{
+				new Within(duration("2 seconds")) {
+					public void run() {
+						remoteActor.tell(new RequestLockRequest(mapId, nodeId, USERNAME1),getRef());
+						RequestLockResponse requestResponse = expectMsgClass(RequestLockResponse.class);
+						assertThat(requestResponse.getLockGained()).isEqualTo(true);
+					}
+				};
+			}
+		};
+	}
+	
+	public void releaseLock(final String mapId, final String nodeId, final String username) {
+		new JavaTestKit(system) {
+			{
+				new Within(duration("2 seconds")) {
+					public void run() {
+						remoteActor.tell(new ReleaseLockRequest("5", nodeId, USERNAME1),getRef());
+						ReleaseLockResponse releaseResponse = expectMsgClass(ReleaseLockResponse.class);
+						assertThat(releaseResponse.getLockReleased()).isEqualTo(true);
+					}
+				};
+			}
+		};
 	}
 
 	public static class TheActor extends UntypedActor {

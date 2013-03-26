@@ -15,7 +15,6 @@ import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.docear.messages.Messages.AddNodeRequest;
@@ -46,6 +45,7 @@ import org.docear.messages.exceptions.LockNotFoundException;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
+import org.docear.messages.exceptions.NodeNotLockedByUserException;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapWriter;
@@ -331,18 +331,23 @@ public class Actions {
 		return new AddNodeResponse(nodeAsJson);
 	}
 
-	public static ChangeNodeResponse changeNode(final ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException, JsonParseException, JsonMappingException, IOException, URISyntaxException {
+	public static ChangeNodeResponse changeNode(final ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException,NodeNotLockedByUserException {
 		final String mapId = request.getMapId();
-		final DefaultNodeModel node = objectMapper.readValue(request.getNodeAsJsonString(), DefaultNodeModel.class);
+		final DefaultNodeModel node = getObjectFromJsonString(DefaultNodeModel.class, request.getNodeAsJsonString());
+		final String nodeId = node.id;
+		final String username = request.getUsername();
 		logger().debug("Actions.changeNode => mapId:'{}'; nodeAsJson:'{}'",mapId,request.getNodeAsJsonString());
-
+		
 		logger().debug("Actions.changeNode => selecting map");
 		selectMap(mapId);
 
 		//get node
 		logger().debug("Actions.changeNode => retrieving node");
-		final NodeModel freeplaneNode = getNodeFromOpenMapById(node.id);
-
+		final NodeModel freeplaneNode = getNodeFromOpenMapById(nodeId);
+		//check if user has lock
+		if(!hasUserLockOnNode(mapId, freeplaneNode, username)) {
+			throw new NodeNotLockedByUserException("User has no lock on node");
+		}
 
 		if(node.folded != null) {
 			logger().debug("Actions.changeNode => folded changed to {}",node.folded);
@@ -389,7 +394,11 @@ public class Actions {
 				freeplaneNode.addExtension(nodeLinks);				
 			}
 
+			try {
 			nodeLinks.setHyperLink(new URI(node.link));
+			} catch (URISyntaxException e) {
+				logger().error("problem saving hyperlink",e);
+			}
 		}
 		if(node.nodeText != null) {
 			logger().debug("Actions.changeNode => nodeText changed to {}",node.nodeText);
@@ -660,6 +669,17 @@ public class Actions {
 			throw new AssertionError("Tried to remove Lock from a Node without a Lock");
 		}
 	}
+	
+	private static boolean hasUserLockOnNode(String mapId, NodeModel node, String userName) {
+		LockModel lm = node.getExtension(LockModel.class);
+		if(lm == null) { //no lock at all
+			return false;
+		} else if(userName.equals(lm.getUsername())) {
+			return true;
+		} else { //locked by someone else
+			return false;
+		}
+	}
 
 	private static void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
 		LocationModel lm = freeplaneNode.getExtension(LocationModel.class);
@@ -694,6 +714,19 @@ public class Actions {
 			result = objectMapper.writeValueAsString(object);
 		} catch (Exception e) {
 			LogUtils.severe("Error while parsing object to JSON-String!", e);
+			throw new AssertionError(e);
+		}		
+
+		return result;
+	}
+	
+	private static <A> A getObjectFromJsonString(Class<A> clazz, String json) {
+		A result = null;
+
+		try {
+			result = objectMapper.readValue(json, clazz);
+		} catch (Exception e) {
+			LogUtils.severe("Error while parsing JSON-String to object!", e);
 			throw new AssertionError(e);
 		}		
 
