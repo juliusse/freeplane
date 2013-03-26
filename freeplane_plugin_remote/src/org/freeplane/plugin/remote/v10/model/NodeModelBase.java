@@ -5,17 +5,14 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-import javax.xml.bind.annotation.XmlTransient;
-
-import org.codehaus.jackson.io.JsonStringEncoder;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.freeplane.features.icon.MindIcon;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.NodeModel;
 
-@XmlTransient
-@XmlSeeAlso(value={DefaultNodeModel.class,RootNodeModel.class})
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 abstract public class NodeModelBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 
@@ -28,10 +25,8 @@ abstract public class NodeModelBase implements Serializable {
 	public String link;
 	public String locked;
 
-	//@XmlTransient
-	//protected final NodeModel freeplaneNode;
-	@XmlElement
-	protected List<String> childrenIds;
+	
+	public List<String> childrenIds;
 
 	/**
 	 * necessary for JAX-B
@@ -102,25 +97,37 @@ abstract public class NodeModelBase implements Serializable {
 	 */
 	public abstract int loadChildren(boolean autoloadChildren);
 
+	@JsonIgnore
 	public abstract List<DefaultNodeModel> getAllChildren();
 
-	protected String getJsonStringParts() {
-		String childrenList = "";
-		if(childrenIds != null) {
-			for(String cId : childrenIds) {
-				childrenList += ",\""+cId+"\"";
-			}
-			childrenList = childrenList.substring(1);
+	
+	public String toJsonString() {
+		try {
+		final ObjectMapper mapper = new ObjectMapper();
+		return mapper.writeValueAsString(this);
+		} catch (Exception e) {
+			return "";
 		}
-
-		return  "\"id\":\""+id+"\"," +
-		"\"nodeText\":\""+new String(JsonStringEncoder.getInstance().quoteAsString(nodeText))+"\"," +
-		"\"isHtml\":\""+isHtml.toString()+"\"," +
-		"\"link\":\""+(link != null ? new String(JsonStringEncoder.getInstance().quoteAsString(link)) : "")+"\"," +
-		"\"folded\":\""+folded+"\"," +
-		"\"locked\":\""+(locked != null ? new String(JsonStringEncoder.getInstance().quoteAsString(locked)) : "")+"\"," +
-		(childrenIds != null && childrenIds.size() > 0 ? "\"childrenIds\":["+childrenList+"]," : "") +
-		"\"image\":\""+"NOT IMPLEMENTED"+"\"," +
-		"\"icons\":\""+"NOT IMPLEMENTED"+"\"";
 	}
+	
+//	@JsonIgnore
+//	protected String getJsonStringParts() {
+//		String childrenList = "";
+//		if(childrenIds != null) {
+//			for(String cId : childrenIds) {
+//				childrenList += ",\""+cId+"\"";
+//			}
+//			childrenList = childrenList.substring(1);
+//		}
+//
+//		return  "\"id\":\""+id+"\"," +
+//		"\"nodeText\":\""+new String(JsonStringEncoder.getInstance().quoteAsString(nodeText))+"\"," +
+//		"\"isHtml\":"+isHtml.toString()+"," +
+//		"\"link\":\""+(link != null ? new String(JsonStringEncoder.getInstance().quoteAsString(link)) : "")+"\"," +
+//		"\"folded\":"+folded+"," +
+//		"\"locked\":\""+(locked != null ? new String(JsonStringEncoder.getInstance().quoteAsString(locked)) : "")+"\"," +
+//		(childrenIds != null && childrenIds.size() > 0 ? "\"childrenIds\":["+childrenList+"]," : "") +
+//		"\"image\":\""+"NOT IMPLEMENTED"+"\"," +
+//		"\"icons\":\""+"NOT IMPLEMENTED"+"\"";
+//	}
 }

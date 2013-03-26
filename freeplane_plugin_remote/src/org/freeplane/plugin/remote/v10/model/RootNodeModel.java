@@ -4,17 +4,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.remote.RemoteController;
 
-@XmlRootElement(name="node")
-@XmlAccessorType(XmlAccessType.FIELD)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 public class RootNodeModel extends NodeModelBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -76,27 +74,28 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 	}
 
 	@Override
+	@JsonIgnore
 	public List<DefaultNodeModel> getAllChildren() {
 		List<DefaultNodeModel> list = new ArrayList<DefaultNodeModel>(leftChildren);
 		list.addAll(rightChildren);
 		return list;
 	}
 
-	public String toJsonString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("{"+getJsonStringParts()+",\"leftChildren\":[");
-		for(int i = 0; i < leftChildren.size(); i ++) {
-			builder.append(leftChildren.get(i).toJsonString());
-			if(i < leftChildren.size()-1)
-				builder.append(",");
-		}
-		builder.append("],\"rightChildren\":[");
-		for(int i = 0; i < rightChildren.size(); i ++) {
-			builder.append(rightChildren.get(i).toJsonString());
-			if(i < rightChildren.size()-1)
-				builder.append(",");
-		}
-		builder.append("]}");
-		return builder.toString();
-	}
+//	public String toJsonString() {
+//		StringBuilder builder = new StringBuilder();
+//		builder.append("{"+getJsonStringParts()+",\"leftChildren\":[");
+//		for(int i = 0; i < leftChildren.size(); i ++) {
+//			builder.append(leftChildren.get(i).toJsonString());
+//			if(i < leftChildren.size()-1)
+//				builder.append(",");
+//		}
+//		builder.append("],\"rightChildren\":[");
+//		for(int i = 0; i < rightChildren.size(); i ++) {
+//			builder.append(rightChildren.get(i).toJsonString());
+//			if(i < rightChildren.size()-1)
+//				builder.append(",");
+//		}
+//		builder.append("]}");
+//		return builder.toString();
+//	}
 }

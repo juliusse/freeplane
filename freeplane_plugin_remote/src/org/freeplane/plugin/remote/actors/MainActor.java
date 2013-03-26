@@ -61,12 +61,12 @@ public class MainActor extends UntypedActor {
 			
 			//change node
 			else if(message instanceof ChangeNodeRequest) {
-				Actions.changeNode((ChangeNodeRequest)message);
+				response = Actions.changeNode((ChangeNodeRequest)message);
 			}
 			
 			//remove node from map
 			else if(message instanceof RemoveNodeRequest) {
-				Actions.removeNode((RemoveNodeRequest) message);			
+				response = Actions.removeNode((RemoveNodeRequest) message);			
 			}
 			
 			//get node from map
@@ -96,17 +96,17 @@ public class MainActor extends UntypedActor {
 			
 			//refresh lock
 			else if(message instanceof RefreshLockRequest) {
-				Actions.refreshLock((RefreshLockRequest)message);
+				response = Actions.refreshLock((RefreshLockRequest)message);
 			}
 			
 			//release lock
 			else if(message instanceof ReleaseLockRequest) {
-				Actions.releaseLock((ReleaseLockRequest)message);
+				response = Actions.releaseLock((ReleaseLockRequest)message);
 			}
 			
 			//request lock
 			else if(message instanceof RequestLockRequest) {
-				Actions.requestLock((RequestLockRequest)message);
+				response = Actions.requestLock((RequestLockRequest)message);
 			}
 			
 			//get expired locks

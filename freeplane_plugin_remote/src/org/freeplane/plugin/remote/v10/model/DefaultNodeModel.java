@@ -6,11 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.freeplane.features.attribute.Attribute;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.map.MapController;
@@ -18,12 +15,11 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.remote.RemoteController;
 
-@XmlRootElement(name="node")
-@XmlAccessorType(XmlAccessType.FIELD)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	private static final long serialVersionUID = 1L;
 
-	@XmlElement(name="children")
+	
 	public List<DefaultNodeModel> children;
 
 	public Integer hGap;
@@ -91,32 +87,39 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	
 
 	@Override
+	@JsonIgnore
 	public List<DefaultNodeModel> getAllChildren() {
 		return children;
 	}
 	
-	public String toJsonString() {
-		String childrenList = "";
-		if(children != null && children.size() > 0) {
-			for(DefaultNodeModel node : children) {
-				childrenList += ","+node.toJsonString();
-			}
-			childrenList = childrenList.substring(1);
-		}
-		
-		
-		StringBuilder builder = new StringBuilder();
-		builder.append("{"+getJsonStringParts()+",");
-		if(children != null) {
-			builder.append("\"children\":["+childrenList+"],");
-		}
-		builder.append("\"attributes\":\"NOT IMPLEMENTED\",");
-		builder.append("\"hGap\":\""+hGap+"\",");
-		builder.append("\"shiftY\":\""+shiftY+"\"");
-		builder.append("}");
-		
-		//return "{}"
-		return builder.toString();
-	}
+//	public String toJsonString() {
+//		try {
+//		final ObjectMapper mapper = new ObjectMapper();
+//		return mapper.writeValueAsString(this);
+//		} catch (Exception e) {
+//			return "";
+//		}
+//		String childrenList = "";
+//		if(children != null && children.size() > 0) {
+//			for(DefaultNodeModel node : children) {
+//				childrenList += ","+node.toJsonString();
+//			}
+//			childrenList = childrenList.substring(1);
+//		}
+//		
+//		
+//		StringBuilder builder = new StringBuilder();
+//		builder.append("{"+getJsonStringParts()+",");
+//		if(children != null) {
+//			builder.append("\"children\":["+childrenList+"],");
+//		}
+//		builder.append("\"attributes\":\"NOT IMPLEMENTED\",");
+//		builder.append("\"hGap\":\""+hGap+"\",");
+//		builder.append("\"shiftY\":\""+shiftY+"\"");
+//		builder.append("}");
+//		
+//		//return "{}"
+//		return builder.toString();
+//	}
 
 }

@@ -17,6 +17,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.docear.messages.Messages.AddNodeRequest;
 import org.docear.messages.Messages.AddNodeResponse;
 import org.docear.messages.Messages.ChangeNodeRequest;
+import org.docear.messages.Messages.ChangeNodeResponse;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
@@ -28,6 +29,7 @@ import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
+import org.docear.messages.Messages.RemoveNodeResponse;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.fest.assertions.Fail;
@@ -374,6 +376,8 @@ public class AkkaTests {
 					protected void run() {
 						sendMindMapToServer(5);
 						remoteActor.tell(new RemoveNodeRequest("5", "ID_1"), localActor);
+						RemoveNodeResponse rmNodeResponse = expectMsgClass(RemoveNodeResponse.class);
+						assertThat(rmNodeResponse.getDeleted()).isEqualTo(true);
 
 						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 						Failure response = expectMsgClass(Failure.class);
@@ -456,19 +460,18 @@ public class AkkaTests {
 						}
 						System.out.println(nodeAsJSON);
 						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON), localActor);
-
-						remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
-						GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
+						ChangeNodeResponse response = expectMsgClass(ChangeNodeResponse.class);
+						System.out.println(response.getNode());
 						
 						try {
-						final DefaultNodeModel receivedNode = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
-						
-						assertThat(receivedNode.nodeText).isEqualTo(newNodeText);
-						assertThat(receivedNode.isHtml).isEqualTo(isHtml);
-						assertThat(receivedNode.folded).isEqualTo(folded);
-						assertThat(receivedNode.link).isEqualTo(link);
-						assertThat(receivedNode.hGap).isEqualTo(hGap);
-						assertThat(receivedNode.shiftY).isEqualTo(shiftY);
+							final DefaultNodeModel receivedNode = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
+
+							assertThat(receivedNode.nodeText).isEqualTo(newNodeText);
+							assertThat(receivedNode.isHtml).isEqualTo(isHtml);
+							assertThat(receivedNode.folded).isEqualTo(folded);
+							assertThat(receivedNode.link).isEqualTo(link);
+							assertThat(receivedNode.hGap).isEqualTo(hGap);
+							assertThat(receivedNode.shiftY).isEqualTo(shiftY);
 
 						} catch (JsonMappingException e) {
 							Fail.fail("json mapping error", e);

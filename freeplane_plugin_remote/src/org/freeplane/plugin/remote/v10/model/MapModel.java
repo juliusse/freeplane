@@ -2,14 +2,11 @@ package org.freeplane.plugin.remote.v10.model;
 
 import java.io.Serializable;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.freeplane.features.map.NodeModel;
 
-@XmlRootElement(name = "mapModel")
-@XmlAccessorType(XmlAccessType.FIELD)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 public class MapModel implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -33,7 +30,13 @@ public class MapModel implements Serializable {
 	}
 	
 	public String toJsonString() {
-		return "{\"id\":\""+id+"\",\"name\":\""+name+"\",\"revision\":\""+revision+"\",\"isReadonly\":\""+isReadonly+"\",\"root\":"+root.toJsonString()+"}";
+		try {
+		final ObjectMapper mapper = new ObjectMapper();
+		return mapper.writeValueAsString(this);
+		} catch (Exception e) {
+			return "";
+		}
+		//return "{\"id\":\""+id+"\",\"name\":\""+name+"\",\"revision\":\""+revision+"\",\"isReadonly\":\""+isReadonly+"\",\"root\":"+root.toJsonString()+"}";
 	}
 	
 }

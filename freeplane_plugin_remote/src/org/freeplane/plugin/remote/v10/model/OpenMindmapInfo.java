@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 
 public class OpenMindmapInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -17,13 +18,13 @@ public class OpenMindmapInfo implements Serializable {
 	private long lastAccessTime;
 	private long lastUpdateTime;
 	private final String name;
-	private final List<String> updateList;
+	private final List<MapUpdate> updateList;
 
 	public OpenMindmapInfo(URL mapUrl, String name) {
 		this.mapUrl = mapUrl;
 		this.name = name;
 		this.lockedNodes = new HashSet<NodeModel>();
-		this.updateList = new ArrayList<String>();
+		this.updateList = new ArrayList<MapUpdate>();
 		updateAccessTime();
 	}
 
@@ -35,6 +36,16 @@ public class OpenMindmapInfo implements Serializable {
 	public Set<NodeModel> getLockedNodes() {
 		updateAccessTime();
 		return lockedNodes;
+	}
+	
+	public void addLockedNode(NodeModel freeplaneNode) {
+		updateAccessTime();
+		lockedNodes.add(freeplaneNode);
+	}
+	
+	public void removeLockedNode(NodeModel freeplaneNode) {
+		updateAccessTime();
+		lockedNodes.remove(freeplaneNode);
 	}
 
 	public long getLastAccessTime() {
@@ -62,7 +73,7 @@ public class OpenMindmapInfo implements Serializable {
 		return updateList.size();
 	}
 	
-	public void addUpdate(String updateStatement) {
+	public void addUpdate(MapUpdate updateStatement) {
 		updateList.add(updateStatement);
 		updateUpdateTime();
 	}
