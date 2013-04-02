@@ -34,6 +34,7 @@ import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.OpenMindMapResponse;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.ReleaseLockResponse;
 import org.docear.messages.Messages.RemoveNodeRequest;
@@ -54,6 +55,7 @@ import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
+import org.freeplane.n3.nanoxml.XMLException;
 import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
@@ -158,7 +160,7 @@ public class Actions {
 		Utils.closeMap(request.getMapId());
 	}
 
-	public static void openMindmap(final OpenMindMapRequest request) throws CannotRetrieveMapIdException {
+	public static OpenMindMapResponse openMindmap(final OpenMindMapRequest request) throws CannotRetrieveMapIdException {
 		final String mapContent = request.getMindmapFileContent();
 		final String mapName = request.getMindmapFileName();
 		logger().debug("Actions.openMindmap => mindmapFileContent:'{}...'",mapContent.substring(0,Math.min(mapContent.length(), 20)));
@@ -187,14 +189,18 @@ public class Actions {
 			final MMapIO mio = (MMapIO)RemoteController.getMapIO();
 			mio.newMap(pathURL);
 			logger().debug("Actions.openMindmap => map successfully loaded and opened!");
-		} catch(CannotRetrieveMapIdException e) {
-			throw e;
-		} catch (Exception e) {
+		} catch (IOException e) {
+			throw new AssertionError(e);
+		} catch (URISyntaxException e) {
+			throw new AssertionError(e);
+		} catch (XMLException e) {
 			throw new AssertionError(e);
 		} finally {
 			logger().debug("Utils.closeMap => removing temporary file from file system");
 			file.delete();
 		}
+		
+		return new OpenMindMapResponse(true);
 	}
 
 	public static Future<ListenToUpdateOccurrenceRespone> listenIfUpdateOccurs(ListenToUpdateOccurrenceRequest request) throws MapNotFoundException {

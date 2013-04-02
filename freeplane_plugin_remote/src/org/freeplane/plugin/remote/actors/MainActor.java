@@ -75,7 +75,7 @@ public class MainActor extends UntypedActor {
 			
 			// Open mindmap
 			else if (message instanceof OpenMindMapRequest){
-				Actions.openMindmap((OpenMindMapRequest)message);
+				response = Actions.openMindmap((OpenMindMapRequest)message);
 			}
 			
 			//close map

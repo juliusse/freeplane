@@ -27,6 +27,7 @@ import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
+import org.docear.messages.Messages.OpenMindMapResponse;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.ReleaseLockResponse;
 import org.docear.messages.Messages.RemoveNodeRequest;
@@ -706,7 +707,9 @@ public class AkkaTests {
 				{
 					new Within(duration("5 seconds")) {
 						public void run() {
-							remoteActor.tell(request, localActor);
+							remoteActor.tell(request, getRef());
+							OpenMindMapResponse response = expectMsgClass(OpenMindMapResponse.class);
+							assertThat(response.getSuccess()).isEqualTo(true);
 						}
 					};
 				}
