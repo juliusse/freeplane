@@ -76,7 +76,7 @@ public class RemoteController {
 						new Runnable() {
 							@Override
 							public void run() {
-								logger.info("Scheduling closing of unused maps.");
+								logger.info("Scheduling release of locks that timed out.");
 								mainActor.tell(new ReleaseTimedOutLocks(15000l), null); // 15 seconds
 							}
 						}, system.dispatcher());

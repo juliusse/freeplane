@@ -37,18 +37,22 @@ public class MainActor extends UntypedActor {
 
 	@Override
 	public void onReceive(Object message) throws Exception {
-		final Logger logger  = RemoteController.getLogger();  
-		logger.info("MainActor.onReceive => '{}' received.",message.getClass().getName());
+		final Logger logger  = RemoteController.getLogger();
 		final ActorRef sender = getSender();
-		logger.info("MainActor.onReceive => Sender: '{}'",sender.path());
 		
+		if(!message.getClass().getSimpleName().contains("ReleaseTimedOutLocks")) {
+			//Release check happens every 5 seconds and would flood the logging
+			logger.info("MainActor.onReceive => '{}' received.",message.getClass().getName());
+			logger.info("MainActor.onReceive => Sender: '{}'",sender.path());
+		}
+
 		Object response = null;
 		try {
 			//get map as json
 			if(message instanceof MindmapAsJsonRequest) {
 				response = Actions.getMapModelJson((MindmapAsJsonRequest) message);
 			}
-			
+
 			//get map as xml
 			else if(message instanceof MindmapAsXmlRequest) {
 				response = Actions.getMapModelXml((MindmapAsXmlRequest)message);
@@ -58,69 +62,69 @@ public class MainActor extends UntypedActor {
 			else if(message instanceof AddNodeRequest) {
 				response = Actions.addNode((AddNodeRequest) message);			
 			}
-			
+
 			//change node
 			else if(message instanceof ChangeNodeRequest) {
 				response = Actions.changeNode((ChangeNodeRequest)message);
 			}
-			
+
 			//remove node from map
 			else if(message instanceof RemoveNodeRequest) {
 				response = Actions.removeNode((RemoveNodeRequest) message);			
 			}
-			
+
 			//get node from map
 			else if(message instanceof GetNodeRequest) {
 				response = Actions.getNode((GetNodeRequest) message);			
 			}
-			
+
 			// Open mindmap
 			else if (message instanceof OpenMindMapRequest){
 				response = Actions.openMindmap((OpenMindMapRequest)message);
 			}
-			
+
 			//close map
 			else if(message instanceof CloseMapRequest) {
 				Actions.closeMap((CloseMapRequest)message);
 			}
-			
+
 			//close all maps
 			else if(message instanceof CloseAllOpenMapsRequest) {
 				Actions.closeAllOpenMaps((CloseAllOpenMapsRequest)message);
 			}
-			
+
 			//close server
 			else if(message instanceof CloseServerRequest) {
 				Actions.closeServer((CloseServerRequest)message);
 			}
-			
+
 			//release lock
 			else if(message instanceof ReleaseLockRequest) {
 				response = Actions.releaseLock((ReleaseLockRequest)message);
 			}
-			
+
 			//request lock
 			else if(message instanceof RequestLockRequest) {
 				response = Actions.requestLock((RequestLockRequest)message);
 			}
-			
+
 			//get updates since specific revision
 			else if(message instanceof FetchMindmapUpdatesRequest) {
 				response = Actions.getUpdatesSinceRevision((FetchMindmapUpdatesRequest)message);
 			}
-			
+
 			//listen if update occurs
 			else if(message instanceof ListenToUpdateOccurrenceRequest) {
 				final SendResult<ListenToUpdateOccurrenceRespone> onSuccess = new SendResult<ListenToUpdateOccurrenceRespone>(sender,getSelf());
 				Actions.listenIfUpdateOccurs((ListenToUpdateOccurrenceRequest) message).onSuccess(onSuccess, RemoteController.getActorSystem().dispatcher());
-				
+
 			}
-			
+
 			//close unused maps
 			else if(message instanceof CloseUnusedMaps) {
 				Actions.closeUnusedMaps((CloseUnusedMaps)message);
 			}
-			
+
 			//release timed out Locks
 			else if(message instanceof ReleaseTimedOutLocks) {
 				Actions.releaseTimedOutLocks((ReleaseTimedOutLocks)message);
@@ -146,20 +150,20 @@ public class MainActor extends UntypedActor {
 			logger.error("MainActor.onReceive => Unrecognized Exception! ",e);
 			response = new Status.Failure(e);
 		}
-		
+
 		if(response != null) {
-			
+
 			logger.info("MainActor.onReceive => sending '{}' as response.",response.getClass().getName());
 			sender.tell(response, getSelf());
 		} else {
 			logger.info("MainActor.onReceive => No response available");
 		}
 	}
-	
-	
+
+
 	public final static class SendResult<T> extends OnSuccess<T> {
 		private final ActorRef remote, me;
-		
+
 		public SendResult(ActorRef remote, ActorRef me) {
 			super();
 			this.remote = remote;
@@ -171,7 +175,7 @@ public class MainActor extends UntypedActor {
 			org.freeplane.plugin.remote.Logger.getLogger().info("MainActor.onReceive => sending '{}' as response.",arg0.getClass().getName());
 			remote.tell(arg0,me);
 		}
-		
+
 	}
 
 }

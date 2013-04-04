@@ -1,41 +1,24 @@
 <configuration>
-
-	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-		<encoder>
-			<pattern>
-				%d{HH:mm:ss.SSS} [%-5level] - %msg
-			</pattern>
-		</encoder>
-	</appender>
-
-	<appender name="FILE"
-		class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <file>/var/log/mindmap-backend/mindmap-backend.log</file>
-		<!-- <file>c:/temp/logs/remote.log</file> -->
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/var/log/mindmap-backend/application.log</file>
 
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<!-- rollover daily -->
-			<fileNamePattern>remote-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-			<timeBasedFileNamingAndTriggeringPolicy
-				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+			<fileNamePattern>/var/log/mindmap-backend/application.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+			<!-- keep 30 days' worth of history -->
+			<maxHistory>30</maxHistory>
+			
+			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
 				<!-- or whenever the file size reaches 100MB -->
 				<maxFileSize>100MB</maxFileSize>
 			</timeBasedFileNamingAndTriggeringPolicy>
 		</rollingPolicy>
-
-		<triggeringPolicy
-			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-			<maxFileSize>10MB</maxFileSize>
-		</triggeringPolicy>
-
 		<encoder>
 			<pattern>%d{HH:mm:ss.SSS} [%-5level] - %msg%n</pattern>
 		</encoder>
 	</appender>
 
 	<root level="DEBUG">
-		<!-- <appender-ref ref="STDOUT" /> -->
 		<appender-ref ref="FILE" />
 	</root>
-
 </configuration>
