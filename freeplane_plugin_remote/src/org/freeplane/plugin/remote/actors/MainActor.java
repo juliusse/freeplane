@@ -110,7 +110,7 @@ public class MainActor extends UntypedActor {
 
 			//get updates since specific revision
 			else if(message instanceof FetchMindmapUpdatesRequest) {
-				response = Actions.getUpdatesSinceRevision((FetchMindmapUpdatesRequest)message);
+				response = Actions.fetchUpdatesSinceRevision((FetchMindmapUpdatesRequest)message);
 			}
 
 			//listen if update occurs

@@ -208,12 +208,16 @@ public class Actions {
 		return new OpenMindMapResponse(true);
 	}
 
-	public static FetchMindmapUpdatesResponse getUpdatesSinceRevision(FetchMindmapUpdatesRequest request) {
+	public static FetchMindmapUpdatesResponse fetchUpdatesSinceRevision(FetchMindmapUpdatesRequest request) throws MapNotFoundException {
 		final String mapId = request.getMapId();
-		final Long sinceRevision = request.getRevisionId();
+		final Integer sinceRevision = request.getRevisionId();
 		logger().debug("Actions.getUpdatesSinceRevision => mapId: {}; sinceRevision: {}",mapId,sinceRevision);
 
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
+		if(info == null) {
+			throw new MapNotFoundException("Map with id "+mapId+" was not found");
+		}
+		
 		List<String> list = info.getJsonUpdateListSinceRevision(sinceRevision);
 		return new FetchMindmapUpdatesResponse(info.getCurrentRevision(),list);
 	}
