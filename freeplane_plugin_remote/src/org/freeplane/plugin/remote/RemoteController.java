@@ -72,7 +72,7 @@ public class RemoteController {
 		releaseExpiredLocksJob = 
 				system.scheduler().schedule(
 						Duration.Zero(), 
-						Duration.apply(10, TimeUnit.MINUTES), 
+						Duration.apply(5, TimeUnit.SECONDS), 
 						new Runnable() {
 							@Override
 							public void run() {

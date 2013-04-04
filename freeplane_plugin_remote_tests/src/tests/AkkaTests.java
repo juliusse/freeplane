@@ -617,9 +617,14 @@ public class AkkaTests {
 						sendMindMapToServer(2);
 						sendMindMapToServer(3);
 
-
+						try {
+							Thread.sleep(100);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						//close maps that haven't been used for 1 ms
-						remoteActor.tell(new CloseUnusedMaps(1), localActor);
+						remoteActor.tell(new CloseUnusedMaps(10), localActor);
 						//expectNoMsg();
 
 						remoteActor.tell(new MindmapAsJsonRequest("5"), localActor);

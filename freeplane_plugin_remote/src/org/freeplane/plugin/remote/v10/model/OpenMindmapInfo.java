@@ -34,17 +34,17 @@ public class OpenMindmapInfo implements Serializable {
 	}
 
 	public Set<NodeModel> getLockedNodes() {
-		updateAccessTime();
+		updateUpdateTime();
 		return lockedNodes;
 	}
 	
 	public void addLockedNode(NodeModel freeplaneNode) {
-		updateAccessTime();
+		updateUpdateTime();
 		lockedNodes.add(freeplaneNode);
 	}
 	
 	public void removeLockedNode(NodeModel freeplaneNode) {
-		updateAccessTime();
+		//updateAccessTime();
 		lockedNodes.remove(freeplaneNode);
 	}
 
