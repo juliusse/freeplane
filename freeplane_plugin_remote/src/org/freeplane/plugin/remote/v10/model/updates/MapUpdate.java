@@ -4,7 +4,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 public abstract class MapUpdate {
 	public enum Type {
-		ChangeNode, AddNode, DeleteNode
+		ChangeNodeAttribute, AddNode, DeleteNode
 	}
 
 	private final Type type;

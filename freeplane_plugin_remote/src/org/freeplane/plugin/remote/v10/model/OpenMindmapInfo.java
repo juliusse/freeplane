@@ -69,12 +69,20 @@ public class OpenMindmapInfo implements Serializable {
 		lastUpdateTime = System.currentTimeMillis();
 	}
 	
-	public long getCurrentRevision() {
+	public int getCurrentRevision() {
 		return updateList.size();
 	}
 	
 	public void addUpdate(MapUpdate updateStatement) {
 		updateList.add(updateStatement);
 		updateUpdateTime();
+	}
+	
+	public List<String> getJsonUpdateListSinceRevision(long revisionNumber) {
+		List<String> list = new ArrayList<String>();
+		for(int i = (int)revisionNumber; i < updateList.size(); i++) {
+			list.add(updateList.get(i).toJson());
+		}
+		return list;
 	}
 }

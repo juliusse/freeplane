@@ -6,7 +6,9 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -25,6 +27,8 @@ import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
+import org.docear.messages.Messages.FetchMindmapUpdatesRequest;
+import org.docear.messages.Messages.FetchMindmapUpdatesResponse;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
@@ -63,8 +67,9 @@ import org.freeplane.plugin.remote.v10.model.LockModel;
 import org.freeplane.plugin.remote.v10.model.MapModel;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
-import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeUpdate;
+import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.DeleteNodeUpdate;
+import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 import org.slf4j.Logger;
 
 import scala.concurrent.Future;
@@ -104,7 +109,7 @@ public class Actions {
 		logger().debug("Actions.getMapModelJson => creating mapmodel for JSON-convertion");
 		final OpenMindmapInfo info = RemoteController.getMapIdInfoMap().get(mapId);
 		final String mapName = info.getName();
-		final Long revision = info.getCurrentRevision();
+		final int revision = info.getCurrentRevision();
 		MapModel mm = new MapModel(freeplaneMap,mapName,revision, loadAllNodes);
 
 		if(!loadAllNodes) {
@@ -196,11 +201,21 @@ public class Actions {
 		} catch (XMLException e) {
 			throw new AssertionError(e);
 		} finally {
-			logger().debug("Utils.closeMap => removing temporary file from file system");
+			logger().debug("Actions.closeMap => removing temporary file from file system");
 			file.delete();
 		}
-		
+
 		return new OpenMindMapResponse(true);
+	}
+
+	public static FetchMindmapUpdatesResponse getUpdatesSinceRevision(FetchMindmapUpdatesRequest request) {
+		final String mapId = request.getMapId();
+		final Long sinceRevision = request.getRevisionId();
+		logger().debug("Actions.getUpdatesSinceRevision => mapId: {}; sinceRevision: {}",mapId,sinceRevision);
+
+		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
+		List<String> list = info.getJsonUpdateListSinceRevision(sinceRevision);
+		return new FetchMindmapUpdatesResponse(info.getCurrentRevision(),list);
 	}
 
 	public static Future<ListenToUpdateOccurrenceRespone> listenIfUpdateOccurs(ListenToUpdateOccurrenceRequest request) throws MapNotFoundException {
@@ -332,18 +347,18 @@ public class Actions {
 		logger().debug("Actions.addNode => node with id '{}' successfully created",node.getID()); 
 
 		logger().debug("Actions.addNode => returning response with new node as json");
-		final String nodeAsJson = new DefaultNodeModel(node, false).toJsonString();
-		getOpenMindMapInfo(mapId).addUpdate(new AddNodeUpdate(parentNodeId, nodeAsJson));
-		return new AddNodeResponse(nodeAsJson);
+		final AddNodeUpdate update = new AddNodeUpdate(parentNodeId, new DefaultNodeModel(node, false).toJsonString());
+		getOpenMindMapInfo(mapId).addUpdate(update);
+		return new AddNodeResponse(update.toJson());
 	}
 
 	public static ChangeNodeResponse changeNode(final ChangeNodeRequest request) throws MapNotFoundException, NodeNotFoundException,NodeNotLockedByUserException {
 		final String mapId = request.getMapId();
-		final DefaultNodeModel node = getObjectFromJsonString(DefaultNodeModel.class, request.getNodeAsJsonString());
-		final String nodeId = node.id;
+		final Map<String,Object> attributeMap = request.getAttributeValueMap();
+		final String nodeId = request.getNodeId();
 		final String username = request.getUsername();
-		logger().debug("Actions.changeNode => mapId:'{}'; nodeAsJson:'{}'",mapId,request.getNodeAsJsonString());
-		
+		logger().debug("Actions.changeNode => mapId:'{}'; nodeId:'{}'; username: '{}'; attributes: '{}'",mapId,nodeId,username,attributeMap.toString());
+
 		logger().debug("Actions.changeNode => selecting map");
 		selectMap(mapId);
 
@@ -355,77 +370,85 @@ public class Actions {
 			throw new NodeNotLockedByUserException("User has no lock on node");
 		}
 
-		if(node.folded != null) {
-			logger().debug("Actions.changeNode => folded changed to {}",node.folded);
-			freeplaneNode.setFolded(node.folded);
-		}
-		if(node.isHtml != null) {
-			logger().debug("Actions.changeNode => isHtml changed to {}",node.isHtml);
-			freeplaneNode.setXmlText(node.nodeText);
-		}
-		if(node.attributes != null) {
-			logger().error("Actions.changeNode => attributes are not implemented yet");
-			//TODO implement correctly
-			//			NodeAttributeTableModel attrTable;
-			//			AttributeController attrController = AttributeController.getController();
-			//			
-			//			if(node.attributes.size() > 0) {
-			//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
-			//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
-			//					//attrController.performInsertRow(attrTable, row, name, value)
-			//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
-			//				}
-			//				freeplaneNode.addExtension(attrTable);
-			//			} else if (node.attributes.size() == 0) {
-			//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
-			//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
-			//			}
-		}
-		if(node.hGap != null) {
-			logger().debug("Actions.changeNode => hGap changed to {}",node.hGap);
-			updateLocationModel(freeplaneNode, node.hGap, null);
-		}
-		if(node.icons != null) {
-			//TODO handle
-		}
-		if(node.image != null) {
-			//TODO handle
-		}
-		if(node.link != null) {
-			logger().debug("Actions.changeNode => link changed to {}",node.link);
-			NodeLinks nodeLinks = freeplaneNode.getExtension(NodeLinks.class);
+		//list to collect updates done
+		final List<MapUpdate> updates = new ArrayList<MapUpdate>();
 
-			if(nodeLinks == null) {
-				nodeLinks = new NodeLinks();
-				freeplaneNode.addExtension(nodeLinks);				
-			}
+		for(Map.Entry<String, Object> entry: attributeMap.entrySet()) {
+			final String attribute = entry.getKey();
+			final Object valueObj = entry.getValue();
+			
+			logger().debug("Actions.changeNode => {} changed to {}",attribute, valueObj.toString());
+			updates.add(new ChangeNodeAttributeUpdate(nodeId, attribute, valueObj));
+			
+			if(attribute.equals("folded")) {
+				final Boolean value = (Boolean)valueObj;
+				freeplaneNode.setFolded(value);
+			} else if(attribute.equals("isHtml")) {
+				final Boolean isHtml = (Boolean)valueObj;
+				if(isHtml) {
+					if(attributeMap.containsKey("nodeText"))
+						freeplaneNode.setXmlText(attributeMap.get("nodeText").toString());
+					else
+						freeplaneNode.setXmlText(freeplaneNode.getText());
+				}
+			} else if(attribute.equals("attributes")) {
+				logger().error("Actions.changeNode => attributes are not implemented yet");
+				//TODO implement correctly
+				//			NodeAttributeTableModel attrTable;
+				//			AttributeController attrController = AttributeController.getController();
+				//			
+				//			if(node.attributes.size() > 0) {
+				//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
+				//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
+				//					//attrController.performInsertRow(attrTable, row, name, value)
+				//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
+				//				}
+				//				freeplaneNode.addExtension(attrTable);
+				//			} else if (node.attributes.size() == 0) {
+				//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
+				//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
+				//			}
+				//updates.add(new ChangeNodeAttributeUpdate(nodeId, "attributes", node.attributes));
+			} else if(attribute.equals("hGap")) {
+				updateLocationModel(freeplaneNode, (Integer)valueObj, null);
+			} else if(attribute.equals("shiftY")) {
+				updateLocationModel(freeplaneNode, null, (Integer)valueObj);
+			} else if(attribute.equals("icons")) {
+				//TODO handle
+			} else if(attribute.equals("image")) {
+				//TODO handle
+			} else if(attribute.equals("link")) {
+				final String value = valueObj.toString();
+				
+				NodeLinks nodeLinks = freeplaneNode.getExtension(NodeLinks.class);
 
-			try {
-			nodeLinks.setHyperLink(new URI(node.link));
-			} catch (URISyntaxException e) {
-				logger().error("problem saving hyperlink",e);
+				if(nodeLinks == null) {
+					nodeLinks = new NodeLinks();
+					freeplaneNode.addExtension(nodeLinks);				
+				}
+
+				try {
+					nodeLinks.setHyperLink(new URI(value));
+				} catch (URISyntaxException e) {
+					logger().error("problem saving hyperlink",e);
+				}
+			} else if(attribute.equals("nodeText")) {
+				freeplaneNode.setText( valueObj.toString());
 			}
 		}
-		if(node.nodeText != null) {
-			logger().debug("Actions.changeNode => nodeText changed to {}",node.nodeText);
-			freeplaneNode.setText(node.nodeText);
-		}
-		if(node.shiftY != null) {
-			logger().debug("Actions.changeNode => shiftY changed to {}",node.shiftY);
-			updateLocationModel(freeplaneNode, null, node.shiftY);
-		}
-		//only for gui
-		//freeplaneNode.fireNodeChanged(new NodeChangeEvent(freeplaneNode, "", "", ""));
 
 		logger().debug("Actions.changeNode => refreshing lock access time");
 		refreshLockAccessTime(freeplaneNode);
 
-		final DefaultNodeModel changedNode = new DefaultNodeModel(freeplaneNode, false);
-		final String nodeAsJson = changedNode.toJsonString();
-		final ChangeNodeUpdate update = new ChangeNodeUpdate(nodeAsJson);
+		//submit changes and create list for response
+		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
+		final List<String> updateJsons = new ArrayList<String>();
+		for(MapUpdate update : updates) {
+			info.addUpdate(update);
+			updateJsons.add(update.toJson());
+		}
 
-		getOpenMindMapInfo(mapId).addUpdate(update);
-		return new ChangeNodeResponse(nodeAsJson);
+		return new ChangeNodeResponse(updateJsons);
 	}
 
 	public static RemoveNodeResponse removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
@@ -449,20 +472,20 @@ public class Actions {
 		return new RemoveNodeResponse(true);
 	}
 
-//	public static RefreshLockResponse refreshLock (RefreshLockRequest request) throws MapNotFoundException, NodeNotFoundException{
-//		final String mapId = request.getMapId();
-//		final String nodeId = request.getNodeId();
-//		logger().debug("Actions.refreshLock => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
-//
-//		logger().debug("Actions.refreshLock => selecting map");
-//		selectMap(request.getMapId());
-//
-//		logger().debug("Actions.refreshLock => retrieving node");
-//		final NodeModel node = getNodeFromOpenMapById(nodeId);
-//
-//		refreshLockAccessTime(node);
-//		return new RefreshLockResponse(true);
-//	}
+	//	public static RefreshLockResponse refreshLock (RefreshLockRequest request) throws MapNotFoundException, NodeNotFoundException{
+	//		final String mapId = request.getMapId();
+	//		final String nodeId = request.getNodeId();
+	//		logger().debug("Actions.refreshLock => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
+	//
+	//		logger().debug("Actions.refreshLock => selecting map");
+	//		selectMap(request.getMapId());
+	//
+	//		logger().debug("Actions.refreshLock => retrieving node");
+	//		final NodeModel node = getNodeFromOpenMapById(nodeId);
+	//
+	//		refreshLockAccessTime(node);
+	//		return new RefreshLockResponse(true);
+	//	}
 
 	public static RequestLockResponse requestLock (RequestLockRequest request) throws MapNotFoundException, NodeAlreadyLockedException, NodeNotFoundException{
 		final String mapId = request.getMapId();
@@ -481,8 +504,8 @@ public class Actions {
 
 		if(lockModel == null) { //no lock present
 			logger().debug("Actions.requestLock => no lock on node, creating lock...");
-			final String changedNodeJson = addLockToNode(mapId, node, username);
-			return new RequestLockResponse(true, changedNodeJson);
+			final String mapUpdateJson = addLockToNode(mapId, node, username);
+			return new RequestLockResponse(true, mapUpdateJson);
 		} else if(username.equals(lockModel.getUsername())) { //refresh from locking user 
 			refreshLockAccessTime(node);
 			return new RequestLockResponse(true, null);
@@ -516,9 +539,9 @@ public class Actions {
 		if(username.equals(lm.getUsername())) {
 			//release lock
 			logger().debug("Actions.releaseLock => releasing lock");
-			final String nodeAsJson = releaseLockFromNode(mapId, node);
+			final String updateJson = releaseLockFromNode(mapId, node);
 
-			return new ReleaseLockResponse(true, nodeAsJson);
+			return new ReleaseLockResponse(true, updateJson);
 		} else {
 			return new ReleaseLockResponse(false, null);
 		}
@@ -641,17 +664,17 @@ public class Actions {
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
 		if(freeplaneNode.getExtension(LockModel.class) == null) {
 			final LockModel lockModel = new LockModel(username,System.currentTimeMillis());
-			
+
 			//add node to locked list
 			logger().debug("Actions.addLockToNode => adding node to locked node list");
 			info.addLockedNode(freeplaneNode);
 			//add lock
 			freeplaneNode.addExtension(lockModel);
 
-			final String nodeAsJson = new DefaultNodeModel(freeplaneNode,false).toJsonString();
+			final ChangeNodeAttributeUpdate update = new ChangeNodeAttributeUpdate(freeplaneNode.getID(), "locked", username);
 			//add change to revision list
-			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));
-			return nodeAsJson;
+			info.addUpdate(update);
+			return update.toJson();
 		} else {
 			throw new AssertionError("Tried to add Lock to a Node with a Lock present");
 		}
@@ -660,22 +683,22 @@ public class Actions {
 	private static String releaseLockFromNode(String mapId, NodeModel freeplaneNode) {
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
 		if(freeplaneNode.getExtension(LockModel.class) != null) {
-			
+
 			//remove node from locked list
 			logger().debug("Actions.releaseLockFromNode => remove node from locked list");
 			info.removeLockedNode(freeplaneNode);
 			//remove lock
 			freeplaneNode.removeExtension(LockModel.class);
 
-			final String nodeAsJson = new DefaultNodeModel(freeplaneNode,false).toJsonString();
+			final ChangeNodeAttributeUpdate update = new ChangeNodeAttributeUpdate(freeplaneNode.getID(), "locked", null);
 			//add change to revision list
-			info.addUpdate(new ChangeNodeUpdate(nodeAsJson));
-			return nodeAsJson;
+			info.addUpdate(update);
+			return update.toJson();
 		} else {
 			throw new AssertionError("Tried to remove Lock from a Node without a Lock");
 		}
 	}
-	
+
 	private static boolean hasUserLockOnNode(String mapId, NodeModel node, String userName) {
 		LockModel lm = node.getExtension(LockModel.class);
 		if(lm == null) { //no lock at all
@@ -720,19 +743,6 @@ public class Actions {
 			result = objectMapper.writeValueAsString(object);
 		} catch (Exception e) {
 			LogUtils.severe("Error while parsing object to JSON-String!", e);
-			throw new AssertionError(e);
-		}		
-
-		return result;
-	}
-	
-	private static <A> A getObjectFromJsonString(Class<A> clazz, String json) {
-		A result = null;
-
-		try {
-			result = objectMapper.readValue(json, clazz);
-		} catch (Exception e) {
-			LogUtils.severe("Error while parsing JSON-String to object!", e);
 			throw new AssertionError(e);
 		}		
 

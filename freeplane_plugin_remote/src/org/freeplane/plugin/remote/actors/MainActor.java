@@ -6,6 +6,7 @@ import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseServerRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
+import org.docear.messages.Messages.FetchMindmapUpdatesRequest;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
@@ -103,7 +104,10 @@ public class MainActor extends UntypedActor {
 				response = Actions.requestLock((RequestLockRequest)message);
 			}
 			
-			
+			//get updates since specific revision
+			else if(message instanceof FetchMindmapUpdatesRequest) {
+				response = Actions.getUpdatesSinceRevision((FetchMindmapUpdatesRequest)message);
+			}
 			
 			//listen if update occurs
 			else if(message instanceof ListenToUpdateOccurrenceRequest) {

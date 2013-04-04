@@ -6,8 +6,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonParseException;
@@ -20,6 +24,8 @@ import org.docear.messages.Messages.ChangeNodeResponse;
 import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseMapRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
+import org.docear.messages.Messages.FetchMindmapUpdatesRequest;
+import org.docear.messages.Messages.FetchMindmapUpdatesResponse;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
 import org.docear.messages.Messages.MindmapAsJsonReponse;
@@ -38,6 +44,9 @@ import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.fest.assertions.Fail;
 import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
+import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
+import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
+import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -246,9 +255,11 @@ public class AkkaTests {
 							sendMindMapToServer(5);
 							remoteActor.tell(new AddNodeRequest("5", "ID_0",USERNAME1), localActor);
 
-							AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
-
-							DefaultNodeModel node = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
+							final AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
+							
+							final AddNodeUpdate update = objectMapper.readValue(response.getMapUpdate(), AddNodeUpdate.class);
+							assertThat(update.getType()).isEqualTo(MapUpdate.Type.AddNode);
+							final DefaultNodeModel node = objectMapper.readValue(update.getNodeAsJson(), DefaultNodeModel.class);
 							System.out.println(node.nodeText);
 							Assert.assertEquals("",node.nodeText);
 
@@ -436,56 +447,65 @@ public class AkkaTests {
 						sendMindMapToServer(5);
 
 						final String nodeId = "ID_1";
-						final String newNodeText = "This is a new nodeText";
-						final Boolean isHtml = false;
-						final Boolean folded = true;
-						final String[] icons = new String[] {"yes"};
-						final String link = "http://www.google.de";
-						final Integer hGap = 10;
-						final Integer shiftY = 10;
-						final Map<String,String> attr = new HashMap<String, String>();
-						attr.put("key", "value");
+						final Map<String,Object> attributeMap = getNewAttributesForNode();
 
+						final ChangeNodeRequest request = new ChangeNodeRequest("5", nodeId, attributeMap, USERNAME1);
 
-
-						DefaultNodeModel node = new DefaultNodeModel();
-						node.id = nodeId;
-						node.nodeText = newNodeText;
-						node.isHtml = isHtml;
-						node.folded = folded;
-						node.icons = icons;
-						node.link = link;
-						node.hGap = hGap;
-						node.shiftY = shiftY;
-						node.attributes = attr;
-
-						ObjectMapper om = new ObjectMapper();
-						String nodeAsJSON = null;
-						try {
-							nodeAsJSON = om.writeValueAsString(node);
-						} catch (Exception e) {
-							Fail.fail("error parsing DefaultNodeModel");
-						}
-						System.out.println(nodeAsJSON);
 						//requesting lock on node
 						requestLock("5", nodeId, USERNAME1);
 						
-						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON,USERNAME1), localActor);
+						remoteActor.tell(request, localActor);
 						ChangeNodeResponse response = expectMsgClass(ChangeNodeResponse.class);
-						System.out.println(response.getNode());
+						System.out.println(response.getMapUpdates());
 						
 						//release lock
 						releaseLock("5", nodeId, USERNAME1);
 
 						try {
-							final DefaultNodeModel receivedNode = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
+							final List<String> mapUpdates = response.getMapUpdates();
 
-							assertThat(receivedNode.nodeText).isEqualTo(newNodeText);
-							assertThat(receivedNode.isHtml).isEqualTo(isHtml);
-							assertThat(receivedNode.folded).isEqualTo(folded);
-							assertThat(receivedNode.link).isEqualTo(link);
-							assertThat(receivedNode.hGap).isEqualTo(hGap);
-							assertThat(receivedNode.shiftY).isEqualTo(shiftY);
+							//Set with attributes that have to be changed
+							final Set<String> notChangedAttributes = 
+									new HashSet<String>(
+											Arrays.asList(
+													new String[] {
+															"nodeText",
+															"isHtml",
+															"folded",
+															"link",
+															"hGap",
+															"shiftY",
+															"attributes",
+															"icons"}
+													));
+							
+							for(String updateJson : mapUpdates) {
+								final ChangeNodeAttributeUpdate update = new ObjectMapper().readValue(updateJson, ChangeNodeAttributeUpdate.class);
+								assertThat(update.getType()).isEqualTo(MapUpdate.Type.ChangeNodeAttribute);
+								
+								final String attribute = update.getAttribute();
+								final Object value = update.getValue();
+								
+								//remove from not changed list and assert
+								assertThat(notChangedAttributes.remove(attribute)).describedAs("Is value supposed to change"). isEqualTo(true);
+								
+								if(attribute.equals("nodeText")) {
+									assertThat(value).isEqualTo(attributeMap.get("nodeText"));
+								} else if(attribute.equals("isHtml")) {
+									assertThat(value).isEqualTo(attributeMap.get("isHtml"));
+								} else if(attribute.equals("folded")) {
+									assertThat(value).isEqualTo(attributeMap.get("folded"));
+								} else if(attribute.equals("link")) {
+									assertThat(value).isEqualTo(attributeMap.get("link"));
+								} else if(attribute.equals("hGap")) {
+									assertThat(value).isEqualTo(attributeMap.get("hGap"));
+								} else if(attribute.equals("shiftY")) {
+									assertThat(value).isEqualTo(attributeMap.get("shiftY"));
+								} 
+							}
+
+							//check that everything changed
+							assertThat(notChangedAttributes.size()).isEqualTo(0);
 
 						} catch (JsonMappingException e) {
 							Fail.fail("json mapping error", e);
@@ -516,17 +536,7 @@ public class AkkaTests {
 					protected void run() {
 						sendMindMapToServer(5);
 
-						DefaultNodeModel node = new DefaultNodeModel();
-						node.id = "ID_FAIL";
-						node.nodeText = "This is a new nodeText";
-
-						String nodeAsJSON = null;
-						try {
-							nodeAsJSON = objectMapper.writeValueAsString(node);
-						} catch (Exception e) {
-							Fail.fail("error parsing DefaultNodeModel");
-						}
-						remoteActor.tell(new ChangeNodeRequest("5", nodeAsJSON,USERNAME1), localActor);
+						remoteActor.tell(new ChangeNodeRequest("5", "ID_FAIL", new HashMap<String, Object>(),USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 
@@ -635,6 +645,36 @@ public class AkkaTests {
 						//close maps that haven't been used for 1 ms
 						remoteActor.tell(new MindmapAsJsonRequest("test_5"), localActor);
 						expectMsgClass(MindmapAsJsonReponse.class);
+					}
+				};
+			}
+		};
+	}
+	
+	@Test
+	public void testFetchChangesSinceRevision() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("3 seconds")) {
+					@Override
+					public void run() {
+
+						sendMindMapToServer(5);
+						requestLock("5", "ID_1", USERNAME1);
+						remoteActor.tell(new ChangeNodeRequest("5", "ID_1",getNewAttributesForNode(), USERNAME1), localActor);
+						final ChangeNodeResponse changeResponse = expectMsgClass(ChangeNodeResponse.class);
+						System.out.println(changeResponse.getMapUpdates());
+						releaseLock("5", "ID_1", USERNAME1);
+						
+						remoteActor.tell(new FetchMindmapUpdatesRequest("5", 0l), localActor);
+						FetchMindmapUpdatesResponse response = expectMsgClass(FetchMindmapUpdatesResponse.class);
+						final List<String> updates = response.getOrderedUpdates();
+						//assertThat(updates.get(0)).doesNotContain(")
+						System.out.println(updates.get(0));
+						System.out.println(updates.get(1));
+						
+						closeMindMapOnServer(5);
 					}
 				};
 			}
@@ -761,6 +801,32 @@ public class AkkaTests {
 			}
 		};
 	}
+	
+	private Map<String,Object> getNewAttributesForNode() {
+		final String newNodeText = "This is a new nodeText";
+		final Boolean isHtml = false;
+		final Boolean folded = true;
+		final String[] icons = new String[] {"yes"};
+		final String link = "http://www.google.de";
+		final Integer hGap = 10;
+		final Integer shiftY = 10;
+		final Map<String,String> attr = new HashMap<String, String>();
+		attr.put("key", "value");
+
+		
+
+		Map<String,Object> attributeMap = new HashMap<String, Object>();
+		attributeMap.put("nodeText", newNodeText);
+		attributeMap.put("isHtml", isHtml);
+		attributeMap.put("folded", folded);
+		attributeMap.put("icons", icons);
+		attributeMap.put("link", link);
+		attributeMap.put("hGap", hGap);
+		attributeMap.put("shiftY", shiftY);
+		attributeMap.put("attributes", attr);
+		
+		return attributeMap;
+	}
 
 	public static class TheActor extends UntypedActor {
 		ActorRef target;
@@ -781,6 +847,5 @@ public class AkkaTests {
 			}
 
 		}
-
 	}
 }
