@@ -458,7 +458,9 @@ public class Actions {
 	public static RemoveNodeResponse removeNode(RemoveNodeRequest request) throws NodeNotFoundException, MapNotFoundException {
 		final String mapId = request.getMapId();
 		final String nodeId = request.getNodeId();
-		logger().debug("Actions.removeNode => mapId:'{}'; nodeId:'{}'",mapId,nodeId);
+		final String username = request.getUsername();
+		logger().debug("Actions.removeNode => mapId:'{}'; nodeId:'{}'; username:'{}'",mapId,nodeId,username);
+		
 
 		logger().debug("Actions.removeNode => selecting map");
 		selectMap(request.getMapId());
@@ -467,6 +469,11 @@ public class Actions {
 		final MMapController mapController = (MMapController) getModeController().getMapController();
 		final NodeModel node = getNodeFromOpenMapById(nodeId);
 
+		//check if any node below has a lock
+		if(hasAnyChildALock(node)) {
+			return new RemoveNodeResponse(false);
+		}
+		
 		logger().debug("Actions.removeNode => deleting node");
 		mapController.deleteNode(node);
 
@@ -474,6 +481,22 @@ public class Actions {
 		info.addUpdate(new DeleteNodeUpdate(nodeId));
 
 		return new RemoveNodeResponse(true);
+	}
+	
+	private static boolean hasAnyChildALock(NodeModel freeplaneNode) {
+		boolean hasLock = freeplaneNode.containsExtension(LockModel.class);
+		//check if node itself has a lock
+		if(hasLock)
+			return true;
+		
+		//check child nodes have lock
+		for(NodeModel node :freeplaneNode.getChildren()) {
+			if(hasAnyChildALock(node))
+				return true;
+		}
+		
+		// else no lock
+		return false;
 	}
 
 	//	public static RefreshLockResponse refreshLock (RefreshLockRequest request) throws MapNotFoundException, NodeNotFoundException{

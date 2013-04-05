@@ -57,6 +57,7 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
+import scala.xml.transform.RewriteRule;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -432,6 +433,33 @@ public class AkkaTests {
 			}
 		};
 	}
+	
+	/**
+	 * testRemoveNodeRequestFailChildNodeLocked<br>
+	 * Send map to server. <br>
+	 * Add lock to child of node to delete<br>
+	 * Try to remove valid node from Map, but with locked child. 
+	 */
+	@Test
+	public void testRemoveNodeRequestFailChildNodeLocked() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(),getRef());
+				new Within(duration("3 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+						requestLock("5", "ID_2", USERNAME2);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_1",USERNAME1), localActor);
+
+						RemoveNodeResponse response = expectMsgClass(RemoveNodeResponse.class);
+						assertThat(response.getDeleted()).isEqualTo(false);
+
+						closeMindMapOnServer(5);
+					}
+				};
+			}
+		};
+	}
 
 	/**
 	 * testChangeNodeRequest
@@ -691,7 +719,7 @@ public class AkkaTests {
 	 * four user opening 4 different maps, each in one thread
 	 */
 	@Test
-	public void simulateMultipleUserAkka() {
+	public void testMultipleUserAkka() {
 
 		new JavaTestKit(system) {{
 			localActor.tell(getRef(),getRef());
