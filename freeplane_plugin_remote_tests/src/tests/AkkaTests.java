@@ -672,7 +672,7 @@ public class AkkaTests {
 						System.out.println(changeResponse.getMapUpdates());
 						releaseLock("5", "ID_1", USERNAME1);
 						
-						remoteActor.tell(new FetchMindmapUpdatesRequest("5", 0l), localActor);
+						remoteActor.tell(new FetchMindmapUpdatesRequest("5", 0), localActor);
 						FetchMindmapUpdatesResponse response = expectMsgClass(FetchMindmapUpdatesResponse.class);
 						final List<String> updates = response.getOrderedUpdates();
 						//assertThat(updates.get(0)).doesNotContain(")
