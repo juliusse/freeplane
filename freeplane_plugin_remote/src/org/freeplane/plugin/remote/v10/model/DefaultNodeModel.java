@@ -2,9 +2,7 @@ package org.freeplane.plugin.remote.v10.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -24,7 +22,7 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 
 	public Integer hGap;
 	public Integer shiftY;
-	public Map<String, String> attributes;
+	public List<String> attributes;
 
 	/**
 	 * necessary for JAX-B
@@ -54,9 +52,9 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	private void loadAttributes(org.freeplane.features.map.NodeModel freeplaneNode){
 		NodeAttributeTableModel attributeModel = freeplaneNode.getExtension(NodeAttributeTableModel.class);
 		if(attributeModel != null) {
-			this.attributes = new HashMap<String, String>();
+			this.attributes = new ArrayList<String>();
 			for (Attribute attribute : attributeModel.getAttributes()){
-				this.attributes.put(attribute.getName(), String.valueOf(attribute.getValue()));
+				this.attributes.add(attribute.getName()+"%:%"+String.valueOf(attribute.getValue()));
 			}
 		} else {
 			attributes = null;
