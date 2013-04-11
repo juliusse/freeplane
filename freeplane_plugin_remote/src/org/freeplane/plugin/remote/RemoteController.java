@@ -51,7 +51,7 @@ public class RemoteController {
 		
 		logger.info("starting Remote Plugin...");
 	
-		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));;
+		system = ActorSystem.create("freeplaneRemote", ConfigFactory.load().getConfig("listener"));
 		mainActor = system.actorOf(new Props(MainActor.class), "main");
 		logger.info("Main Actor running at path='{}'", mainActor.path());
 

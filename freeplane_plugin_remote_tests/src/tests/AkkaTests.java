@@ -90,7 +90,7 @@ public class AkkaTests {
 
 		objectMapper = new ObjectMapper();
 	}
-
+	
 	private static void setUpConnectionToFreeplane() {
 		long startTime = System.currentTimeMillis();
 		long endTime = startTime + 60000; // one minute
