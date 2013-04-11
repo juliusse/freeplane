@@ -2,20 +2,18 @@ package org.freeplane.plugin.remote;
 
 import java.awt.Container;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.docear.messages.Messages.CloseAllOpenMapsRequest;
 import org.docear.messages.Messages.CloseUnusedMaps;
-import org.docear.messages.exceptions.MapNotFoundException;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.features.ui.INodeViewLifeCycleListener;
 import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
 import org.freeplane.plugin.remote.actors.MainActor;
-import org.freeplane.plugin.remote.v10.Utils;
+import org.freeplane.plugin.remote.v10.Actions;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.jboss.netty.channel.ChannelException;
 import org.slf4j.Logger;
@@ -120,14 +118,7 @@ public class RemoteController {
 	}
 	
 	private void closeMaps() {
-		Set<String> idSet = new HashSet<String>(this.mapIdInfoMap.keySet());
-		for(String id: idSet) {
-			try {
-				Utils.closeMap(id);
-			} catch (MapNotFoundException e) {
-				org.freeplane.plugin.remote.Logger.getLogger().warn("could not find map with id '{}'",id);
-			}
-		}
+		Actions.closeAllOpenMaps(new CloseAllOpenMapsRequest());
 	}
 
 	public static ModeController getModeController() {

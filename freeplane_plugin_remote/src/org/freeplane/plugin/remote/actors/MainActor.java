@@ -12,6 +12,7 @@ import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
+import org.docear.messages.Messages.MoveNodeToRequest;
 import org.docear.messages.Messages.OpenMindMapRequest;
 import org.docear.messages.Messages.ReleaseLockRequest;
 import org.docear.messages.Messages.RemoveNodeRequest;
@@ -67,6 +68,11 @@ public class MainActor extends UntypedActor {
 			//change node
 			else if(message instanceof ChangeNodeRequest) {
 				response = Actions.changeNode((ChangeNodeRequest)message);
+			}
+			
+			//move node to another position
+			else if(message instanceof MoveNodeToRequest) {
+				response = Actions.moveNodeTo((MoveNodeToRequest) message);
 			}
 
 			//remove node from map

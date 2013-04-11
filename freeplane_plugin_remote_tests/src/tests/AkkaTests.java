@@ -33,6 +33,8 @@ import org.docear.messages.Messages.MindmapAsJsonReponse;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
 import org.docear.messages.Messages.MindmapAsXmlResponse;
+import org.docear.messages.Messages.MoveNodeToRequest;
+import org.docear.messages.Messages.MoveNodeToResponse;
 import org.docear.messages.Messages.OpenMindMapRequest;
 import org.docear.messages.Messages.OpenMindMapResponse;
 import org.docear.messages.Messages.ReleaseLockRequest;
@@ -72,24 +74,19 @@ public class AkkaTests {
 
 	private final static String USERNAME1 = "USER1";
 	private final static String USERNAME2 = "USER2";
-	
+
 	private static ActorSystem system;
 	private static ActorRef remoteActor;
 	private static ActorRef localActor;
 	private static ObjectMapper objectMapper;
-	
-
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		system = ActorSystem.create("actoruser", ConfigFactory.load().getConfig("local"));
 
-
-		localActor = system.actorOf(new Props(TheActor.class), "localActor_"+System.currentTimeMillis());
+		localActor = system.actorOf(new Props(TheActor.class), "localActor_" + System.currentTimeMillis());
 
 		setUpConnectionToFreeplane();
-
-
 
 		objectMapper = new ObjectMapper();
 	}
@@ -97,25 +94,26 @@ public class AkkaTests {
 	private static void setUpConnectionToFreeplane() {
 		long startTime = System.currentTimeMillis();
 		long endTime = startTime + 60000; // one minute
-		while(remoteActor == null && System.currentTimeMillis() < endTime) {
+		while (remoteActor == null && System.currentTimeMillis() < endTime) {
 			try {
 				remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 
 				Future<Object> future = Patterns.ask(remoteActor, new MindmapAsJsonRequest("NOT_EXISTING"), 2000);
 				Await.result(future, Duration.create("2 second"));
 			} catch (MapNotFoundException e) {
-				//expected, good
+				// expected, good
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.err.println("Could not connect to Freeplane remote. Waiting 10 seconds.");
 				remoteActor = null;
 				try {
 					Thread.sleep(10000); // 10 seconds
-				} catch (InterruptedException e1) {} 
+				} catch (InterruptedException e1) {
+				}
 			}
 		}
 
-		if(remoteActor == null) {
+		if (remoteActor == null) {
 			Fail.fail("Could not connect to Freeplane Remote");
 		}
 	}
@@ -126,7 +124,7 @@ public class AkkaTests {
 	}
 
 	@Before
-	public  void setUp() throws Exception {
+	public void setUp() throws Exception {
 
 	}
 
@@ -138,15 +136,14 @@ public class AkkaTests {
 	public void testSkeleton() {
 		new JavaTestKit(system) {
 			{
-				//need to register to the localActor
+				// need to register to the localActor
 				localActor.tell(getRef(), getRef());
 			}
 		};
 	}
 
 	/**
-	 * testMindMapAsJson
-	 * Open one of default test maps and receive json of map
+	 * testMindMapAsJson Open one of default test maps and receive json of map
 	 */
 	@Test
 	public void testMindMapAsJson() {
@@ -170,8 +167,8 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testMindMapAsJsonFail
-	 * Try to open a not available map. Should throw MapNotFoundException.
+	 * testMindMapAsJsonFail Try to open a not available map. Should throw
+	 * MapNotFoundException.
 	 */
 	@Test
 	public void testMindMapAsJsonFail() {
@@ -190,10 +187,8 @@ public class AkkaTests {
 		};
 	}
 
-
 	/**
-	 * testMindMapAsXml
-	 * Send MindMap to server. Request opened Mindmap as xml.
+	 * testMindMapAsXml Send MindMap to server. Request opened Mindmap as xml.
 	 */
 	@Test
 	public void testMindMapAsXml() {
@@ -204,10 +199,12 @@ public class AkkaTests {
 					protected void run() {
 						sendMindMapToServer(5);
 
-						remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
+						remoteActor.tell(new MindmapAsXmlRequest("5"), localActor);
 
 						MindmapAsXmlResponse response = expectMsgClass(MindmapAsXmlResponse.class);
-						assertThat(response.getXmlString()).contains("<node TEXT=\"right_L1P0_Links\" COLOR=\"#000000\" STYLE=\"as_parent\" MAX_WIDTH=\"600\" MIN_WIDTH=\"1\" POSITION=\"right\" ID=\"ID_1\" CREATED=\"1354627639897\" MODIFIED=\"1355079961660\" HGAP=\"70\" VSHIFT=\"-160\">");
+						assertThat(response.getXmlString())
+								.contains(
+										"<node TEXT=\"right_L1P0_Links\" COLOR=\"#000000\" STYLE=\"as_parent\" MAX_WIDTH=\"600\" MIN_WIDTH=\"1\" POSITION=\"right\" ID=\"ID_1\" CREATED=\"1354627639897\" MODIFIED=\"1355079961660\" HGAP=\"70\" VSHIFT=\"-160\">");
 
 						closeMindMapOnServer(5);
 					}
@@ -216,10 +213,9 @@ public class AkkaTests {
 		};
 	}
 
-
 	/**
-	 * testMindMapAsXmlFail
-	 * Requesting not opened mindmap. should throw MapNotFoundException
+	 * testMindMapAsXmlFail Requesting not opened mindmap. should throw
+	 * MapNotFoundException
 	 */
 	@Test
 	public void testMindMapAsXmlFail() {
@@ -228,7 +224,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						localActor.tell(getRef(), getRef());
-						remoteActor.tell(new MindmapAsXmlRequest("5"),localActor);
+						remoteActor.tell(new MindmapAsXmlRequest("5"), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof MapNotFoundException).isTrue();
@@ -239,10 +235,8 @@ public class AkkaTests {
 		};
 	}
 
-
 	/**
-	 * testAddNodeRequest
-	 * Open Map. Add new node to root node.
+	 * testAddNodeRequest Open Map. Add new node to root node.
 	 */
 	@Test
 	public void testAddNodeRequest() {
@@ -253,15 +247,15 @@ public class AkkaTests {
 					protected void run() {
 						try {
 							sendMindMapToServer(5);
-							remoteActor.tell(new AddNodeRequest("5", "ID_0",USERNAME1), localActor);
+							remoteActor.tell(new AddNodeRequest("5", "ID_0", USERNAME1), localActor);
 
 							final AddNodeResponse response = expectMsgClass(AddNodeResponse.class);
-							
+
 							final AddNodeUpdate update = objectMapper.readValue(response.getMapUpdate(), AddNodeUpdate.class);
 							assertThat(update.getType()).isEqualTo(MapUpdate.Type.AddNode);
 							final NodeModelDefault node = objectMapper.readValue(update.getNodeAsJson(), NodeModelDefault.class);
 							System.out.println(node.nodeText);
-							Assert.assertEquals("",node.nodeText);
+							Assert.assertEquals("", node.nodeText);
 
 						} catch (JsonMappingException e) {
 							Fail.fail("json mapping error", e);
@@ -279,8 +273,8 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testAddNodeRequestFailInvalidNode
-	 * Open Map. Add new node to invalid node. Should throw NodeNotFoundException
+	 * testAddNodeRequestFailInvalidNode Open Map. Add new node to invalid node.
+	 * Should throw NodeNotFoundException
 	 */
 	@Test
 	public void testAddNodeRequestFailInvalidNode() {
@@ -290,7 +284,7 @@ public class AkkaTests {
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new AddNodeRequest("5", "ID_FAIL",USERNAME1), localActor);
+						remoteActor.tell(new AddNodeRequest("5", "ID_FAIL", USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof NodeNotFoundException).isTrue();
@@ -302,8 +296,8 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testAddNodeRequestFailInvalidMap
-	 * Open no Map. Try to add node. Should throw MapNotFoundException
+	 * testAddNodeRequestFailInvalidMap Open no Map. Try to add node. Should
+	 * throw MapNotFoundException
 	 */
 	@Test
 	public void testAddNodeRequestFailInvalidMap() {
@@ -312,7 +306,7 @@ public class AkkaTests {
 				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
-						remoteActor.tell(new AddNodeRequest("16", "ID_FAIL",USERNAME1), localActor);
+						remoteActor.tell(new AddNodeRequest("16", "ID_FAIL", USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof MapNotFoundException).isTrue();
@@ -323,14 +317,13 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testGetNodeRequest
-	 * Get node from map 
+	 * testGetNodeRequest Get node from map
 	 */
 	@Test
 	public void testGetNodeRequest() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						try {
@@ -343,7 +336,6 @@ public class AkkaTests {
 							assertThat(node.nodeText).isEqualTo("right_L1P0_Links");
 							assertThat(node.hGap).isEqualTo(70);
 
-
 						} catch (JsonMappingException e) {
 							Fail.fail("json mapping error", e);
 						} catch (JsonParseException e) {
@@ -360,14 +352,14 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testGetNodeRequest
-	 * Get invalid node from map. Should throw NodeNotFoundException
+	 * testGetNodeRequest Get invalid node from map. Should throw
+	 * NodeNotFoundException
 	 */
 	@Test
 	public void testGetNodeRequestFailInvalidNode() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
@@ -383,18 +375,18 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testRemoveNodeRequest
-	 * send map to server. remove valid node from Map. check if node with id isn't available any more.
+	 * testRemoveNodeRequest send map to server. remove valid node from Map.
+	 * check if node with id isn't available any more.
 	 */
 	@Test
 	public void testRemoveNodeRequest() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new RemoveNodeRequest("5", "ID_1",USERNAME1), localActor);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_1", USERNAME1), localActor);
 						RemoveNodeResponse rmNodeResponse = expectMsgClass(RemoveNodeResponse.class);
 						assertThat(rmNodeResponse.getDeleted()).isEqualTo(true);
 
@@ -410,18 +402,18 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testRemoveNodeRequestFailInvalidNode
-	 * send map to server. remove valid node from Map. check if 
+	 * testRemoveNodeRequestFailInvalidNode send map to server. remove valid
+	 * node from Map. check if
 	 */
 	@Test
 	public void testRemoveNodeRequestFailInvalidNode() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
-						remoteActor.tell(new RemoveNodeRequest("5", "ID_FAIL",USERNAME1), localActor);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_FAIL", USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause() instanceof NodeNotFoundException).isTrue();
@@ -432,23 +424,23 @@ public class AkkaTests {
 			}
 		};
 	}
-	
+
 	/**
 	 * testRemoveNodeRequestFailChildNodeLocked<br>
 	 * Send map to server. <br>
 	 * Add lock to child of node to delete<br>
-	 * Try to remove valid node from Map, but with locked child. 
+	 * Try to remove valid node from Map, but with locked child.
 	 */
 	@Test
 	public void testRemoveNodeRequestFailChildNodeLocked() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
 						requestLock("5", "ID_2", USERNAME2);
-						remoteActor.tell(new RemoveNodeRequest("5", "ID_1",USERNAME1), localActor);
+						remoteActor.tell(new RemoveNodeRequest("5", "ID_1", USERNAME1), localActor);
 
 						RemoveNodeResponse response = expectMsgClass(RemoveNodeResponse.class);
 						assertThat(response.getDeleted()).isEqualTo(false);
@@ -461,80 +453,68 @@ public class AkkaTests {
 	}
 
 	/**
-	 * testChangeNodeRequest
-	 * change available node to defined attributes. check if node got attributes.
+	 * testChangeNodeRequest change available node to defined attributes. check
+	 * if node got attributes.
 	 */
 	@Test
 	public void testChangeNodeRequest() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("10 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
 
 						final String nodeId = "ID_1";
-						final Map<String,Object> attributeMap = getNewAttributesForNode();
+						final Map<String, Object> attributeMap = getNewAttributesForNode();
 
 						final ChangeNodeRequest request = new ChangeNodeRequest("5", nodeId, attributeMap, USERNAME1);
 
-						//requesting lock on node
+						// requesting lock on node
 						requestLock("5", nodeId, USERNAME1);
-						
+
 						remoteActor.tell(request, localActor);
 						ChangeNodeResponse response = expectMsgClass(ChangeNodeResponse.class);
 						System.out.println(response.getMapUpdates());
-						
-						//release lock
+
+						// release lock
 						releaseLock("5", nodeId, USERNAME1);
 
 						try {
 							final List<String> mapUpdates = response.getMapUpdates();
 
-							//Set with attributes that have to be changed
-							final Set<String> notChangedAttributes = 
-									new HashSet<String>(
-											Arrays.asList(
-													new String[] {
-															"nodeText",
-															"isHtml",
-															"folded",
-															"link",
-															"hGap",
-															"shiftY",
-															"attributes",
-															"icons",
-															"note"}
-													));
-							
-							for(String updateJson : mapUpdates) {
+							// Set with attributes that have to be changed
+							final Set<String> notChangedAttributes = new HashSet<String>(Arrays.asList(new String[] { "nodeText", "isHtml", "folded", "link", "hGap", "shiftY", "attributes", "icons",
+									"note" }));
+
+							for (String updateJson : mapUpdates) {
 								final ChangeNodeAttributeUpdate update = new ObjectMapper().readValue(updateJson, ChangeNodeAttributeUpdate.class);
 								assertThat(update.getType()).isEqualTo(MapUpdate.Type.ChangeNodeAttribute);
-								
+
 								final String attribute = update.getAttribute();
 								final Object value = update.getValue();
-								
-								//remove from not changed list and assert
-								assertThat(notChangedAttributes.remove(attribute)).describedAs("Is value supposed to change"). isEqualTo(true);
-								
-								if(attribute.equals("nodeText")) {
+
+								// remove from not changed list and assert
+								assertThat(notChangedAttributes.remove(attribute)).describedAs("Is value supposed to change").isEqualTo(true);
+
+								if (attribute.equals("nodeText")) {
 									assertThat(value).isEqualTo(attributeMap.get("nodeText"));
-								} else if(attribute.equals("isHtml")) {
+								} else if (attribute.equals("isHtml")) {
 									assertThat(value).isEqualTo(attributeMap.get("isHtml"));
-								} else if(attribute.equals("folded")) {
+								} else if (attribute.equals("folded")) {
 									assertThat(value).isEqualTo(attributeMap.get("folded"));
-								} else if(attribute.equals("link")) {
+								} else if (attribute.equals("link")) {
 									assertThat(value).isEqualTo(attributeMap.get("link"));
-								} else if(attribute.equals("hGap")) {
+								} else if (attribute.equals("hGap")) {
 									assertThat(value).isEqualTo(attributeMap.get("hGap"));
-								} else if(attribute.equals("shiftY")) {
+								} else if (attribute.equals("shiftY")) {
 									assertThat(value).isEqualTo(attributeMap.get("shiftY"));
-								} else if(attribute.equals("note")) {
+								} else if (attribute.equals("note")) {
 									assertThat(value).isEqualTo(attributeMap.get("note"));
 								}
 							}
 
-							//check that everything changed
+							// check that everything changed
 							assertThat(notChangedAttributes.size()).isEqualTo(0);
 
 						} catch (JsonMappingException e) {
@@ -552,21 +532,20 @@ public class AkkaTests {
 		};
 	}
 
-
 	/**
-	 * testChangeNodeRequestFailInvalidNode
-	 * change invalid node to defined attributes. Should throw NodeNotFoundException
+	 * testChangeNodeRequestFailInvalidNode change invalid node to defined
+	 * attributes. Should throw NodeNotFoundException
 	 */
 	@Test
 	public void testChangeNodeRequestFailInvalidNode() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("10 seconds")) {
 					protected void run() {
 						sendMindMapToServer(5);
 
-						remoteActor.tell(new ChangeNodeRequest("5", "ID_FAIL", new HashMap<String, Object>(),USERNAME1), localActor);
+						remoteActor.tell(new ChangeNodeRequest("5", "ID_FAIL", new HashMap<String, Object>(), USERNAME1), localActor);
 
 						Failure response = expectMsgClass(Failure.class);
 
@@ -578,10 +557,35 @@ public class AkkaTests {
 		};
 	}
 
+	@Test
+	public void testMoveNodeToAnotherPosition() {
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
+				new Within(duration("10 seconds")) {
+					protected void run() {
+						sendMindMapToServer(5);
+
+						//also checks that switching sides is no problem
+						final MoveNodeToRequest moveRequest = new MoveNodeToRequest("5", "ID_505304847", "ID_1", 1);
+						remoteActor.tell(moveRequest, localActor);
+						assertThat(expectMsgClass(MoveNodeToResponse.class).getSuccess()).isEqualTo(true);
+						
+						final GetNodeRequest getNodeRequest = new GetNodeRequest("5", "ID_505304847", 0);
+						remoteActor.tell(getNodeRequest, localActor);
+						final String parentNodeJson = expectMsgClass(GetNodeResponse.class).getNode();
+						
+						assertThat(parentNodeJson).contains("ID_1");
+
+						closeMindMapOnServer(5);
+					}
+				};
+			}
+		};
+	}
 
 	/**
-	 * sendMapGetAsJsonAndCloseOnServerTest
-	 * send Map, get map as json, close map
+	 * sendMapGetAsJsonAndCloseOnServerTest send Map, get map as json, close map
 	 */
 	@Test
 	public void sendMapGetAsJsonAndCloseOnServerTest() {
@@ -606,14 +610,14 @@ public class AkkaTests {
 	}
 
 	/**
-	 * sendMapGetAsJsonAndCloseOnServerTestFailDoubleClose
-	 * send Map, get map as json, close map, close map again. should run.
+	 * sendMapGetAsJsonAndCloseOnServerTestFailDoubleClose send Map, get map as
+	 * json, close map, close map again. should run.
 	 */
 	@Test
 	public void sendMapGetAsJsonAndCloseOnServerTestDoubleClose() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					@Override
 					public void run() {
@@ -638,7 +642,7 @@ public class AkkaTests {
 	public void testCloseNotAccessedMaps() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					@Override
 					public void run() {
@@ -653,62 +657,45 @@ public class AkkaTests {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
-						//close maps that haven't been used for 1 ms
+						// close maps that haven't been used for 1 ms
 						remoteActor.tell(new CloseUnusedMaps(10), localActor);
-						//expectNoMsg();
+						// expectNoMsg();
 
 						remoteActor.tell(new MindmapAsJsonRequest("5"), localActor);
 						Failure response = expectMsgClass(Failure.class);
 						assertThat(response.cause()).isInstanceOf(MapNotFoundException.class);
 
-						//no map closing needed, because it has been closed due to beeing unused
+						// no map closing needed, because it has been closed due
+						// to beeing unused
 					}
 				};
 			}
 		};
 	}
 
-	@Test
-	public void testUseTestMapFromFreeplaneInstance() {
-		new JavaTestKit(system) {
-			{
-				localActor.tell(getRef(),getRef());
-				new Within(duration("3 seconds")) {
-					@Override
-					public void run() {
-
-						//close maps that haven't been used for 1 ms
-						remoteActor.tell(new MindmapAsJsonRequest("test_5"), localActor);
-						expectMsgClass(MindmapAsJsonReponse.class);
-					}
-				};
-			}
-		};
-	}
-	
 	@Test
 	public void testFetchChangesSinceRevision() {
 		new JavaTestKit(system) {
 			{
-				localActor.tell(getRef(),getRef());
+				localActor.tell(getRef(), getRef());
 				new Within(duration("3 seconds")) {
 					@Override
 					public void run() {
 
 						sendMindMapToServer(5);
 						requestLock("5", "ID_1", USERNAME1);
-						remoteActor.tell(new ChangeNodeRequest("5", "ID_1",getNewAttributesForNode(), USERNAME1), localActor);
+						remoteActor.tell(new ChangeNodeRequest("5", "ID_1", getNewAttributesForNode(), USERNAME1), localActor);
 						final ChangeNodeResponse changeResponse = expectMsgClass(ChangeNodeResponse.class);
 						System.out.println(changeResponse.getMapUpdates());
 						releaseLock("5", "ID_1", USERNAME1);
-						
+
 						remoteActor.tell(new FetchMindmapUpdatesRequest("5", 0), localActor);
 						FetchMindmapUpdatesResponse response = expectMsgClass(FetchMindmapUpdatesResponse.class);
 						final List<String> updates = response.getOrderedUpdates();
-						//assertThat(updates.get(0)).doesNotContain(")
+						// assertThat(updates.get(0)).doesNotContain(")
 						System.out.println(updates.get(0));
 						System.out.println(updates.get(1));
-						
+
 						closeMindMapOnServer(5);
 					}
 				};
@@ -717,54 +704,58 @@ public class AkkaTests {
 	}
 
 	/**
-	 * simulateMultipleUserAkka
-	 * four user opening 4 different maps, each in one thread
+	 * simulateMultipleUserAkka four user opening 4 different maps, each in one
+	 * thread
 	 */
 	@Test
 	public void testMultipleUserAkka() {
 
-		new JavaTestKit(system) {{
-			localActor.tell(getRef(),getRef());
+		new JavaTestKit(system) {
+			{
+				localActor.tell(getRef(), getRef());
 
-			new Within(duration("5 seconds")) {
+				new Within(duration("5 seconds")) {
 
-				@Override
-				public void run() {
-					sendMindMapToServer(1);
-					sendMindMapToServer(2);
-					sendMindMapToServer(3);
-					sendMindMapToServer(5);
+					@Override
+					public void run() {
+						sendMindMapToServer(1);
+						sendMindMapToServer(2);
+						sendMindMapToServer(3);
+						sendMindMapToServer(5);
 
-					remoteActor.tell(new MindmapAsJsonRequest("3", 5),localActor);
-					remoteActor.tell(new MindmapAsJsonRequest("2", 5),localActor);
-					remoteActor.tell(new MindmapAsJsonRequest("5", 5),localActor);
-					remoteActor.tell(new MindmapAsJsonRequest("1", 5),localActor);
+						remoteActor.tell(new MindmapAsJsonRequest("3", 5), localActor);
+						remoteActor.tell(new MindmapAsJsonRequest("2", 5), localActor);
+						remoteActor.tell(new MindmapAsJsonRequest("5", 5), localActor);
+						remoteActor.tell(new MindmapAsJsonRequest("1", 5), localActor);
 
-					MindmapAsJsonReponse response = null;
-					String mapAsJson = null;
-					//map 3
-					response = expectMsgClass(MindmapAsJsonReponse.class);
-					mapAsJson = response.getJsonString();
-					assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"Welcome\",\"isHtml\":false,\"folded\":false");
+						MindmapAsJsonReponse response = null;
+						String mapAsJson = null;
+						// map 3
+						response = expectMsgClass(MindmapAsJsonReponse.class);
+						mapAsJson = response.getJsonString();
+						assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"Welcome\",\"isHtml\":false,\"folded\":false");
 
-					//map 2
-					response = expectMsgClass(MindmapAsJsonReponse.class);
-					mapAsJson = response.getJsonString();
-					assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"New Mindmap\",\"isHtml\":false,\"folded\":false,\"icons\":[],\"leftChildren\":[{\"id\":\"ID_270895934\",\"nodeText\":\"\",\"isHtml\":false,\"folded\":false");
+						// map 2
+						response = expectMsgClass(MindmapAsJsonReponse.class);
+						mapAsJson = response.getJsonString();
+						assertThat(mapAsJson)
+								.contains(
+										"\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"New Mindmap\",\"isHtml\":false,\"folded\":false,\"icons\":[],\"leftChildren\":[{\"id\":\"ID_270895934\",\"nodeText\":\"\",\"isHtml\":false,\"folded\":false");
 
-					//map 5
-					response = expectMsgClass(MindmapAsJsonReponse.class);
-					mapAsJson = response.getJsonString();
-					assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
+						// map 5
+						response = expectMsgClass(MindmapAsJsonReponse.class);
+						mapAsJson = response.getJsonString();
+						assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"test_5 = MapID ; 5.mm = Title\"");
 
-					//map 1
-					response = expectMsgClass(MindmapAsJsonReponse.class);
-					mapAsJson = response.getJsonString();
-					assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"foo2\",\"isHtml\":false,\"folded\":false");
+						// map 1
+						response = expectMsgClass(MindmapAsJsonReponse.class);
+						mapAsJson = response.getJsonString();
+						assertThat(mapAsJson).contains("\"isReadonly\":false,\"root\":{\"id\":\"ID_0\",\"nodeText\":\"foo2\",\"isHtml\":false,\"folded\":false");
 
-				}
-			};
-		}};
+					}
+				};
+			}
+		};
 
 	}
 
@@ -774,7 +765,7 @@ public class AkkaTests {
 		try {
 			final File f = new File(pathURL.toURI());
 			String mapContent = FileUtils.readFileToString(f);
-			final OpenMindMapRequest request = new OpenMindMapRequest(id+"", mapContent,id+".mm");
+			final OpenMindMapRequest request = new OpenMindMapRequest(id + "", mapContent, id + ".mm");
 
 			assertThat(f).isNotNull();
 
@@ -794,7 +785,6 @@ public class AkkaTests {
 		} catch (IOException e) {
 		}
 
-
 	}
 
 	public void closeMindMapOnServer(final int id) {
@@ -802,19 +792,19 @@ public class AkkaTests {
 			{
 				new Within(duration("2 seconds")) {
 					public void run() {
-						remoteActor.tell(new CloseMapRequest(id+""), localActor);
+						remoteActor.tell(new CloseMapRequest(id + ""), localActor);
 					}
 				};
 			}
 		};
 	}
-	
+
 	public void requestLock(final String mapId, final String nodeId, final String username) {
 		new JavaTestKit(system) {
 			{
 				new Within(duration("2 seconds")) {
 					public void run() {
-						remoteActor.tell(new RequestLockRequest(mapId, nodeId, USERNAME1),getRef());
+						remoteActor.tell(new RequestLockRequest(mapId, nodeId, USERNAME1), getRef());
 						RequestLockResponse requestResponse = expectMsgClass(RequestLockResponse.class);
 						assertThat(requestResponse.getLockGained()).isEqualTo(true);
 					}
@@ -822,13 +812,13 @@ public class AkkaTests {
 			}
 		};
 	}
-	
+
 	public void releaseLock(final String mapId, final String nodeId, final String username) {
 		new JavaTestKit(system) {
 			{
 				new Within(duration("2 seconds")) {
 					public void run() {
-						remoteActor.tell(new ReleaseLockRequest("5", nodeId, USERNAME1),getRef());
+						remoteActor.tell(new ReleaseLockRequest("5", nodeId, USERNAME1), getRef());
 						ReleaseLockResponse releaseResponse = expectMsgClass(ReleaseLockResponse.class);
 						assertThat(releaseResponse.getLockReleased()).isEqualTo(true);
 					}
@@ -836,12 +826,12 @@ public class AkkaTests {
 			}
 		};
 	}
-	
-	private Map<String,Object> getNewAttributesForNode() {
+
+	private Map<String, Object> getNewAttributesForNode() {
 		final String newNodeText = "This is a new nodeText";
 		final Boolean isHtml = false;
 		final Boolean folded = true;
-		final String[] icons = new String[] {"yes"};
+		final String[] icons = new String[] { "yes" };
 		final String link = "http://www.google.de";
 		final Integer hGap = 10;
 		final Integer shiftY = 10;
@@ -849,9 +839,7 @@ public class AkkaTests {
 		final List<String> attr = new ArrayList<String>();
 		attr.add("key%:%value");
 
-		
-
-		Map<String,Object> attributeMap = new HashMap<String, Object>();
+		Map<String, Object> attributeMap = new HashMap<String, Object>();
 		attributeMap.put("nodeText", newNodeText);
 		attributeMap.put("isHtml", isHtml);
 		attributeMap.put("folded", folded);
@@ -861,25 +849,27 @@ public class AkkaTests {
 		attributeMap.put("shiftY", shiftY);
 		attributeMap.put("attributes", attr);
 		attributeMap.put("note", note);
-		
+
 		return attributeMap;
 	}
 
 	public static class TheActor extends UntypedActor {
 		ActorRef target;
+
 		@Override
 		public void onReceive(Object message) throws Exception {
 			System.out.println(message.getClass().getName() + " received");
 
 			if (message instanceof Failure) {
 				System.err.println("warning: Error occured.");
-				//org.fest.assertions.Fail.fail("An error occured", ((Failure) message).cause());
+				// org.fest.assertions.Fail.fail("An error occured", ((Failure)
+				// message).cause());
 			}
 
 			if (message instanceof ActorRef) {
-				target = (ActorRef)message;
+				target = (ActorRef) message;
 			} else {
-				if(target != null)
+				if (target != null)
 					target.tell(message, getSelf());
 			}
 
