@@ -52,6 +52,10 @@ import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.docear.messages.exceptions.NodeNotLockedByUserException;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.features.attribute.Attribute;
+import org.freeplane.features.attribute.AttributeController;
+import org.freeplane.features.attribute.NodeAttributeTableModel;
+import org.freeplane.features.attribute.mindmapmode.MAttributeController;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.MapWriter;
 import org.freeplane.features.map.NodeModel;
@@ -217,7 +221,7 @@ public class Actions {
 		if(info == null) {
 			throw new MapNotFoundException("Map with id "+mapId+" was not found");
 		}
-		
+
 		List<String> list = info.getJsonUpdateListSinceRevision(sinceRevision);
 		return new FetchMindmapUpdatesResponse(info.getCurrentRevision(),list);
 	}
@@ -380,10 +384,10 @@ public class Actions {
 		for(Map.Entry<String, Object> entry: attributeMap.entrySet()) {
 			final String attribute = entry.getKey();
 			final Object valueObj = entry.getValue();
-			
+
 			logger().debug("Actions.changeNode => {} changed to {}",attribute, valueObj.toString());
 			updates.add(new ChangeNodeAttributeUpdate(nodeId, attribute, valueObj));
-			
+
 			if(attribute.equals("folded")) {
 				final Boolean value = (Boolean)valueObj;
 				freeplaneNode.setFolded(value);
@@ -396,23 +400,27 @@ public class Actions {
 						freeplaneNode.setXmlText(freeplaneNode.getText());
 				}
 			} else if(attribute.equals("attributes")) {
-				logger().error("Actions.changeNode => attributes are not implemented yet");
-				//TODO implement correctly
-				//			NodeAttributeTableModel attrTable;
-				//			AttributeController attrController = AttributeController.getController();
-				//			
-				//			if(node.attributes.size() > 0) {
-				//				attrTable = attrController.createAttributeTableModel(freeplaneNode);
-				//				for(Map.Entry<String, String> entry : node.attributes.entrySet()) {
-				//					//attrController.performInsertRow(attrTable, row, name, value)
-				//					attrTable.addRowNoUndo(new Attribute(entry.getKey(),entry.getValue()));
-				//				}
-				//				freeplaneNode.addExtension(attrTable);
-				//			} else if (node.attributes.size() == 0) {
-				//				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
-				//					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
-				//			}
-				//updates.add(new ChangeNodeAttributeUpdate(nodeId, "attributes", node.attributes));
+				//remove current extension, because everything is written new
+				if(freeplaneNode.getExtension(NodeAttributeTableModel.class) != null)
+					freeplaneNode.removeExtension(NodeAttributeTableModel.class);
+
+				@SuppressWarnings("unchecked")
+				// "Play" sends it as an ArrayList, so I can just grab it
+				final List<String> orderedItems = (List<String>)valueObj;
+
+				NodeAttributeTableModel attrTable;
+				MAttributeController attrController = MAttributeController.getController();
+				
+				if(orderedItems.size() > 0) {
+					attrTable = attrController.createAttributeTableModel(freeplaneNode);
+					
+					for(int i = 0; i < orderedItems.size(); i++) {
+						final String[] parts = orderedItems.get(i).split("%:%");
+						logger().debug("key: {}; value: {}",parts[0],parts[1]);
+						attrController.performInsertRow(attrTable, i, parts[0], parts[1]);
+					}
+					freeplaneNode.addExtension(attrTable);
+				}
 			} else if(attribute.equals("hGap")) {
 				updateLocationModel(freeplaneNode, (Integer)valueObj, null);
 			} else if(attribute.equals("shiftY")) {
@@ -423,7 +431,7 @@ public class Actions {
 				//TODO handle
 			} else if(attribute.equals("link")) {
 				final String value = valueObj.toString();
-				
+
 				NodeLinks nodeLinks = freeplaneNode.getExtension(NodeLinks.class);
 
 				if(nodeLinks == null) {
@@ -460,7 +468,7 @@ public class Actions {
 		final String nodeId = request.getNodeId();
 		final String username = request.getUsername();
 		logger().debug("Actions.removeNode => mapId:'{}'; nodeId:'{}'; username:'{}'",mapId,nodeId,username);
-		
+
 
 		logger().debug("Actions.removeNode => selecting map");
 		selectMap(request.getMapId());
@@ -473,7 +481,7 @@ public class Actions {
 		if(hasAnyChildALock(node)) {
 			return new RemoveNodeResponse(false);
 		}
-		
+
 		logger().debug("Actions.removeNode => deleting node");
 		mapController.deleteNode(node);
 
@@ -482,19 +490,19 @@ public class Actions {
 
 		return new RemoveNodeResponse(true);
 	}
-	
+
 	private static boolean hasAnyChildALock(NodeModel freeplaneNode) {
 		boolean hasLock = freeplaneNode.containsExtension(LockModel.class);
 		//check if node itself has a lock
 		if(hasLock)
 			return true;
-		
+
 		//check child nodes have lock
 		for(NodeModel node :freeplaneNode.getChildren()) {
 			if(hasAnyChildALock(node))
 				return true;
 		}
-		
+
 		// else no lock
 		return false;
 	}
