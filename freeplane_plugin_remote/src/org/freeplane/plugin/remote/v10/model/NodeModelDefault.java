@@ -20,6 +20,7 @@ public class NodeModelDefault extends NodeModelBase implements Serializable{
 	
 	public List<NodeModelDefault> children;
 
+	public EdgeModel edgeStyle;
 	public Integer hGap;
 	public Integer shiftY;
 	public List<String> attributes;
@@ -36,6 +37,14 @@ public class NodeModelDefault extends NodeModelBase implements Serializable{
 		
 		loadLocation(freeplaneNode);
 		loadAttributes(freeplaneNode);
+		loadEdgeStyle(freeplaneNode);
+		
+	}
+	
+	private void loadEdgeStyle(NodeModel freeplaneNode) {
+		this.edgeStyle = new EdgeModel(freeplaneNode);
+		if(edgeStyle.areAllValuesNull())
+			edgeStyle = null;
 	}
 	
 	private void loadLocation(org.freeplane.features.map.NodeModel freeplaneNode) {
