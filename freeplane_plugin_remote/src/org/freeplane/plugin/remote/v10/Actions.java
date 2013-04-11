@@ -52,8 +52,6 @@ import org.docear.messages.exceptions.NodeAlreadyLockedException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.docear.messages.exceptions.NodeNotLockedByUserException;
 import org.freeplane.core.util.LogUtils;
-import org.freeplane.features.attribute.Attribute;
-import org.freeplane.features.attribute.AttributeController;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.attribute.mindmapmode.MAttributeController;
 import org.freeplane.features.link.NodeLinks;
@@ -63,12 +61,13 @@ import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.nodelocation.LocationModel;
+import org.freeplane.features.note.mindmapmode.MNoteController;
 import org.freeplane.n3.nanoxml.XMLException;
 import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
 import org.freeplane.plugin.remote.RemoteController;
-import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
 import org.freeplane.plugin.remote.v10.model.LockModel;
 import org.freeplane.plugin.remote.v10.model.MapModel;
+import org.freeplane.plugin.remote.v10.model.NodeModelDefault;
 import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
@@ -315,7 +314,7 @@ public class Actions {
 
 
 		logger().debug("Actions.getNode => loading into model to convert to JSON");
-		final DefaultNodeModel node = new DefaultNodeModel(freeplaneNode,loadAllNodes);
+		final NodeModelDefault node = new NodeModelDefault(freeplaneNode,loadAllNodes);
 		if(!loadAllNodes) {
 			Utils.loadNodesIntoModel(node, request.getNodeCount());
 		}
@@ -355,7 +354,7 @@ public class Actions {
 		logger().debug("Actions.addNode => node with id '{}' successfully created",node.getID()); 
 
 		logger().debug("Actions.addNode => returning response with new node as json");
-		final AddNodeUpdate update = new AddNodeUpdate(parentNodeId, new DefaultNodeModel(node, false).toJsonString());
+		final AddNodeUpdate update = new AddNodeUpdate(parentNodeId, new NodeModelDefault(node, false).toJsonString());
 		getOpenMindMapInfo(mapId).addUpdate(update);
 		return new AddNodeResponse(update.toJson());
 	}
@@ -385,7 +384,7 @@ public class Actions {
 			final String attribute = entry.getKey();
 			final Object valueObj = entry.getValue();
 
-			logger().debug("Actions.changeNode => {} changed to {}",attribute, valueObj.toString());
+			logger().debug("Actions.changeNode => {} changed to {}",attribute, valueObj);
 			updates.add(new ChangeNodeAttributeUpdate(nodeId, attribute, valueObj));
 
 			if(attribute.equals("folded")) {
@@ -410,10 +409,10 @@ public class Actions {
 
 				NodeAttributeTableModel attrTable;
 				MAttributeController attrController = MAttributeController.getController();
-				
+
 				if(orderedItems.size() > 0) {
 					attrTable = attrController.createAttributeTableModel(freeplaneNode);
-					
+
 					for(int i = 0; i < orderedItems.size(); i++) {
 						final String[] parts = orderedItems.get(i).split("%:%");
 						logger().debug("key: {}; value: {}",parts[0],parts[1]);
@@ -446,6 +445,14 @@ public class Actions {
 				}
 			} else if(attribute.equals("nodeText")) {
 				freeplaneNode.setText( valueObj.toString());
+			} else if(attribute.equals("note")) {
+				final MNoteController noteController = (MNoteController)MNoteController.getController();
+				if(valueObj == null) {
+					noteController.setNoteText(freeplaneNode, "");
+				} else {
+					final String noteText = valueObj.toString();
+					noteController.setNoteText(freeplaneNode, noteText);
+				}
 			}
 		}
 

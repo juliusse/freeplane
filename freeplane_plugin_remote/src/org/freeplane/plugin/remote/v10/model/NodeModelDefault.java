@@ -14,11 +14,11 @@ import org.freeplane.features.nodelocation.LocationModel;
 import org.freeplane.plugin.remote.RemoteController;
 
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-public class DefaultNodeModel extends NodeModelBase implements Serializable{
+public class NodeModelDefault extends NodeModelBase implements Serializable{
 	private static final long serialVersionUID = 1L;
 
 	
-	public List<DefaultNodeModel> children;
+	public List<NodeModelDefault> children;
 
 	public Integer hGap;
 	public Integer shiftY;
@@ -27,11 +27,11 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 	/**
 	 * necessary for JAX-B
 	 */
-	public DefaultNodeModel() {
+	public NodeModelDefault() {
 		super();
 	}
 	
-	public DefaultNodeModel(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
+	public NodeModelDefault(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
 		super(freeplaneNode,autoloadChildren);
 		
 		loadLocation(freeplaneNode);
@@ -63,14 +63,14 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 
 	@Override
 	public int loadChildren(boolean autoloadChildren) {
-		children = new ArrayList<DefaultNodeModel>();
+		children = new ArrayList<NodeModelDefault>();
 		
 		MapController mapController = RemoteController.getModeController().getMapController();
 		
 		int totalCount = childrenIds.size();
 		for(String nodeId : childrenIds) {
 			NodeModel freeplaneChild = mapController.getNodeFromID(nodeId);
-			children.add(new DefaultNodeModel(freeplaneChild,false));
+			children.add(new NodeModelDefault(freeplaneChild,false));
 		}
 		
 		if(autoloadChildren) {
@@ -86,7 +86,7 @@ public class DefaultNodeModel extends NodeModelBase implements Serializable{
 
 	@Override
 	@JsonIgnore
-	public List<DefaultNodeModel> getAllChildren() {
+	public List<NodeModelDefault> getAllChildren() {
 		return children;
 	}
 	

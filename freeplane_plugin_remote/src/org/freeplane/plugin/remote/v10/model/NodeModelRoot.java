@@ -13,15 +13,15 @@ import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.remote.RemoteController;
 
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-public class RootNodeModel extends NodeModelBase implements Serializable {
+public class NodeModelRoot extends NodeModelBase implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	//@XmlElement(required=true,nillable=true)
 	@XmlElement(name="leftChildren")
-	public List<DefaultNodeModel> leftChildren;
+	public List<NodeModelDefault> leftChildren;
 	//@XmlElement(required=true)
 	@XmlElement(name="rightChildren")
-	public List<DefaultNodeModel> rightChildren;
+	public List<NodeModelDefault> rightChildren;
 
 	//public NodeModel preferredChild;
 	
@@ -30,7 +30,7 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 	 * necessary for JAX-B
 	 */
 	@SuppressWarnings("unused")
-	private RootNodeModel() {
+	private NodeModelRoot() {
 		super();
 	}
 	
@@ -38,7 +38,7 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 	 * automatically converts the whole tree
 	 * @param freeplaneNode
 	 */
-	public RootNodeModel(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
+	public NodeModelRoot(org.freeplane.features.map.NodeModel freeplaneNode, boolean autoloadChildren) {
 		super(freeplaneNode,autoloadChildren);
 	}
 	
@@ -46,25 +46,25 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 	
 	@Override
 	public int loadChildren(boolean autoloadChildren) {
-		leftChildren = new ArrayList<DefaultNodeModel>();
-		rightChildren = new ArrayList<DefaultNodeModel>();
+		leftChildren = new ArrayList<NodeModelDefault>();
+		rightChildren = new ArrayList<NodeModelDefault>();
 		
 		MapController mapController = RemoteController.getModeController().getMapController(); 
 		int totalCount = childrenIds.size();
 		for(String nodeId : childrenIds) {
 			NodeModel child = mapController.getNodeFromID(nodeId);
 			if(child.isLeft()) {
-				this.leftChildren.add(new org.freeplane.plugin.remote.v10.model.DefaultNodeModel(child,false));
+				this.leftChildren.add(new org.freeplane.plugin.remote.v10.model.NodeModelDefault(child,false));
 			} else {
-				this.rightChildren.add(new org.freeplane.plugin.remote.v10.model.DefaultNodeModel(child,false));
+				this.rightChildren.add(new org.freeplane.plugin.remote.v10.model.NodeModelDefault(child,false));
 			}
 		}
 		
 		if(autoloadChildren) {
-			for(DefaultNodeModel child : this.leftChildren) {
+			for(NodeModelDefault child : this.leftChildren) {
 				totalCount += child.loadChildren(true);
 			}
-			for(DefaultNodeModel child : this.rightChildren) {
+			for(NodeModelDefault child : this.rightChildren) {
 				totalCount += child.loadChildren(true);
 			}
 		}
@@ -75,8 +75,8 @@ public class RootNodeModel extends NodeModelBase implements Serializable {
 
 	@Override
 	@JsonIgnore
-	public List<DefaultNodeModel> getAllChildren() {
-		List<DefaultNodeModel> list = new ArrayList<DefaultNodeModel>(leftChildren);
+	public List<NodeModelDefault> getAllChildren() {
+		List<NodeModelDefault> list = new ArrayList<NodeModelDefault>(leftChildren);
 		list.addAll(rightChildren);
 		return list;
 	}

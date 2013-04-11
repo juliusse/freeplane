@@ -12,7 +12,7 @@ public class MapModel implements Serializable {
 	
 	public String id;
 	public Boolean isReadonly;
-	public RootNodeModel root;
+	public NodeModelRoot root;
 	public String name;
 	public int revision;
 
@@ -26,7 +26,7 @@ public class MapModel implements Serializable {
 		this.revision = revision;
 		
 		NodeModel rootNodeFreeplane = freeplaneMap.getRootNode();
-		root = new RootNodeModel(rootNodeFreeplane, autoloadChildren);
+		root = new NodeModelRoot(rootNodeFreeplane, autoloadChildren);
 	}
 	
 	public String toJsonString() {

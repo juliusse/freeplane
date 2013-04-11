@@ -11,6 +11,8 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.freeplane.features.icon.MindIcon;
 import org.freeplane.features.link.NodeLinks;
 import org.freeplane.features.map.NodeModel;
+import org.freeplane.features.note.NoteController;
+import org.freeplane.features.note.mindmapmode.MNoteController;
 
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 abstract public class NodeModelBase implements Serializable {
@@ -24,7 +26,7 @@ abstract public class NodeModelBase implements Serializable {
 	public ImageModel image;
 	public String link;
 	public String locked;
-
+	public String note;
 	
 	public List<String> childrenIds;
 
@@ -32,14 +34,14 @@ abstract public class NodeModelBase implements Serializable {
 	 * necessary for JAX-B
 	 */
 	protected NodeModelBase() {
-		id = null;
-		nodeText = null;
-		isHtml = false;
-		folded = false;
-		icons = null;
-		image = null;
-		link = null;
-		locked = null;
+//		id = null;
+//		nodeText = null;
+//		isHtml = false;
+//		folded = false;
+//		icons = null;
+//		image = null;
+//		link = null;
+//		locked = null;
 		//freeplaneNode = null;
 	}
 
@@ -51,6 +53,7 @@ abstract public class NodeModelBase implements Serializable {
 		this.folded = freeplaneNode.isFolded();
 		this.icons = getIconArray(freeplaneNode);
 		this.image = getImage(freeplaneNode);
+		this.note = getNote(freeplaneNode);
 
 		URI uri = NodeLinks.getValidLink(freeplaneNode);
 		this.link = uri != null ? uri.toString() : null;
@@ -63,6 +66,13 @@ abstract public class NodeModelBase implements Serializable {
 		if(autoloadChildren) { //load children models
 			loadChildren(true);
 		}
+	}
+	
+	private String getNote(org.freeplane.features.map.NodeModel freeplaneNode) {
+		NoteController noteController = MNoteController.getController();
+		final String noteText = noteController.getNoteText(freeplaneNode);
+		//if no note, 'noteText' is null
+		return noteText;
 	}
 
 	private String[] getIconArray(org.freeplane.features.map.NodeModel freeplaneNode) {
@@ -98,7 +108,7 @@ abstract public class NodeModelBase implements Serializable {
 	public abstract int loadChildren(boolean autoloadChildren);
 
 	@JsonIgnore
-	public abstract List<DefaultNodeModel> getAllChildren();
+	public abstract List<NodeModelDefault> getAllChildren();
 
 	
 	public String toJsonString() {

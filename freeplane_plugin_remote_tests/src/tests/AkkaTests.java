@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,7 +44,7 @@ import org.docear.messages.Messages.RequestLockResponse;
 import org.docear.messages.exceptions.MapNotFoundException;
 import org.docear.messages.exceptions.NodeNotFoundException;
 import org.fest.assertions.Fail;
-import org.freeplane.plugin.remote.v10.model.DefaultNodeModel;
+import org.freeplane.plugin.remote.v10.model.NodeModelDefault;
 import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
@@ -260,7 +261,7 @@ public class AkkaTests {
 							
 							final AddNodeUpdate update = objectMapper.readValue(response.getMapUpdate(), AddNodeUpdate.class);
 							assertThat(update.getType()).isEqualTo(MapUpdate.Type.AddNode);
-							final DefaultNodeModel node = objectMapper.readValue(update.getNodeAsJson(), DefaultNodeModel.class);
+							final NodeModelDefault node = objectMapper.readValue(update.getNodeAsJson(), NodeModelDefault.class);
 							System.out.println(node.nodeText);
 							Assert.assertEquals("",node.nodeText);
 
@@ -339,7 +340,7 @@ public class AkkaTests {
 							remoteActor.tell(new GetNodeRequest("5", "ID_1", 1), localActor);
 
 							GetNodeResponse response = expectMsgClass(GetNodeResponse.class);
-							DefaultNodeModel node = objectMapper.readValue(response.getNode(), DefaultNodeModel.class);
+							NodeModelDefault node = objectMapper.readValue(response.getNode(), NodeModelDefault.class);
 							System.out.println(node.nodeText);
 							assertThat(node.nodeText).isEqualTo("right_L1P0_Links");
 							assertThat(node.hGap).isEqualTo(70);
@@ -504,7 +505,8 @@ public class AkkaTests {
 															"hGap",
 															"shiftY",
 															"attributes",
-															"icons"}
+															"icons",
+															"note"}
 													));
 							
 							for(String updateJson : mapUpdates) {
@@ -529,7 +531,9 @@ public class AkkaTests {
 									assertThat(value).isEqualTo(attributeMap.get("hGap"));
 								} else if(attribute.equals("shiftY")) {
 									assertThat(value).isEqualTo(attributeMap.get("shiftY"));
-								} 
+								} else if(attribute.equals("note")) {
+									assertThat(value).isEqualTo(attributeMap.get("note"));
+								}
 							}
 
 							//check that everything changed
@@ -843,8 +847,9 @@ public class AkkaTests {
 		final String link = "http://www.google.de";
 		final Integer hGap = 10;
 		final Integer shiftY = 10;
-		final Map<String,String> attr = new HashMap<String, String>();
-		attr.put("key", "value");
+		final String note = "This is a note";
+		final List<String> attr = new ArrayList<String>();
+		attr.add("key%:%value");
 
 		
 
@@ -857,6 +862,7 @@ public class AkkaTests {
 		attributeMap.put("hGap", hGap);
 		attributeMap.put("shiftY", shiftY);
 		attributeMap.put("attributes", attr);
+		attributeMap.put("note", note);
 		
 		return attributeMap;
 	}
