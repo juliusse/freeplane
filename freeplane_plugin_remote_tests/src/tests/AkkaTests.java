@@ -58,7 +58,6 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.xml.transform.RewriteRule;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -72,7 +71,6 @@ import com.typesafe.config.ConfigFactory;
 public class AkkaTests {
 
 	private final static String USERNAME1 = "USER1";
-	@SuppressWarnings("unused")
 	private final static String USERNAME2 = "USER2";
 	
 	private static ActorSystem system;
@@ -776,7 +774,7 @@ public class AkkaTests {
 		try {
 			final File f = new File(pathURL.toURI());
 			String mapContent = FileUtils.readFileToString(f);
-			final OpenMindMapRequest request = new OpenMindMapRequest(mapContent,id+".mm");
+			final OpenMindMapRequest request = new OpenMindMapRequest(id+"", mapContent,id+".mm");
 
 			assertThat(f).isNotNull();
 

@@ -1,14 +1,10 @@
 package org.freeplane.plugin.remote.v10;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.util.LinkedList;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.io.IOUtils;
 import org.docear.messages.Messages.OpenMindMapRequest;
@@ -18,7 +14,6 @@ import org.freeplane.features.mapio.MapIO;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.model.NodeModelBase;
 import org.slf4j.Logger;
-import org.w3c.dom.Document;
 
 public final class Utils {
 
@@ -35,30 +30,12 @@ public final class Utils {
 		}
 	}
 
-	public static String getMapIdFromFile(File mindmapFile) throws CannotRetrieveMapIdException {
-		logger().debug("Utils.getMapIdFromFile => retrieving mapId from '{}'",mindmapFile.getAbsolutePath());
-		try {
-			logger().debug("Utils.getMapIdFromFile => parsing document as XML");
-			DocumentBuilderFactory dbFactory =  DocumentBuilderFactory.newInstance();
-			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.parse(mindmapFile);
-
-			doc.getDocumentElement().normalize();
-			logger().debug("Utils.getMapIdFromFile => sending value of attribute 'dcr_id'");
-			return doc.getDocumentElement().getAttribute("dcr_id");
-
-		} catch(Exception e) {
-			logger().error("Utils.getMapIdFromFile => exception catched, CannotRetrieveMapIdException thrown");
-			throw new CannotRetrieveMapIdException("Cannot retrieve map id from file",e);
-		}
-	}
-
 	public static void selectMap(final String mapId) throws MapNotFoundException {
 		logger().debug("Utils.selectMap => mapId:'{}'",mapId);
 		
 		if(!RemoteController.getMapIdInfoMap().containsKey(mapId)) {
 			logger().error("Utils.selectMap => map not found");
-			throw new MapNotFoundException("Map with id "+ mapId+ " is not present.");
+			throw new MapNotFoundException("Map with id "+ mapId+ " is not present.",mapId);
 		}
 		
 		logger().debug("Utils.selectMap => Changing map to '{}'",mapId);
@@ -70,7 +47,7 @@ public final class Utils {
 			logger().debug("Utils.selectMap => Map succesfully selected");
 		} catch (Exception e) {
 			logger().error("Utils.selectMap => Error while selecting map with id '{}'",mapId);
-			throw new MapNotFoundException("Could not open Map with id "+ mapId,e);
+			throw new MapNotFoundException("Could not open Map with id "+ mapId,e,mapId);
 		}
 	}
 
@@ -98,7 +75,7 @@ public final class Utils {
 			IOUtils.copy(in, writer);
 			final String xmlMap = writer.toString();
 			
-			Actions.openMindmap(new OpenMindMapRequest(xmlMap,mapName));
+			Actions.openMindmap(new OpenMindMapRequest(id, xmlMap,mapName));
 		} catch (IOException e) {}
 		finally {
 			IOUtils.closeQuietly(in);

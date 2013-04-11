@@ -91,7 +91,7 @@ public class Actions {
 	public static MindmapAsJsonReponse getMapModelJson(MindmapAsJsonRequest request) throws MapNotFoundException {
 
 		final int nodeCount = request.getNodeCount();
-		final String mapId = request.getId();
+		final String mapId = request.getMapId();
 
 		final boolean loadAllNodes = nodeCount == -1;
 
@@ -169,9 +169,10 @@ public class Actions {
 	}
 
 	public static OpenMindMapResponse openMindmap(final OpenMindMapRequest request) throws CannotRetrieveMapIdException {
+		final String mapId = request.getMapId();
 		final String mapContent = request.getMindmapFileContent();
 		final String mapName = request.getMindmapFileName();
-		logger().debug("Actions.openMindmap => mindmapFileContent:'{}...'",mapContent.substring(0,Math.min(mapContent.length(), 20)));
+		logger().debug("Actions.openMindmap => mapId: {}; mapName: {}; content:'{}...'",mapId, mapName, mapContent.substring(0,Math.min(mapContent.length(), 20)));
 
 
 		//create file
@@ -186,7 +187,6 @@ public class Actions {
 			FileUtils.writeStringToFile(file, mapContent);
 
 			//put map in openMap Collection
-			final String mapId = Utils.getMapIdFromFile(file);
 			final URL pathURL = file.toURI().toURL();
 			final OpenMindmapInfo info = new OpenMindmapInfo(pathURL,mapName);
 			getOpenMindmapInfoMap().put(mapId, info);
@@ -218,7 +218,7 @@ public class Actions {
 
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
 		if(info == null) {
-			throw new MapNotFoundException("Map with id "+mapId+" was not found");
+			throw new MapNotFoundException("Map with id "+mapId+" was not found",mapId);
 		}
 
 		List<String> list = info.getJsonUpdateListSinceRevision(sinceRevision);
@@ -229,7 +229,7 @@ public class Actions {
 		final String mapId = request.getMapId();
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId); 
 		if(info == null)
-			throw new MapNotFoundException("Map with id "+mapId+" was not present");
+			throw new MapNotFoundException("Map with id "+mapId+" was not present",mapId);
 
 		//Polling to check for changes
 		final long revision = info.getCurrentRevision();
@@ -686,7 +686,7 @@ public class Actions {
 				}
 			} else {
 				throw new MapNotFoundException("Map not found!\n"+
-						"Available test map ids: 'test_1','test_2','test_3','test_5'");
+						"Available test map ids: 'test_1','test_2','test_3','test_5'",mapId);
 			}
 		}
 	}

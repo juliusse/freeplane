@@ -25,6 +25,7 @@ import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.v10.Actions;
 import org.slf4j.Logger;
 
+import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.Status;
 import akka.actor.UntypedActor;
@@ -116,7 +117,8 @@ public class MainActor extends UntypedActor {
 			//listen if update occurs
 			else if(message instanceof ListenToUpdateOccurrenceRequest) {
 				final SendResult<ListenToUpdateOccurrenceRespone> onSuccess = new SendResult<ListenToUpdateOccurrenceRespone>(sender,getSelf());
-				Actions.listenIfUpdateOccurs((ListenToUpdateOccurrenceRequest) message).onSuccess(onSuccess, RemoteController.getActorSystem().dispatcher());
+				final Future<ListenToUpdateOccurrenceRespone> future = Actions.listenIfUpdateOccurs((ListenToUpdateOccurrenceRequest) message);
+				future.onSuccess(onSuccess, RemoteController.getActorSystem().dispatcher());
 
 			}
 
