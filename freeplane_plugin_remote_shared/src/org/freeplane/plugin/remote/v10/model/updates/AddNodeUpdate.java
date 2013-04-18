@@ -13,14 +13,14 @@ public class AddNodeUpdate extends MapUpdate {
 	// Do not remove! Needed for jackson (in testing project)
 	@SuppressWarnings("unused")
 	private AddNodeUpdate() {
-		this("", "", null);
+		this("","","", "", null);
 	}
 
 	/**
 	 * Constructor for default nodes (don't need side)
 	 */
-	public AddNodeUpdate(String parentNodeId, String newNodeId, String nodeAsJson) {
-		this(parentNodeId, newNodeId, nodeAsJson, null);
+	public AddNodeUpdate(String source, String username, String parentNodeId, String newNodeId, String nodeAsJson) {
+		this(source, username, parentNodeId, newNodeId, nodeAsJson, null);
 	}
 
 	/**
@@ -29,8 +29,8 @@ public class AddNodeUpdate extends MapUpdate {
 	 * @param side
 	 *            only required at root node level
 	 */
-	public AddNodeUpdate(String parentNodeId, String newNodeId, String nodeAsJson, Side side) {
-		super(Type.AddNode);
+	public AddNodeUpdate(String source, String username, String parentNodeId, String newNodeId, String nodeAsJson, Side side) {
+		super(source, username, Type.AddNode);
 		this.parentNodeId = parentNodeId;
 		this.nodeAsJson = nodeAsJson;
 		this.side = side;

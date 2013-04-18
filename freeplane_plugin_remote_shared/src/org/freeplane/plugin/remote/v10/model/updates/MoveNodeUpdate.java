@@ -7,11 +7,11 @@ public class MoveNodeUpdate extends MapUpdate {
 
 	@SuppressWarnings("unused")
 	private MoveNodeUpdate() {
-		this("", "", 0);
+		this("", "", "", "", 0);
 	}
-	
-	public MoveNodeUpdate(String newParentNodeId, String nodetoMoveId, Integer newIndex) {
-		super(Type.MoveNode);
+
+	public MoveNodeUpdate(String source, String username, String newParentNodeId, String nodetoMoveId, Integer newIndex) {
+		super(source, username, Type.MoveNode);
 		this.newParentNodeId = newParentNodeId;
 		this.nodetoMoveId = nodetoMoveId;
 		this.newIndex = newIndex;

@@ -9,14 +9,14 @@ public class ChangeNodeAttributeUpdate extends MapUpdate {
 	
 
 	private ChangeNodeAttributeUpdate() {
-		super(Type.ChangeNodeAttribute);
+		super("","",Type.ChangeNodeAttribute);
 		nodeId = "";
 		attribute = "";
 		value = "";
 	}
 	
-	public ChangeNodeAttributeUpdate(String nodeId, String attribute, Object value) {
-		super(Type.ChangeNodeAttribute);
+	public ChangeNodeAttributeUpdate(String source, String username, String nodeId, String attribute, Object value) {
+		super(source, username, Type.ChangeNodeAttribute);
 		
 		this.nodeId = nodeId;
 		this.attribute = attribute;

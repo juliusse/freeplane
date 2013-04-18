@@ -63,7 +63,7 @@ public class RemoteController {
 							@Override
 							public void run() {
 								logger.info("Scheduling closing of unused maps.");
-								mainActor.tell(new CloseUnusedMaps(600000), null); // ten minutes
+								mainActor.tell(new CloseUnusedMaps("self", "", 600000), null); // ten minutes
 							}
 						}, system.dispatcher());
 		
@@ -118,7 +118,7 @@ public class RemoteController {
 	}
 	
 	private void closeMaps() {
-		Actions.closeAllOpenMaps(new CloseAllOpenMapsRequest());
+		Actions.closeAllOpenMaps(new CloseAllOpenMapsRequest("self", ""));
 	}
 
 	public static ModeController getModeController() {

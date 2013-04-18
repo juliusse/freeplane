@@ -9,13 +9,12 @@ import org.docear.messages.exceptions.NodeNotFoundException;
 import org.freeplane.features.attribute.NodeAttributeTableModel;
 import org.freeplane.features.attribute.mindmapmode.MAttributeController;
 import org.freeplane.features.link.NodeLinks;
-import org.freeplane.features.map.MapController;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.nodelocation.LocationModel;
+import org.freeplane.features.nodelocation.mindmapmode.MLocationController;
 import org.freeplane.features.note.mindmapmode.MNoteController;
-import org.freeplane.features.text.mindmapmode.MTextController;
 import org.freeplane.plugin.remote.v10.model.NodeModelBase;
 
 public final class RemoteUtils {
@@ -59,7 +58,7 @@ public final class RemoteUtils {
 	}
 	
 	public static void changeNodeAttribute(NodeModel freeplaneNode, String attribute, Object valueObj) {
-		
+		System.out.println("attribute: "+attribute);
 		if (attribute.equals("folded")) {
 			final Boolean value = (Boolean) valueObj;
 			freeplaneNode.setFolded(value);
@@ -142,18 +141,18 @@ public final class RemoteUtils {
 	}
 	
 	private static void updateLocationModel(NodeModel freeplaneNode, Integer hGap, Integer Shifty) {
+		System.out.println("changing location");
+		int oldhGap = 0;
+		int oldshiftY = 0;
+		
 		LocationModel lm = freeplaneNode.getExtension(LocationModel.class);
-		if (lm == null) {
-			lm = new LocationModel();
-			freeplaneNode.addExtension(lm);
+		if (lm != null) {
+			oldhGap = lm.getHGap();
+			oldshiftY = lm.getShiftY();
 		}
-
-		if (hGap != null) {
-			lm.setHGap(hGap);
-		}
-		if (Shifty != null) {
-			lm.setShiftY(Shifty);
-		}
+		LocationModel model = LocationModel.createLocationModel(freeplaneNode);
+		model.setHGap(hGap != null ? hGap : oldhGap);
+		model.setShiftY(Shifty != null ? Shifty : oldshiftY);
 	}
 
 }

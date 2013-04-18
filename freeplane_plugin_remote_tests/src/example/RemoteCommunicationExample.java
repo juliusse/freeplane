@@ -28,7 +28,7 @@ public class RemoteCommunicationExample {
 		remoteActor = system.actorFor("akka://freeplaneRemote@127.0.0.1:2553/user/main");
 		localActor = system.actorOf(new Props(MyActor.class), "local");
 
-		final MindmapAsJsonRequest request = new MindmapAsJsonRequest("<id of the map>");
+		final MindmapAsJsonRequest request = new MindmapAsJsonRequest("source", "username", "<id of the map>");
 		//Asynch call with own actor to handle (preferred)
 		remoteActor.tell(request, localActor);
 

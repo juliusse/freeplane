@@ -33,3 +33,4 @@ freeplane_plugin_remote_tests/lib
 freeplane_plugin_remote_tests/report
 freeplane_plugin_remote_tests/src/files/mindmaps/4.mm
 freeplane_plugin_remote/resources/mindmaps/test_4.mm
+freeplane_plugin_client/lib

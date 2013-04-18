@@ -1,20 +1,28 @@
 package org.freeplane.plugin.client.services;
 
+import java.util.concurrent.Executor;
+
 import org.codehaus.jackson.JsonNode;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 public interface WS {
+	Executor getExecutor();
 	
-	boolean login(String username, String password);
 	
-	boolean listenIfUpdatesOccur(String mapId);
+	ListenableFuture<Boolean> login(String username, String password);
 	
-	JsonNode getMapAsXml(String mapId);
+	ListenableFuture<Boolean> listenIfUpdatesOccur(String mapId);
 	
-	GetUpdatesResponse getUpdatesSinceRevision(String mapId, int sinceRevision);
+	ListenableFuture<JsonNode> getMapAsXml(String mapId);
 	
-	String createNode(String mapId, String parentNodeId);
+	ListenableFuture<GetUpdatesResponse> getUpdatesSinceRevision(String mapId, int sinceRevision);
 	
-	boolean moveNodeTo(String mapId, String newParentId, String nodeToMoveId, int newIndex);
-	boolean removeNode(String mapId, String nodeId);
-	boolean changeNode(String mapId, String nodeId, String attribute, Object value);
+	ListenableFuture<String> createNode(String mapId, String parentNodeId);
+	
+	ListenableFuture<Boolean> moveNodeTo(String mapId, String newParentId, String nodeToMoveId, int newIndex);
+	ListenableFuture<Boolean> removeNode(String mapId, String nodeId);
+	ListenableFuture<Boolean> changeNode(String mapId, String nodeId, String attribute, Object value);
+	
+	
 }

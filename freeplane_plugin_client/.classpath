@@ -41,6 +41,7 @@
 	<classpathentry kind="lib" path="lib/commons-httpclient-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/jersey-apache-client-1.17.1.jar"/>
+	<classpathentry kind="lib" path="lib/guava-14.0.1.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/freeplane"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/freeplane_plugin_remote_shared"/>
 	<classpathentry kind="output" path="build"/>
