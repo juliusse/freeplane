@@ -1,38 +1,35 @@
 package org.freeplane.plugin.client;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonNode;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.map.INodeSelectionListener;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.MapIO;
-import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.features.mode.mindmapmode.MModeController;
-import org.freeplane.n3.nanoxml.XMLException;
-import org.freeplane.plugin.client.jobs.ListenForUpdatesJob;
+import org.freeplane.plugin.client.actors.ApplyChangesActor;
+import org.freeplane.plugin.client.actors.InitCollaborationActor;
+import org.freeplane.plugin.client.actors.ListenForUpdatesActor;
 import org.freeplane.plugin.client.listeners.MapChangeListener;
 import org.freeplane.plugin.client.listeners.NodeChangeListener;
 import org.freeplane.plugin.client.listeners.NodeViewListener;
 import org.freeplane.plugin.client.services.DocearOnlineWs;
 import org.freeplane.plugin.client.services.WS;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.actor.TypedActor;
+import akka.actor.TypedProps;
+import akka.util.Timeout;
+
+import com.typesafe.config.ConfigFactory;
 
 public class ClientController {
 
@@ -40,12 +37,18 @@ public class ClientController {
 	public static final String USER = "Julius";
 	public static final String PW = "secret";
 
-	private final ListeningScheduledExecutorService executor;
+	private final ActorSystem system;
+	private ActorRef listenForUpdatesActor = null;
+	private ActorRef applyChangeActor = null;
+	private ActorRef initCollaborationactor = null;
+
+	//private final ListeningScheduledExecutorService executor;
+	
 	private WS webservice;
 	private static ClientController instance;
 	private final String sourceString;
 	private boolean isUpdating = false;
-	private ListenForUpdatesJob listenForUpdatesJob = null;
+	
 	private final Map<NodeModel, NodeViewListener> selectedNodesMap = new HashMap<NodeModel, NodeViewListener>();
 
 	public static ClientController getInstance() {
@@ -65,52 +68,54 @@ public class ClientController {
 		}
 
 		// create Threadpool
-		executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(10));
+		//executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(10));
 
 		// change class loader
-		// final ClassLoader contextClassLoader =
-		// Thread.currentThread().getContextClassLoader();
-		// Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
+		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
 
 		LogUtils.info("starting Client Plugin...");
 
-		webservice = new DocearOnlineWs();
+		system = ActorSystem.create("freeplaneClient", ConfigFactory.load().getConfig("local"));
+		listenForUpdatesActor = system.actorOf(new Props(ListenForUpdatesActor.class), "updateListener");
+		applyChangeActor = system.actorOf(new Props(ApplyChangesActor.class), "changeApplier");
+		initCollaborationactor = system.actorOf(new Props(InitCollaborationActor.class), "initCollaboration");
+		
+		
+		webservice = TypedActor.get(system).typedActorOf(
+				new TypedProps<DocearOnlineWs>(WS.class, DocearOnlineWs.class).withTimeout(Timeout.apply(3, TimeUnit.MINUTES)));
+
 
 		this.registerListeners();
-		// // set back to original class loader
-		// Thread.currentThread().setContextClassLoader(contextClassLoader);
-		executor.schedule((new Runnable() {
 
-			@Override
-			public void run() {
-				try {
-					while (!getModeController().getModeName().equals("MindMap")) {
-						Thread.sleep(20);
-					}
-					Futures.getUnchecked(webservice.login(USER, PW));
-					final int currentRevision = openMindmap("5");
-					listenForUpdatesJob = new ListenForUpdatesJob("5", currentRevision);
-					executor.submit(listenForUpdatesJob);
-				} catch (InterruptedException e) {
-				} catch (Throwable t) {
-					t.printStackTrace();
+		initCollaborationactor.tell(new InitCollaborationActor.Messages.InitCollaborationMode("5",USER,PW), null);
+		
+//		system.scheduler().scheduleOnce(
+//				Duration.create(1, TimeUnit.SECONDS), 
+//				new MapInitRunnable("5", USER, PW), 
+//				system.dispatcher());
+
+
+		// set back to original class loader
+		Thread.currentThread().setContextClassLoader(contextClassLoader);
+	}
+
+	public static final class CheckForChangesRunnable implements Runnable {
+
+		@Override
+		public void run() {
+			final Map<NodeModel, NodeViewListener> selectedNodesMap = ClientController.selectedNodesMap();
+			for (Map.Entry<NodeModel, NodeViewListener> nodePair : selectedNodesMap.entrySet()) {
+				final Map<String, Object> attributeValueMap = nodePair.getValue().getChangedAttributes();
+
+				for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
+					webservice().changeNode("5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
 				}
-
+				
+				nodePair.getValue().updateCurrentState();
 			}
-		}),2,TimeUnit.SECONDS);
-		executor.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				for (Map.Entry<NodeModel, NodeViewListener> nodePair : selectedNodesMap.entrySet()) {
-					final Map<String, Object> attributeValueMap = nodePair.getValue().getChangedAttributes();
+		}
 
-					for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
-						webservice().changeNode("5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
-					}
-					nodePair.getValue().updateCurrentState();
-				}
-			}
-		}, 5, 1, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -138,7 +143,7 @@ public class ClientController {
 
 					for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
 						webservice().changeNode("5", node.getID(), entry.getKey(), entry.getValue());
-						
+
 					}
 
 					node.removeViewer(listener);
@@ -164,35 +169,7 @@ public class ClientController {
 		return getModeController().getExtension(MapIO.class);
 	}
 
-	public int openMindmap(final String mapId) {
 
-		final JsonNode responseNode = Futures.getUnchecked(webservice().getMapAsXml(mapId));
-
-		final int currentRevision = responseNode.get("currentRevision").asInt();
-		final String xmlString = responseNode.get("xmlString").asText();
-		final Random ran = new Random();
-		final String filename = "" + System.currentTimeMillis() + ran.nextInt(100);
-		final String tempDirPath = System.getProperty("java.io.tmpdir");
-		final File file = new File(tempDirPath + "/docear/" + filename + ".mm");
-
-		try {
-			FileUtils.writeStringToFile(file, xmlString);
-			final URL pathURL = file.toURI().toURL();
-
-			final MMapIO mio = (MMapIO) ClientController.getMapIO();
-			mio.newMap(pathURL);
-		} catch (IOException e) {
-			throw new AssertionError(e);
-		} catch (URISyntaxException e) {
-			throw new AssertionError(e);
-		} catch (XMLException e) {
-			throw new AssertionError(e);
-		} finally {
-			file.delete();
-		}
-
-		return currentRevision;
-	}
 
 	public static MMapController mmapController() {
 		return (MMapController) getModeController().getMapController();
@@ -218,11 +195,19 @@ public class ClientController {
 		return USER;
 	}
 
-	public static ListeningScheduledExecutorService executor() {
-		return getInstance().executor;
+	public static ActorRef applyChangesActor() {
+		return getInstance().applyChangeActor;
+	}
+
+	public static ActorRef listenForUpdatesActor() {
+		return getInstance().listenForUpdatesActor;
+	}
+
+	public static Map<NodeModel, NodeViewListener> selectedNodesMap() {
+		return getInstance().selectedNodesMap;
 	}
 	
-	public static Map<NodeModel,NodeViewListener> selectedNodesMap() {
-		return getInstance().selectedNodesMap;
+	public static ActorSystem system() {
+		return getInstance().system;
 	}
 }

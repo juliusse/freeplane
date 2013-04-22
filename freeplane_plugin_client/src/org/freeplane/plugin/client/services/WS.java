@@ -2,22 +2,22 @@ package org.freeplane.plugin.client.services;
 
 import org.codehaus.jackson.JsonNode;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import scala.concurrent.Future;
 
 public interface WS {	
-	ListenableFuture<Boolean> login(String username, String password);
+	Future<Boolean> login(String username, String password);
 	
-	ListenableFuture<Boolean> listenIfUpdatesOccur(String mapId);
+	Future<Boolean> listenIfUpdatesOccur(String mapId);
 	
-	ListenableFuture<JsonNode> getMapAsXml(String mapId);
+	Future<JsonNode> getMapAsXml(String mapId);
 	
-	ListenableFuture<GetUpdatesResponse> getUpdatesSinceRevision(String mapId, int sinceRevision);
+	Future<GetUpdatesResponse> getUpdatesSinceRevision(String mapId, int sinceRevision);
 	
-	ListenableFuture<String> createNode(String mapId, String parentNodeId);
+	Future<String> createNode(String mapId, String parentNodeId);
 	
-	ListenableFuture<Boolean> moveNodeTo(String mapId, String newParentId, String nodeToMoveId, int newIndex);
-	ListenableFuture<Boolean> removeNode(String mapId, String nodeId);
-	ListenableFuture<Boolean> changeNode(String mapId, String nodeId, String attribute, Object value);
+	Future<Boolean> moveNodeTo(String mapId, String newParentId, String nodeToMoveId, int newIndex);
+	Future<Boolean> removeNode(String mapId, String nodeId);
+	Future<Boolean> changeNode(String mapId, String nodeId, String attribute, Object value);
 	
 	
 }

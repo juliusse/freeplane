@@ -18,10 +18,6 @@ import org.freeplane.view.swing.features.filepreview.ExternalResource;
 import org.freeplane.view.swing.map.MapView;
 import org.freeplane.view.swing.map.NodeView;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 @SuppressWarnings("serial")
 public class NodeViewListener extends NodeView implements INodeView {
 	private NodeModelDefault lastNodeState;
@@ -82,23 +78,24 @@ public class NodeViewListener extends NodeView implements INodeView {
 				final Object property = event.getProperty();
 				if (property.toString().contains("FOLDING")) {
 					LogUtils.info("folding");
-					final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), "folded", event.getNewValue());
-					Futures.addCallback(future, new FutureCallback<Boolean>() {
-
-						@Override
-						public void onFailure(Throwable t) {
-							t.printStackTrace();
-						}
-
-						@Override
-						public void onSuccess(Boolean success) {
-							if (!success) {
-								isUpdating(true);
-								event.getNode().setFolded(!(Boolean) event.getNewValue());
-								isUpdating(false);
-							}
-						}
-					});
+					webservice().changeNode("5", event.getNode().getID(), "folded", event.getNewValue());
+//					final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), "folded", event.getNewValue());
+//					Futures.addCallback(future, new FutureCallback<Boolean>() {
+//
+//						@Override
+//						public void onFailure(Throwable t) {
+//							t.printStackTrace();
+//						}
+//
+//						@Override
+//						public void onSuccess(Boolean success) {
+//							if (!success) {
+//								isUpdating(true);
+//								event.getNode().setFolded(!(Boolean) event.getNewValue());
+//								isUpdating(false);
+//							}
+//						}
+//					});
 				}
 				// note
 				else if(property.equals("note_text")) {
@@ -180,9 +177,5 @@ public class NodeViewListener extends NodeView implements INodeView {
 
 	private boolean isUpdating() {
 		return ClientController.isUpdating();
-	}
-
-	private void isUpdating(boolean value) {
-		ClientController.isUpdating(value);
 	}
 }

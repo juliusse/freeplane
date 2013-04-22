@@ -6,10 +6,6 @@ import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.plugin.client.ClientController;
 import org.freeplane.plugin.client.services.WS;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 public class NodeChangeListener implements INodeChangeListener {
 
 	@Override
@@ -22,22 +18,23 @@ public class NodeChangeListener implements INodeChangeListener {
 
 			if (event.getProperty() != null && event.getProperty().equals("node_text")) {
 				LogUtils.info("node_text");
-				final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), "nodeText", event.getNewValue());
-				Futures.addCallback(future, new FutureCallback<Boolean>() {
-					@Override
-					public void onFailure(Throwable t) {
-						t.printStackTrace();
-					}
-
-					@Override
-					public void onSuccess(Boolean success) {
-						if (!success) {
-							isUpdating(true);
-							event.getNode().setText(event.getOldValue().toString());
-							isUpdating(false);
-						}
-					}
-				});
+				webservice().changeNode("5", event.getNode().getID(), "nodeText", event.getNewValue());
+//				final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), "nodeText", event.getNewValue());
+//				Futures.addCallback(future, new FutureCallback<Boolean>() {
+//					@Override
+//					public void onFailure(Throwable t) {
+//						t.printStackTrace();
+//					}
+//
+//					@Override
+//					public void onSuccess(Boolean success) {
+//						if (!success) {
+//							isUpdating(true);
+//							event.getNode().setText(event.getOldValue().toString());
+//							isUpdating(false);
+//						}
+//					}
+//				});
 			}
 			// node_text
 

@@ -1,13 +1,14 @@
 package org.freeplane.plugin.client.listeners;
 
-import java.util.concurrent.ExecutionException;
-
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.client.ClientController;
 import org.freeplane.plugin.client.services.WS;
+
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 
 public class MapChangeListener implements IMapChangeListener {
 
@@ -36,12 +37,11 @@ public class MapChangeListener implements IMapChangeListener {
 		if (!isUpdating()) {
 			LogUtils.info("Node Added. Sending to Webservice");
 			try {
-				final String newNodeId = webservice().createNode("5", parent.getID()).get();
+				final String newNodeId = Await.result(webservice().createNode("5", parent.getID()),Duration.create("10 seconds"));
 				child.setID(newNodeId);
-			} catch (InterruptedException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
+				throw new RuntimeException(e);
 			}
 		}
 	}

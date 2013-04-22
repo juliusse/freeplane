@@ -42,6 +42,12 @@
 	<classpathentry kind="lib" path="lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/jersey-apache-client-1.17.1.jar"/>
 	<classpathentry kind="lib" path="lib/guava-14.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/akka-actor_2.10-2.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/akka-remote_2.10-2.1.0.jar"/>
+	<classpathentry kind="lib" path="lib/netty-3.5.8.Final.jar"/>
+	<classpathentry kind="lib" path="lib/protobuf-java-2.4.1.jar"/>
+	<classpathentry kind="lib" path="lib/scala-library-2.10.0.jar"/>
+	<classpathentry kind="lib" path="lib/config-1.0.0.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/freeplane"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/freeplane_plugin_remote_shared"/>
 	<classpathentry kind="output" path="build"/>
