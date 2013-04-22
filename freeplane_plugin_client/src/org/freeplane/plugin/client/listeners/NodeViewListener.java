@@ -24,11 +24,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 @SuppressWarnings("serial")
 public class NodeViewListener extends NodeView implements INodeView {
-	NodeModelDefault lastNodeState;
+	private NodeModelDefault lastNodeState;
+	private final NodeModel model;
 
 	public NodeViewListener(NodeModel model, MapView map, Container parent) {
 		super(model, map, parent);
 		lastNodeState = new NodeModelDefault(model, false);
+		this.model = model;
 	}
 
 	@Override
@@ -98,43 +100,33 @@ public class NodeViewListener extends NodeView implements INodeView {
 						}
 					});
 				}
+				// note
+				else if(property.equals("note_text")) {
+					LogUtils.info("note_text");
+					webservice().changeNode("5", event.getNode().getID(), "note", event.getNewValue());
+				}
 				// images
 				else if (property.equals(ExternalResource.class)) {
-					// TODO handle images
-					@SuppressWarnings("unused")
-					final ExternalResource resource = (ExternalResource) event.getNewValue();
-					// resource.getUri()
+					LogUtils.info("image");
+					// TODO is not handled by the server side, yet.
+					// use this code when handling is implemented 
+					
+					//final ExternalResource resource = (ExternalResource) event.getNewValue();
+					//webservice().changeNode("5", event.getNode().getID(), "image", resource.getUri().toString());
 				}
 				// send all because real change is unknown (only every 5
 				// seconds)
 				else if (property.equals(NodeModel.UNKNOWN_PROPERTY)) {
-					long nowMillis = System.currentTimeMillis();
-					if (lastMillis < 0 || nowMillis - lastMillis > 5000) {
-						lastMillis = nowMillis;
-						LogUtils.info("unkown property changed, creating diff");
-						NodeModelDefault now = new NodeModelDefault(event.getNode(), false);
-						Map<String, Object> attributeValueMap = getChangedAttributes(lastNodeState, now);
-						lastNodeState = now;
-						for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
-							final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), entry.getKey(), entry.getValue());
-							Futures.addCallback(future, new FutureCallback<Boolean>() {
+					// Do nothing, because logic has changed
+//					long nowMillis = System.currentTimeMillis();
+//					if (lastMillis < 0 || nowMillis - lastMillis > 5000) {
+//						lastMillis = nowMillis;
+//						LogUtils.info("unkown property changed, creating diff");
+//						NodeModelDefault now = new NodeModelDefault(event.getNode(), false);
+//						Map<String, Object> attributeValueMap = getChangedAttributes(lastNodeState, now);
+//						lastNodeState = now;
 
-								@Override
-								public void onFailure(Throwable t) {
-									t.printStackTrace();
-								}
-
-								@Override
-								public void onSuccess(Boolean success) {
-									if (!success) {
-										// isUpdating(true);
-										// event.
-										// isUpdating(false);
-									}
-								}
-							});
-						}
-					}
+//					}
 				}
 
 			}
@@ -142,23 +134,42 @@ public class NodeViewListener extends NodeView implements INodeView {
 
 	}
 
-	private long lastMillis = -1;
+//	private long lastMillis = -1;
+	public void updateCurrentState() {
+		lastNodeState = new NodeModelDefault(model,false);
+	}
 
-	private Map<String, Object> getChangedAttributes(NodeModelDefault previousState, NodeModelDefault now) {
+	public Map<String, Object> getChangedAttributes() {
 		final Map<String, Object> attributes = new HashMap<String, Object>();
+		NodeModelDefault now = new NodeModelDefault(model,false);
 
 		// nodeText is a recognized change
 		// fold is a recognized change
 
 		// moving is not recognized
-		if (previousState.hGap != now.hGap) {
+		if (!lastNodeState.hGap.equals(now.hGap)) {
 			LogUtils.info("hGap changed to " + now.hGap);
 			attributes.put("hGap", now.hGap);
 		}
-		if (previousState.shiftY != now.shiftY) {
+		//
+		if (!lastNodeState.shiftY.equals(now.shiftY)) {
 			LogUtils.info("hGap changed to " + now.shiftY);
 			attributes.put("shiftY", now.shiftY);
 		}
+		
+		//links are not recognized
+		if(lastNodeState.link == null && now.link != null) {
+			attributes.put("link",now.link);
+		} else if (lastNodeState.link != null && now.link != null && !lastNodeState.link.equals(now.link)) {
+			attributes.put("link",now.link);
+		} else if(lastNodeState.link != null && now.link == null) {
+			attributes.put("link", null);
+		}
+		
+		//EdgeStyles are not recognized
+		
+		
+		lastNodeState = now;
 
 		return attributes;
 	}

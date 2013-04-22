@@ -6,11 +6,17 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonNode;
 import org.freeplane.core.util.LogUtils;
+import org.freeplane.features.map.INodeSelectionListener;
+import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.mapio.MapIO;
 import org.freeplane.features.mapio.mindmapmode.MMapIO;
@@ -19,12 +25,14 @@ import org.freeplane.features.mode.mindmapmode.MModeController;
 import org.freeplane.n3.nanoxml.XMLException;
 import org.freeplane.plugin.client.jobs.ListenForUpdatesJob;
 import org.freeplane.plugin.client.listeners.MapChangeListener;
-import org.freeplane.plugin.client.listeners.MapLifeCycleListener;
 import org.freeplane.plugin.client.listeners.NodeChangeListener;
+import org.freeplane.plugin.client.listeners.NodeViewListener;
 import org.freeplane.plugin.client.services.DocearOnlineWs;
 import org.freeplane.plugin.client.services.WS;
 
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 public class ClientController {
 
@@ -32,12 +40,13 @@ public class ClientController {
 	public static final String USER = "Julius";
 	public static final String PW = "secret";
 
+	private final ListeningScheduledExecutorService executor;
 	private WS webservice;
-	private Thread updateCheckerThread;
 	private static ClientController instance;
 	private final String sourceString;
 	private boolean isUpdating = false;
 	private ListenForUpdatesJob listenForUpdatesJob = null;
+	private final Map<NodeModel, NodeViewListener> selectedNodesMap = new HashMap<NodeModel, NodeViewListener>();
 
 	public static ClientController getInstance() {
 		if (instance == null)
@@ -55,19 +64,22 @@ public class ClientController {
 			throw new RuntimeException(e);
 		}
 
+		// create Threadpool
+		executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(10));
+
 		// change class loader
-		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
+		// final ClassLoader contextClassLoader =
+		// Thread.currentThread().getContextClassLoader();
+		// Thread.currentThread().setContextClassLoader(Activator.class.getClassLoader());
 
 		LogUtils.info("starting Client Plugin...");
 
 		webservice = new DocearOnlineWs();
 
 		this.registerListeners();
-		// set back to original class loader
-		Thread.currentThread().setContextClassLoader(contextClassLoader);
-
-		new Thread(new Runnable() {
+		// // set back to original class loader
+		// Thread.currentThread().setContextClassLoader(contextClassLoader);
+		executor.schedule((new Runnable() {
 
 			@Override
 			public void run() {
@@ -78,20 +90,27 @@ public class ClientController {
 					Futures.getUnchecked(webservice.login(USER, PW));
 					final int currentRevision = openMindmap("5");
 					listenForUpdatesJob = new ListenForUpdatesJob("5", currentRevision);
-					new Thread(listenForUpdatesJob).start();
+					executor.submit(listenForUpdatesJob);
 				} catch (InterruptedException e) {
 				} catch (Throwable t) {
 					t.printStackTrace();
 				}
 
-				updateCheckerThread.start();
 			}
-		}).start();
+		}),2,TimeUnit.SECONDS);
+		executor.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				for (Map.Entry<NodeModel, NodeViewListener> nodePair : selectedNodesMap.entrySet()) {
+					final Map<String, Object> attributeValueMap = nodePair.getValue().getChangedAttributes();
 
-		// check for changes
-
-		updateCheckerThread = new Thread();
-
+					for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
+						webservice().changeNode("5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
+					}
+					nodePair.getValue().updateCurrentState();
+				}
+			}
+		}, 5, 1, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -99,12 +118,35 @@ public class ClientController {
 	 * Might belong into a new plugin, which sends changes to the server
 	 */
 	private void registerListeners() {
-		mmapController().addMapLifeCycleListener(new MapLifeCycleListener());
+		// mmapController().addMapLifeCycleListener(new MapLifeCycleListener());
 		mmapController().addMapChangeListener(new MapChangeListener());
 		mmapController().addNodeChangeListener(new NodeChangeListener());
+		mmapController().addNodeSelectionListener(new INodeSelectionListener() {
+
+			@Override
+			public void onSelect(NodeModel node) {
+				final NodeViewListener listener = new NodeViewListener(node, null, null);
+				node.addViewer(listener);
+				selectedNodesMap.put(node, listener);
+			}
+
+			@Override
+			public void onDeselect(NodeModel node) {
+				final NodeViewListener listener = selectedNodesMap.remove(node);
+				if (listener != null) {
+					final Map<String, Object> attributeValueMap = listener.getChangedAttributes();
+
+					for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
+						webservice().changeNode("5", node.getID(), entry.getKey(), entry.getValue());
+						
+					}
+
+					node.removeViewer(listener);
+				}
+
+			}
+		});
 	}
-
-
 
 	public static boolean isStarted() {
 		return instance != null;
@@ -151,7 +193,7 @@ public class ClientController {
 
 		return currentRevision;
 	}
-	
+
 	public static MMapController mmapController() {
 		return (MMapController) getModeController().getMapController();
 	}
@@ -174,5 +216,13 @@ public class ClientController {
 
 	public static String loggedInUserName() {
 		return USER;
+	}
+
+	public static ListeningScheduledExecutorService executor() {
+		return getInstance().executor;
+	}
+	
+	public static Map<NodeModel,NodeViewListener> selectedNodesMap() {
+		return getInstance().selectedNodesMap;
 	}
 }

@@ -13,7 +13,6 @@ import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.features.map.mindmapmode.MMapController;
 import org.freeplane.features.nodelocation.LocationModel;
-import org.freeplane.features.nodelocation.mindmapmode.MLocationController;
 import org.freeplane.features.note.mindmapmode.MNoteController;
 import org.freeplane.plugin.remote.v10.model.NodeModelBase;
 

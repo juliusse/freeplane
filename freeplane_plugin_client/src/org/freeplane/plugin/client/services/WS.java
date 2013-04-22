@@ -1,15 +1,10 @@
 package org.freeplane.plugin.client.services;
 
-import java.util.concurrent.Executor;
-
 import org.codehaus.jackson.JsonNode;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-public interface WS {
-	Executor getExecutor();
-	
-	
+public interface WS {	
 	ListenableFuture<Boolean> login(String username, String password);
 	
 	ListenableFuture<Boolean> listenIfUpdatesOccur(String mapId);

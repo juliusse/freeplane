@@ -10,8 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -35,8 +33,7 @@ import org.freeplane.plugin.remote.v10.model.updates.MoveNodeUpdate;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
@@ -48,13 +45,14 @@ import com.sun.jersey.client.apache.ApacheHttpClient;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class DocearOnlineWs implements WS {
-	private final ListeningExecutorService threadPool = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
+	
 
 	private final String serviceUrl = "http://localhost:9000";
 	// private final String serviceUrl = "https://staging.my.docear.org";
 	private final Client restClient;
 
 	public DocearOnlineWs() {
+		//com.google.common.util.concurrent.
 		PrintStream stream = new PrintStream(new NullOutputStream());
 		// disableCertificateValidation();
 		restClient = ApacheHttpClient.create();
@@ -95,9 +93,8 @@ public class DocearOnlineWs implements WS {
 		});
 	}
 	
-	@Override
-	public Executor getExecutor() {
-		return threadPool;
+	public ListeningScheduledExecutorService executor() {
+		return ClientController.executor();
 	}
 
 	public static void disableCertificateValidation() {
@@ -134,7 +131,7 @@ public class DocearOnlineWs implements WS {
 	@Override
 	public ListenableFuture<Boolean> login(final String username, final String password) {
 
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
@@ -152,7 +149,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<Boolean> listenIfUpdatesOccur(final String mapId) {
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
@@ -166,7 +163,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<JsonNode> getMapAsXml(final String mapId) {
-		return threadPool.submit(new Callable<JsonNode>() {
+		return executor().submit(new Callable<JsonNode>() {
 
 			@Override
 			public JsonNode call() throws Exception {
@@ -185,7 +182,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<GetUpdatesResponse> getUpdatesSinceRevision(final String mapId, final int sinceRevision) {
-		return threadPool.submit(new Callable<GetUpdatesResponse>() {
+		return executor().submit(new Callable<GetUpdatesResponse>() {
 
 			@Override
 			public GetUpdatesResponse call() throws Exception {
@@ -230,7 +227,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<String> createNode(final String mapId, final String parentNodeId) {
-		return threadPool.submit(new Callable<String>() {
+		return executor().submit(new Callable<String>() {
 
 			@Override
 			public String call() throws Exception {
@@ -252,7 +249,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<Boolean> moveNodeTo(final String mapId, final String newParentId, final String nodeToMoveId, final int newIndex) {
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
@@ -271,7 +268,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<Boolean> removeNode(final String mapId, final String nodeId) {
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
@@ -290,7 +287,7 @@ public class DocearOnlineWs implements WS {
 
 	@Override
 	public ListenableFuture<Boolean> changeNode(final String mapId, final String nodeId, final String attribute, final Object value) {
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
@@ -325,7 +322,7 @@ public class DocearOnlineWs implements WS {
 	}
 
 	private ListenableFuture<Boolean> lockNode(final String mapId, final String nodeId) {
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
@@ -341,7 +338,7 @@ public class DocearOnlineWs implements WS {
 	}
 
 	private ListenableFuture<Boolean> releaseNode(final String mapId, final String nodeId) {
-		return threadPool.submit(new Callable<Boolean>() {
+		return executor().submit(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {

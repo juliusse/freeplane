@@ -102,9 +102,14 @@ public class ListenForUpdatesJob implements Runnable {
 				try {
 					final NodeModel freeplaneNode = getNodeFromOpenMapById(mmapController(), update.getNodeId());
 					changeNodeAttribute(freeplaneNode, update.getAttribute(), update.getValue());
+					if(ClientController.selectedNodesMap().containsKey(freeplaneNode)) {
+						ClientController.selectedNodesMap().get(freeplaneNode).updateCurrentState();
+					}
 					ClientController.mmapController().nodeChanged(freeplaneNode);
 				} catch (NodeNotFoundException e) {
 					// Do nothing, indicates that this app was sender
+				} catch (NullPointerException e) {
+					// Do nothing, but happens very often in freeplane view stuff
 				}
 			} else if (mapUpdate instanceof MoveNodeUpdate) {
 				final MoveNodeUpdate update = (MoveNodeUpdate) mapUpdate;
