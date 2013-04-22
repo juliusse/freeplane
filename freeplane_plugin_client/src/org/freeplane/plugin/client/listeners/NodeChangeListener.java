@@ -7,6 +7,12 @@ import org.freeplane.plugin.client.ClientController;
 import org.freeplane.plugin.client.services.WS;
 
 public class NodeChangeListener implements INodeChangeListener {
+	private final ClientController clientController;
+
+	public NodeChangeListener(ClientController clientController) {
+		super();
+		this.clientController = clientController;
+	}
 
 	@Override
 	public void nodeChanged(final NodeChangeEvent event) {
@@ -19,37 +25,39 @@ public class NodeChangeListener implements INodeChangeListener {
 			if (event.getProperty() != null && event.getProperty().equals("node_text")) {
 				LogUtils.info("node_text");
 				webservice().changeNode("5", event.getNode().getID(), "nodeText", event.getNewValue());
-//				final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), "nodeText", event.getNewValue());
-//				Futures.addCallback(future, new FutureCallback<Boolean>() {
-//					@Override
-//					public void onFailure(Throwable t) {
-//						t.printStackTrace();
-//					}
-//
-//					@Override
-//					public void onSuccess(Boolean success) {
-//						if (!success) {
-//							isUpdating(true);
-//							event.getNode().setText(event.getOldValue().toString());
-//							isUpdating(false);
-//						}
-//					}
-//				});
+				// final ListenableFuture<Boolean> future =
+				// webservice().changeNode("5", event.getNode().getID(),
+				// "nodeText", event.getNewValue());
+				// Futures.addCallback(future, new FutureCallback<Boolean>() {
+				// @Override
+				// public void onFailure(Throwable t) {
+				// t.printStackTrace();
+				// }
+				//
+				// @Override
+				// public void onSuccess(Boolean success) {
+				// if (!success) {
+				// isUpdating(true);
+				// event.getNode().setText(event.getOldValue().toString());
+				// isUpdating(false);
+				// }
+				// }
+				// });
 			}
 			// node_text
 
 		}
 	}
 
-	public static WS webservice() {
-		return ClientController.webservice();
+	public WS webservice() {
+		return clientController.webservice();
 	}
 
-	public static boolean isUpdating() {
-		return ClientController.isUpdating();
+	public boolean isUpdating() {
+		return clientController.isUpdating();
 	}
 
-	public static void isUpdating(boolean value) {
-		ClientController.isUpdating(value);
+	public void isUpdating(boolean value) {
+		clientController.isUpdating(value);
 	}
 }

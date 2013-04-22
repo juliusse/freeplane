@@ -17,9 +17,11 @@ import org.freeplane.plugin.remote.v10.model.updates.DeleteNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.MoveNodeUpdate;
 
-import akka.actor.UntypedActor;
+public class ApplyChangesActor extends FreeplaneClientActor {
 
-public class ApplyChangesActor extends UntypedActor {
+	public ApplyChangesActor(ClientController clientController) {
+		super(clientController);
+	}
 
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -78,8 +80,8 @@ public class ApplyChangesActor extends UntypedActor {
 		try {
 			final NodeModel freeplaneNode = getNodeFromOpenMapById(mmapController(), update.getNodeId());
 			changeNodeAttribute(freeplaneNode, update.getAttribute(), update.getValue());
-			if (ClientController.selectedNodesMap().containsKey(freeplaneNode)) {
-				ClientController.selectedNodesMap().get(freeplaneNode).updateCurrentState();
+			if (getClientController().selectedNodesMap().containsKey(freeplaneNode)) {
+				getClientController().selectedNodesMap().get(freeplaneNode).updateCurrentState();
 			}
 			ClientController.mmapController().nodeChanged(freeplaneNode);
 		} catch (NullPointerException e) {
@@ -93,7 +95,7 @@ public class ApplyChangesActor extends UntypedActor {
 	}
 
 	private void isUpdating(boolean value) {
-		ClientController.isUpdating(value);
+		getClientController().isUpdating(value);
 	}
 
 	private MMapController mmapController() {
@@ -105,6 +107,6 @@ public class ApplyChangesActor extends UntypedActor {
 	}
 
 	private String source() {
-		return ClientController.source();
+		return getClientController().source();
 	}
 }

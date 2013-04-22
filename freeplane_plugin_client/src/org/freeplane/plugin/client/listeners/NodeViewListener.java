@@ -20,13 +20,15 @@ import org.freeplane.view.swing.map.NodeView;
 
 @SuppressWarnings("serial")
 public class NodeViewListener extends NodeView implements INodeView {
+	private final ClientController clientController;
 	private NodeModelDefault lastNodeState;
 	private final NodeModel model;
 
-	public NodeViewListener(NodeModel model, MapView map, Container parent) {
+	public NodeViewListener(ClientController clientController, NodeModel model, MapView map, Container parent) {
 		super(model, map, parent);
 		lastNodeState = new NodeModelDefault(model, false);
 		this.model = model;
+		this.clientController = clientController;
 	}
 
 	@Override
@@ -172,10 +174,10 @@ public class NodeViewListener extends NodeView implements INodeView {
 	}
 
 	private WS webservice() {
-		return ClientController.webservice();
+		return clientController.webservice();
 	}
 
 	private boolean isUpdating() {
-		return ClientController.isUpdating();
+		return clientController.isUpdating();
 	}
 }

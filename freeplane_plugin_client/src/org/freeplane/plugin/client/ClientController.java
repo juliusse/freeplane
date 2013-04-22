@@ -22,11 +22,16 @@ import org.freeplane.plugin.client.listeners.NodeViewListener;
 import org.freeplane.plugin.client.services.DocearOnlineWs;
 import org.freeplane.plugin.client.services.WS;
 
+import scala.concurrent.duration.Duration;
+import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.TypedActor;
 import akka.actor.TypedProps;
+import akka.actor.UntypedActorFactory;
+import akka.japi.Creator;
+import akka.pattern.Patterns;
 import akka.util.Timeout;
 
 import com.typesafe.config.ConfigFactory;
@@ -34,30 +39,24 @@ import com.typesafe.config.ConfigFactory;
 public class ClientController {
 
 	// Temp variables, only for developping
+	public static final String MAP_ID = "5";
 	public static final String USER = "Julius";
 	public static final String PW = "secret";
 
 	private final ActorSystem system;
-	private ActorRef listenForUpdatesActor = null;
-	private ActorRef applyChangeActor = null;
-	private ActorRef initCollaborationactor = null;
+	private final ActorRef listenForUpdatesActor;
+	private final ActorRef applyChangeActor;
+	private final ActorRef initCollaborationactor;
 
-	//private final ListeningScheduledExecutorService executor;
-	
-	private WS webservice;
-	private static ClientController instance;
+	private final WS webservice;
+
 	private final String sourceString;
 	private boolean isUpdating = false;
-	
+
 	private final Map<NodeModel, NodeViewListener> selectedNodesMap = new HashMap<NodeModel, NodeViewListener>();
 
-	public static ClientController getInstance() {
-		if (instance == null)
-			instance = new ClientController();
-		return instance;
-	}
-
-	private ClientController() {
+	@SuppressWarnings("serial")
+	public ClientController() {
 
 		// set sourceString, used to identify for updates
 		try {
@@ -68,7 +67,8 @@ public class ClientController {
 		}
 
 		// create Threadpool
-		//executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(10));
+		// executor =
+		// MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(10));
 
 		// change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -77,41 +77,59 @@ public class ClientController {
 		LogUtils.info("starting Client Plugin...");
 
 		system = ActorSystem.create("freeplaneClient", ConfigFactory.load().getConfig("local"));
-		listenForUpdatesActor = system.actorOf(new Props(ListenForUpdatesActor.class), "updateListener");
-		applyChangeActor = system.actorOf(new Props(ApplyChangesActor.class), "changeApplier");
-		initCollaborationactor = system.actorOf(new Props(InitCollaborationActor.class), "initCollaboration");
-		
-		
-		webservice = TypedActor.get(system).typedActorOf(
-				new TypedProps<DocearOnlineWs>(WS.class, DocearOnlineWs.class).withTimeout(Timeout.apply(3, TimeUnit.MINUTES)));
+		listenForUpdatesActor = system.actorOf(new Props(new UntypedActorFactory() {
+			@Override
+			public Actor create() throws Exception {
+				return new ListenForUpdatesActor(ClientController.this);
+			}
+		}), "updateListener");
+		applyChangeActor = system.actorOf(new Props(new UntypedActorFactory() {
+			@Override
+			public Actor create() throws Exception {
+				return new ApplyChangesActor(ClientController.this);
+			}
+		}), "changeApplier");
+		initCollaborationactor = system.actorOf(new Props(new UntypedActorFactory() {
+			@Override
+			public Actor create() throws Exception {
+				return new InitCollaborationActor(ClientController.this);
+			}
+		}), "initCollaboration");
 
+		webservice = TypedActor.get(system).typedActorOf(new TypedProps<DocearOnlineWs>(WS.class, new Creator<DocearOnlineWs>() {
+
+			@Override
+			public DocearOnlineWs create() throws Exception {
+				return new DocearOnlineWs(ClientController.this);
+			}
+		}).withTimeout(Timeout.apply(3, TimeUnit.MINUTES)));
 
 		this.registerListeners();
 
-		initCollaborationactor.tell(new InitCollaborationActor.Messages.InitCollaborationMode("5",USER,PW), null);
-		
-//		system.scheduler().scheduleOnce(
-//				Duration.create(1, TimeUnit.SECONDS), 
-//				new MapInitRunnable("5", USER, PW), 
-//				system.dispatcher());
-
+		initCollaborationactor.tell(new InitCollaborationActor.Messages.InitCollaborationMode(MAP_ID, USER, PW), null);
 
 		// set back to original class loader
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
 	}
 
 	public static final class CheckForChangesRunnable implements Runnable {
+		private final ClientController clientController;
+
+		public CheckForChangesRunnable(ClientController clientController) {
+			super();
+			this.clientController = clientController;
+		}
 
 		@Override
 		public void run() {
-			final Map<NodeModel, NodeViewListener> selectedNodesMap = ClientController.selectedNodesMap();
+			final Map<NodeModel, NodeViewListener> selectedNodesMap = clientController.selectedNodesMap();
 			for (Map.Entry<NodeModel, NodeViewListener> nodePair : selectedNodesMap.entrySet()) {
 				final Map<String, Object> attributeValueMap = nodePair.getValue().getChangedAttributes();
 
 				for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
-					webservice().changeNode("5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
+					clientController.webservice().changeNode("5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
 				}
-				
+
 				nodePair.getValue().updateCurrentState();
 			}
 		}
@@ -124,13 +142,13 @@ public class ClientController {
 	 */
 	private void registerListeners() {
 		// mmapController().addMapLifeCycleListener(new MapLifeCycleListener());
-		mmapController().addMapChangeListener(new MapChangeListener());
-		mmapController().addNodeChangeListener(new NodeChangeListener());
+		mmapController().addMapChangeListener(new MapChangeListener(this));
+		mmapController().addNodeChangeListener(new NodeChangeListener(this));
 		mmapController().addNodeSelectionListener(new INodeSelectionListener() {
 
 			@Override
 			public void onSelect(NodeModel node) {
-				final NodeViewListener listener = new NodeViewListener(node, null, null);
+				final NodeViewListener listener = new NodeViewListener(ClientController.this, node, null, null);
 				node.addViewer(listener);
 				selectedNodesMap.put(node, listener);
 			}
@@ -153,12 +171,12 @@ public class ClientController {
 		});
 	}
 
-	public static boolean isStarted() {
-		return instance != null;
-	}
-
-	public static void stop() {
-		// getLogger().info("Shutting down client plugin...");
+	public void stop() {
+		LogUtils.info("Shutting down client plugin...");
+		Patterns.gracefulStop(applyChangeActor, Duration.create(5, TimeUnit.SECONDS), system());
+		Patterns.gracefulStop(listenForUpdatesActor, Duration.create(5, TimeUnit.SECONDS), system());
+		Patterns.gracefulStop(initCollaborationactor, Duration.create(5, TimeUnit.SECONDS), system());
+		system.shutdown();
 	}
 
 	public static ModeController getModeController() {
@@ -169,45 +187,44 @@ public class ClientController {
 		return getModeController().getExtension(MapIO.class);
 	}
 
-
-
 	public static MMapController mmapController() {
 		return (MMapController) getModeController().getMapController();
 	}
 
-	public static WS webservice() {
-		return getInstance().webservice;
+	public WS webservice() {
+		return webservice;
 	}
 
-	public static String source() {
-		return getInstance().sourceString;
+	public String source() {
+		return sourceString;
 	}
 
-	public static boolean isUpdating() {
-		return getInstance().isUpdating;
+	public boolean isUpdating() {
+		return isUpdating;
 	}
 
-	public static void isUpdating(boolean value) {
-		getInstance().isUpdating = value;
+	public void isUpdating(boolean value) {
+		isUpdating = value;
 	}
 
 	public static String loggedInUserName() {
 		return USER;
 	}
 
-	public static ActorRef applyChangesActor() {
-		return getInstance().applyChangeActor;
+	public ActorRef applyChangesActor() {
+		return applyChangeActor;
 	}
 
-	public static ActorRef listenForUpdatesActor() {
-		return getInstance().listenForUpdatesActor;
+	public ActorRef listenForUpdatesActor() {
+		return listenForUpdatesActor;
 	}
 
-	public static Map<NodeModel, NodeViewListener> selectedNodesMap() {
-		return getInstance().selectedNodesMap;
+	public Map<NodeModel, NodeViewListener> selectedNodesMap() {
+		return selectedNodesMap;
 	}
-	
-	public static ActorSystem system() {
-		return getInstance().system;
+
+	public ActorSystem system() {
+		return system;
 	}
+
 }

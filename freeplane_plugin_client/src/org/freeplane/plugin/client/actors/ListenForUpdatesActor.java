@@ -7,14 +7,17 @@ import org.freeplane.plugin.client.services.WS;
 import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 
 import scala.concurrent.Future;
-import akka.actor.UntypedActor;
 import akka.pattern.Patterns;
 
-public class ListenForUpdatesActor extends UntypedActor {
+public class ListenForUpdatesActor extends FreeplaneClientActor {
 
 	private String currentMapId;
 	private String mapIdForThisExecution;
 	private int currentRevision;
+
+	public ListenForUpdatesActor(ClientController clientController) {
+		super(clientController);
+	}
 
 	@Override
 	public void onReceive(Object message) throws Exception {
@@ -25,12 +28,12 @@ public class ListenForUpdatesActor extends UntypedActor {
 		} else if (message.equals("listen")) {
 			LogUtils.info("listening");
 			mapIdForThisExecution = currentMapId;
-			
+
 			final Future<Boolean> future = webservice().listenIfUpdatesOccur(mapIdForThisExecution);
 			Patterns.pipe(future, getContext().system().dispatcher()).to(getSelf());
 		} else if (message instanceof Boolean) {
-			final Boolean updateOccured = (Boolean)message;
-			if(updateOccured && mapIdForThisExecution.equals(currentMapId)) {
+			final Boolean updateOccured = (Boolean) message;
+			if (updateOccured && mapIdForThisExecution.equals(currentMapId)) {
 				LogUtils.info("updates occured");
 				final Future<GetUpdatesResponse> future = webservice().getUpdatesSinceRevision(mapIdForThisExecution, currentRevision);
 				Patterns.pipe(future, getContext().system().dispatcher()).to(getSelf());
@@ -43,7 +46,7 @@ public class ListenForUpdatesActor extends UntypedActor {
 			this.currentRevision = response.getCurrentRevision();
 
 			for (MapUpdate mapUpdate : response.getOrderedUpdates()) {
-				ClientController.applyChangesActor().tell(mapUpdate, getSelf());
+				getClientController().applyChangesActor().tell(mapUpdate, getSelf());
 
 			}
 			getSelf().tell("listen", getSelf());
@@ -64,7 +67,7 @@ public class ListenForUpdatesActor extends UntypedActor {
 	}
 
 	private WS webservice() {
-		return ClientController.webservice();
+		return getClientController().webservice();
 	}
 
 	public final static class Messages {

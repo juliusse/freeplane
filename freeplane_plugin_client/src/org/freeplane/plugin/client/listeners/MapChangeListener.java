@@ -11,6 +11,12 @@ import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
 public class MapChangeListener implements IMapChangeListener {
+	private final ClientController clientController;
+
+	public MapChangeListener(ClientController clientController) {
+		super();
+		this.clientController = clientController;
+	}
 
 	@Override
 	public void onPreNodeMoved(NodeModel oldParent, int oldIndex, NodeModel newParent, NodeModel child, int newIndex) {
@@ -37,7 +43,7 @@ public class MapChangeListener implements IMapChangeListener {
 		if (!isUpdating()) {
 			LogUtils.info("Node Added. Sending to Webservice");
 			try {
-				final String newNodeId = Await.result(webservice().createNode("5", parent.getID()),Duration.create("10 seconds"));
+				final String newNodeId = Await.result(webservice().createNode("5", parent.getID()), Duration.create("10 seconds"));
 				child.setID(newNodeId);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -61,11 +67,11 @@ public class MapChangeListener implements IMapChangeListener {
 	}
 
 	private WS webservice() {
-		return ClientController.webservice();
+		return clientController.webservice();
 	}
 
 	private boolean isUpdating() {
-		return ClientController.isUpdating();
+		return clientController.isUpdating();
 	}
 
 }

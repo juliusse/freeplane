@@ -8,8 +8,10 @@ import org.freeplane.main.osgi.IModeControllerExtensionProvider;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-public class Activator implements BundleActivator{
+public class Activator implements BundleActivator {
 
+	private ClientController clientController;
+	
 	@Override
 	public void start(BundleContext context) {
 		registerToFreeplaneStart(context);
@@ -17,23 +19,17 @@ public class Activator implements BundleActivator{
 
 	private void registerToFreeplaneStart(final BundleContext context) {
 		final Hashtable<String, String[]> props = new Hashtable<String, String[]>();
-		
+
 		props.put("mode", new String[] { MModeController.MODENAME });
-		context.registerService(IModeControllerExtensionProvider.class.getName(),
-				new IModeControllerExtensionProvider() {
+		context.registerService(IModeControllerExtensionProvider.class.getName(), new IModeControllerExtensionProvider() {
 			public void installExtension(ModeController modeController) {
-				ClientController.getInstance();
+				clientController =  new ClientController();
 			}
 		}, props);
 	}
-	
+
 	@Override
 	public void stop(BundleContext context) {
-		//Logger.getLogger().info("Activator.stop => Activator.stop called.");
-		
-		if (ClientController.isStarted()){
-			//Logger.getLogger().info("Activator.stop => Stop running Remote.");
-			ClientController.stop();
-		}
+		clientController.stop();
 	}
 }

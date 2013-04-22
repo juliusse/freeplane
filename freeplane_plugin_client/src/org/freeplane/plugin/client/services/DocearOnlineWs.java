@@ -47,12 +47,13 @@ import com.sun.jersey.client.apache.ApacheHttpClient;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class DocearOnlineWs implements WS {
-
+	private final ClientController clientController;
 	private final String serviceUrl = "http://localhost:9000";
 	// private final String serviceUrl = "https://staging.my.docear.org";
 	private final Client restClient;
 
-	public DocearOnlineWs() {
+	public DocearOnlineWs(ClientController clientController) {
+		this.clientController = clientController;
 		// com.google.common.util.concurrent.
 		PrintStream stream = new PrintStream(new NullOutputStream());
 		// disableCertificateValidation();
@@ -79,6 +80,7 @@ public class DocearOnlineWs implements WS {
 			}
 		});
 
+		final String source = clientController.source();
 		restClient.addFilter(new ClientFilter() {
 
 			@Override
@@ -86,7 +88,7 @@ public class DocearOnlineWs implements WS {
 				String uriString = request.getURI().toASCIIString();
 				uriString = uriString.contains("?") ? uriString + "&" : uriString + "?";
 
-				final URI newUri = URI.create(uriString + "source=" + ClientController.source());
+				final URI newUri = URI.create(uriString + "source=" + source);
 				request.setURI(newUri);
 
 				return getNext().handle(request);
@@ -147,7 +149,7 @@ public class DocearOnlineWs implements WS {
 				final ClientResponse loginResponse = resource.get(ClientResponse.class);
 				return loginResponse.getStatus() == 200;
 			}
-		}, ClientController.system().dispatcher());
+		}, clientController.system().dispatcher());
 
 	}
 

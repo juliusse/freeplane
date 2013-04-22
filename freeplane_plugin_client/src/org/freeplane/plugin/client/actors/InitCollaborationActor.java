@@ -21,35 +21,38 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.UntypedActor;
 import akka.pattern.Patterns;
 
-public class InitCollaborationActor extends UntypedActor {
+public class InitCollaborationActor extends FreeplaneClientActor {
 
 	private String mapId = null;
-	
+
+	public InitCollaborationActor(ClientController clientController) {
+		super(clientController);
+	}
+
 	@Override
 	public void onReceive(Object message) throws Exception {
-		if(message instanceof InitCollaborationMode) {
-			final InitCollaborationMode msg = (InitCollaborationMode)message;
+		if (message instanceof InitCollaborationMode) {
+			final InitCollaborationMode msg = (InitCollaborationMode) message;
 			this.mapId = msg.getMapId();
-			final WS ws = ClientController.webservice();
-			final Future<Boolean> loginFuture = ws.login(msg.getUsername(), msg.getPassword()); 
+			final WS ws = getClientController().webservice();
+			final Future<Boolean> loginFuture = ws.login(msg.getUsername(), msg.getPassword());
 			Patterns.pipe(loginFuture, getContext().system().dispatcher()).to(getSelf());
-			
-		} 
-		//login response
-		else if(message instanceof Boolean) { 
-			final Boolean loginSuccess = (Boolean)message;
-			if(loginSuccess) {
-				final WS ws = ClientController.webservice();
+
+		}
+		// login response
+		else if (message instanceof Boolean) {
+			final Boolean loginSuccess = (Boolean) message;
+			if (loginSuccess) {
+				final WS ws = getClientController().webservice();
 				final Future<JsonNode> mindmapFuture = ws.getMapAsXml(mapId);
 				Patterns.pipe(mindmapFuture, getContext().system().dispatcher()).to(getSelf());
 			}
-		} 
-		//mindmap as json
-		else if(message instanceof JsonNode) {
-			final JsonNode responseNode = (JsonNode)message;
+		}
+		// mindmap as json
+		else if (message instanceof JsonNode) {
+			final JsonNode responseNode = (JsonNode) message;
 			final int currentRevision = responseNode.get("currentRevision").asInt();
 			final String xmlString = responseNode.get("xmlString").asText();
 			final Random ran = new Random();
@@ -73,20 +76,15 @@ public class InitCollaborationActor extends UntypedActor {
 				file.delete();
 			}
 
-			final ActorRef listenForUpdatesActor = ClientController.listenForUpdatesActor();
-			listenForUpdatesActor.tell(new SetMapAndRevision(mapId,currentRevision),getSelf());
+			final ActorRef listenForUpdatesActor = getClientController().listenForUpdatesActor();
+			listenForUpdatesActor.tell(new SetMapAndRevision(mapId, currentRevision), getSelf());
 			listenForUpdatesActor.tell("listen", getSelf());
 
 			final ActorSystem system = getContext().system();
-			system.scheduler().schedule(
-					Duration.Zero(), 
-					Duration.create(1, TimeUnit.SECONDS), 
-					new CheckForChangesRunnable(), 
-					system.dispatcher());
+			system.scheduler().schedule(Duration.Zero(), Duration.create(1, TimeUnit.SECONDS), new CheckForChangesRunnable(getClientController()), system.dispatcher());
 		}
 
 	}
-
 
 	public static final class Messages {
 		public static class InitCollaborationMode {
