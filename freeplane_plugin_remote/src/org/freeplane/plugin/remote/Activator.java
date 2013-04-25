@@ -145,7 +145,8 @@ public class Activator implements BundleActivator{
         try {
             File pidFile = new File("RUNNING_PID");
             Logger.getLogger().info("Activator.generatePIDFile => Path of RUNNING_PID = '{}'",pidFile.getAbsolutePath());
-            if (pidFile.exists()){
+            String pidProperty = System.getProperty("ignorePID");
+            if (pidFile.exists() &&  (pidProperty == null || pidProperty.isEmpty() || !pidProperty.equals("true"))){
             	Logger.getLogger().error("Activator.generatePIDFile => RUNNING_PID already exists. Abort start.");
             	systemBundle.stop();
             	Logger.getLogger().info("Activator.generatePIDFile => OSGI SystemBundle stopped. Exit.");
