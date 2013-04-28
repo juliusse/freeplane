@@ -141,8 +141,7 @@
 	<target name="ifOSNotWindows" if="isOSUnix">
 		<echo>Starting Freeplane</echo>
 		<exec dir="../freeplane_framework/build/" executable="bash">
-		    <arg value="freeplane.sh"/>
-			<arg value="&amp;"/>
+		    <arg value="-c freeplane.sh"/>
 		</exec>
     </target>
 	
