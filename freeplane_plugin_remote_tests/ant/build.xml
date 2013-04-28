@@ -142,12 +142,13 @@
 		<echo>Starting Freeplane</echo>
 		<exec dir="../freeplane_framework/build/" executable="bash">
 		    <arg value="freeplane.sh"/>
+			<arg value="&amp;"/>
 		</exec>
     </target>
 	
     <target name="killTaskIfUnix" if="isOSUnix">
     	<echo>Killing Freeplane</echo>
-        <exec executable="/bin/sh">
+        <exec executable="bash">
 			<arg value="-e kill -15"/>
         	<arg value="${pid}"/>
         </exec>
