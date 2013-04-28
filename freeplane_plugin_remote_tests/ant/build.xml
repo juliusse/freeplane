@@ -99,7 +99,7 @@
 		</copy>
 	</target>
 
-	<target name="build" depends="resolve,build-freeplane,init">
+	<target name="build" depends="resolve,init,test">
 		<echo message="${ant.project.name}: ${ant.file}" />
 		<javac debug="true" destdir="bin" includeantruntime="false">
 			<src path="src/tests" />
@@ -113,15 +113,60 @@
 		<ant antfile="ant/build.xml" dir="${freeplane.location}" inheritAll="false" target="build" />
 		<ant antfile="ant/build.xml" dir="${freeplane_plugin_remote.location}" inheritAll="false" target="build" />
 	</target>
+	
+    <condition property="isOSUnix">
+        <os family="unix" />
+    </condition>
 
-	<target name="test">
+    <condition property="isOSWindows">
+        <os family="windows" />
+    </condition>
+	
+	<target name="ifOSWindows" if="isOSWindows">
+		<echo>Starting Freeplane</echo>
+		<exec dir="../freeplane_framework/build/" executable="cmd" >
+			<arg line="/K freeplane.bat"/>
+	    </exec>
+    </target>
+	
+	<target name="killTaskIfWindows" if="isOSWindows">	
+		<echo>Killing Freeplane</echo>
+		<exec executable="taskkill">
+			<arg value="/PID"/>
+			<arg value="-F"/>
+			<arg value="${pid}"/>
+		</exec>	
+    </target>
+
+	<target name="ifOSNotWindows" if="isOSUnix">
+		<echo>Starting Freeplane</echo>
+	    <exec dir="." executable="/bin/sh">
+			<arg line="-c freeplane.sh"/>
+	    </exec>
+    </target>
+	
+    <target name="killTaskIfUnix" if="isOSUnix">
+    	<echo>Killing Freeplane</echo>
+        <exec executable="/bin/sh">
+			<arg value="-c kill -15"/>
+        	<arg value="${pid}"/>
+        </exec>
+    </target>
+
+	<target name="test"  depends="ifOSWindows, ifOSNotWindows">
+		<sleep seconds="10"/>
 		<mkdir dir="${report.dir}" />
-		<junit fork="yes" printsummary="yes" haltonfailure="no" showoutput="no">
+		<junit fork="yes" printsummary="yes" haltonfailure="no" failureproperty="junit_test_failed" showoutput="yes">
 			<formatter type="plain" />
 			<formatter type="xml" />
 			<test name="tests.AkkaTests" todir="${report.dir}" />
 			<classpath refid="freeplane_plugin_remote_tests.classpath" />
 		</junit>
+		<fail if="junit_test_failed">At least one test failed - see the report.</fail>	
+		 <loadfile property="pid"
+		      srcFile="../freeplane_framework/build/RUNNING_PID"/>
+		<antcall target="killTaskIfWindows"/>
+		<antcall target="killTaskIfUnix"/>
 	</target>
 	
 	<target name="junitreport">
