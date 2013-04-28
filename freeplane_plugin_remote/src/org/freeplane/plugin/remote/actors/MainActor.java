@@ -157,6 +157,9 @@ public class MainActor extends UntypedActor {
 		catch(Exception e) {
 			logger.error("MainActor.onReceive => Unrecognized Exception! ",e);
 			response = new Status.Failure(e);
+		} catch (AssertionError e) {
+			logger.error("MainActor.onReceive => Something really bad happened! ",e);
+			response = new Status.Failure(e);
 		}
 
 		if(response != null) {
