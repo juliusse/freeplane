@@ -99,7 +99,7 @@
 		</copy>
 	</target>
 
-	<target name="build" depends="resolve,init,test">
+	<target name="build" depends="resolve,init">
 		<echo message="${ant.project.name}: ${ant.file}" />
 		<javac debug="true" destdir="bin" includeantruntime="false">
 			<src path="src/tests" />
@@ -141,14 +141,14 @@
 	<target name="ifOSNotWindows" if="isOSUnix">
 		<echo>Starting Freeplane</echo>
 	    <exec dir="." executable="/bin/sh">
-			<arg line="-c freeplane.sh"/>
+			<arg line="-c /freeplane.sh"/>
 	    </exec>
     </target>
 	
     <target name="killTaskIfUnix" if="isOSUnix">
     	<echo>Killing Freeplane</echo>
         <exec executable="/bin/sh">
-			<arg value="-c kill -15"/>
+			<arg value="-e kill -15"/>
         	<arg value="${pid}"/>
         </exec>
     </target>
