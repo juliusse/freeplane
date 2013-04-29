@@ -140,7 +140,7 @@
 
 	<target name="ifOSNotWindows" if="isOSUnix">
 		<echo>Starting Freeplane</echo>
-		<exec dir="../resources/" executable="bash">
+		<exec dir="resources/" executable="bash">
 		    <arg value="-c runFreeplane.sh"/>
 		</exec>
     </target>
