@@ -153,7 +153,7 @@
         </exec>
     </target>
 
-	<target name="test"  depends="ifOSWindows, ifOSNotWindows">
+	<target name="test"  depends="build,ifOSWindows, ifOSNotWindows">
 		<sleep seconds="10"/>
 		<mkdir dir="${report.dir}" />
 		<junit fork="yes" printsummary="yes" failureproperty="junit_test_failed" showoutput="yes">
