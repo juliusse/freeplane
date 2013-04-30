@@ -133,6 +133,12 @@ public class Activator implements BundleActivator{
 		}
 	}
 	
+	/**
+	 * The PID-File indicates that the server is currently running.
+	 * Only one server instance can run at a time.
+	 * OSGI-Container will shut down if, a server is already running.
+	 * 
+	 */
 	private void generatePIDFile(Bundle systemBundle){
 		RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
 		String name = rtb.getName();

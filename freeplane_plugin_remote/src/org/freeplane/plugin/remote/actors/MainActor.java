@@ -42,7 +42,7 @@ public class MainActor extends UntypedActor {
 		final Logger logger  = RemoteController.getLogger();
 		final ActorRef sender = getSender();
 		
-		if(!message.getClass().getSimpleName().contains("ReleaseTimedOutLocks")) {
+		if(!(message instanceof ReleaseTimedOutLocks)) {
 			//Release check happens every 5 seconds and would flood the logging
 			logger.info("MainActor.onReceive => '{}' received.",message.getClass().getName());
 			logger.info("MainActor.onReceive => Sender: '{}'",sender.path());

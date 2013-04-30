@@ -43,7 +43,7 @@ public class RemoteController {
 	}
 
 	private RemoteController() {
-		final Logger logger = org.freeplane.plugin.remote.Logger.getLogger();
+		final Logger logger = getLogger();
 		
 		//change class loader
 		final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
@@ -75,32 +75,12 @@ public class RemoteController {
 							@Override
 							public void run() {
 								logger.info("Scheduling release of locks that timed out.");
-								mainActor.tell(new ReleaseTimedOutLocks(15000l), null); // 15 seconds
+								mainActor.tell(new ReleaseTimedOutLocks(15000L), null); // 15 seconds
 							}
 						}, system.dispatcher());
-
 		
-		this.registerListeners();
 		//set back to original class loader
 		Thread.currentThread().setContextClassLoader(contextClassLoader);
-	}
-
-	/**
-	 * registers all listeners to react on necessary events like created nodes
-	 * Might belong into a new plugin, which sends changes to the server (And this IS the server)
-	 */
-	private void registerListeners() {
-		getModeController().addINodeViewLifeCycleListener(new INodeViewLifeCycleListener() {
-
-			@Override
-			public void onViewRemoved(Container nodeView) {
-
-			}
-
-			@Override
-			public void onViewCreated(Container nodeView) {				
-			}
-		});
 	}
 	
 	public static boolean isStarted(){
@@ -115,6 +95,7 @@ public class RemoteController {
 		controller.mainActor.tell(PoisonPill.getInstance(), null);
 		controller.system.shutdown();
 		controller.closeMaps();
+		instance = null;
 	}
 	
 	private void closeMaps() {
@@ -122,7 +103,6 @@ public class RemoteController {
 	}
 
 	public static ModeController getModeController() {
-		//Controller.getCurrentController().selectMode(MModeController.getMModeController());
 		return MModeController.getMModeController();
 	}
 	
