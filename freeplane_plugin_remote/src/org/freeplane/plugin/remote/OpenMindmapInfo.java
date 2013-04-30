@@ -1,4 +1,4 @@
-package org.freeplane.plugin.remote.v10.model;
+package org.freeplane.plugin.remote;
 
 import java.io.Serializable;
 import java.net.URL;
@@ -7,12 +7,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.DeleteNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.MoveNodeUpdate;
+
+import akka.actor.ActorRef;
 
 public class OpenMindmapInfo implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -23,12 +26,14 @@ public class OpenMindmapInfo implements Serializable {
 	private long lastUpdateTime;
 	private final String name;
 	private final List<MapUpdate> updateList;
+	private final List<ActorRef> listeningActors;
 
 	public OpenMindmapInfo(URL mapUrl, String name) {
 		this.mapUrl = mapUrl;
 		this.name = name;
 		this.lockedNodes = new HashSet<NodeModel>();
 		this.updateList = new ArrayList<MapUpdate>();
+		this.listeningActors = new ArrayList<ActorRef>();
 		updateAccessTime();
 	}
 
@@ -80,16 +85,22 @@ public class OpenMindmapInfo implements Serializable {
 	}
 	
 	public void addUpdate(MapUpdate updateStatement) {
+		RemoteController.getLogger().debug("OpenMindmapInfo.addUpdate => update added: "+updateStatement.getClass().getSimpleName());
 		updateList.add(updateStatement);
 		updateUpdateTime();
+		//tell listeners that change has happened
+		for(ActorRef ref : listeningActors) {
+			ref.tell(new ListenToUpdateOccurrenceRespone(true), null);
+		}
+		//empty list, because they have to register again
+		listeningActors.clear();
+	}
+	
+	public void registerUpdateListener(ActorRef actor) {
+		listeningActors.add(actor);
 	}
 	
 	public List<String> getUpdateListAsJson(long sinceRevisionNumber) {
-//		final List<String> list = new ArrayList<String>();
-//		for(int i = (int)sinceRevisionNumber; i < updateList.size(); i++) {
-//			list.add(updateList.get(i).toJson());
-//		}
-//		return list;
 		return getShortUpdateListAsJson((int)sinceRevisionNumber);
 	}
 	

@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonGenerationException;
@@ -34,7 +33,6 @@ import org.docear.messages.Messages.FetchMindmapUpdatesResponse;
 import org.docear.messages.Messages.GetNodeRequest;
 import org.docear.messages.Messages.GetNodeResponse;
 import org.docear.messages.Messages.ListenToUpdateOccurrenceRequest;
-import org.docear.messages.Messages.ListenToUpdateOccurrenceRespone;
 import org.docear.messages.Messages.MindmapAsJsonReponse;
 import org.docear.messages.Messages.MindmapAsJsonRequest;
 import org.docear.messages.Messages.MindmapAsXmlRequest;
@@ -63,12 +61,12 @@ import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.features.mode.ModeController;
 import org.freeplane.n3.nanoxml.XMLException;
 import org.freeplane.plugin.remote.InternalMessages.ReleaseTimedOutLocks;
+import org.freeplane.plugin.remote.OpenMindmapInfo;
 import org.freeplane.plugin.remote.RemoteController;
 import org.freeplane.plugin.remote.RemoteUtils;
 import org.freeplane.plugin.remote.v10.model.LockModel;
 import org.freeplane.plugin.remote.v10.model.MapModel;
 import org.freeplane.plugin.remote.v10.model.NodeModelDefault;
-import org.freeplane.plugin.remote.v10.model.OpenMindmapInfo;
 import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.DeleteNodeUpdate;
@@ -76,8 +74,7 @@ import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.MoveNodeUpdate;
 import org.slf4j.Logger;
 
-import scala.concurrent.Future;
-import akka.dispatch.Futures;
+import akka.actor.ActorRef;
 
 public class Actions {
 
@@ -245,34 +242,13 @@ public class Actions {
 		return new FetchMindmapUpdatesResponse(info.getCurrentRevision(), list);
 	}
 
-	public static Future<ListenToUpdateOccurrenceRespone> listenIfUpdateOccurs(ListenToUpdateOccurrenceRequest request) throws MapNotFoundException {
+	public static void listenIfUpdateOccurs(ListenToUpdateOccurrenceRequest request, ActorRef sender) throws MapNotFoundException {
 		final String mapId = request.getMapId();
 		final OpenMindmapInfo info = getOpenMindMapInfo(mapId);
 		if (info == null)
 			throw new MapNotFoundException("Map with id " + mapId + " was not present", mapId);
 
-		// Polling to check for changes
-		final long revision = info.getCurrentRevision();
-		Future<ListenToUpdateOccurrenceRespone> future = Futures.future(new Callable<ListenToUpdateOccurrenceRespone>() {
-
-			@Override
-			public ListenToUpdateOccurrenceRespone call() throws Exception {
-				final long pollingStart = System.currentTimeMillis();
-				final long pollingDuration = 60000;
-				final long pollingInterval = 25;
-
-				while (System.currentTimeMillis() - pollingStart < pollingDuration) {
-					if (info.getCurrentRevision() != revision) {
-						logger().debug("listenIfUpdateOccurs => update occured at map {}", mapId);
-						return new ListenToUpdateOccurrenceRespone(true);
-					}
-					Thread.sleep(pollingInterval);
-				}
-				return new ListenToUpdateOccurrenceRespone(false);
-			}
-		}, RemoteController.getActorSystem().dispatcher());
-
-		return future;
+		info.registerUpdateListener(sender);
 	}
 
 	public static void closeServer(CloseServerRequest request) {
