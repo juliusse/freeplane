@@ -11,7 +11,6 @@
 <booleanAttribute key="default" value="true"/>
 <booleanAttribute key="default_auto_start" value="true"/>
 <intAttribute key="default_start_level" value="1"/>
-<stringAttribute key="deselected_workspace_plugins" value="org.freeplane.plugin.client"/>
 <booleanAttribute key="includeOptional" value="true"/>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
 <mapEntry key="webservice_port" value="8081"/>
@@ -21,7 +20,7 @@
 <stringAttribute key="org.eclipse.jdt.launching.JAVA_COMMAND" value="java"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-os ${target.os} -ws ${target.ws} -arch ${target.arch} -nl ${target.nl} -console"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.pde.ui.workbenchClasspathProvider"/>
-<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx1024m -Declipse.ignoreApp=true -Dosgi.noShutdown=true -Dosgi.debug=debug.properties -ea &quot;-Dorg.freeplane.globalresourcedir=${workspace_loc:freeplane/external-resources}&quot; -Dorg.freeplane.nosplash=true -Dorg.freeplane.main.application.FreeplaneSecurityManager.disable=true &quot;-Dorg.freeplane.main.application.FreeplaneStarter.headless=true&quot;"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx1024m -Declipse.ignoreApp=true -Dosgi.noShutdown=true -Dosgi.debug=debug.properties -ea &quot;-Dorg.freeplane.globalresourcedir=${workspace_loc:freeplane/external-resources}&quot; -Dorg.freeplane.nosplash=true &#13;&#10;-DignorePID=true&#13;&#10;-Dorg.freeplane.main.application.FreeplaneSecurityManager.disable=true &quot;-Dorg.freeplane.main.application.FreeplaneStarter.headless=true&quot;"/>
 <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:freeplane/..}"/>
 <stringAttribute key="pde.version" value="3.3"/>
 <booleanAttribute key="show_selected_only" value="false"/>
