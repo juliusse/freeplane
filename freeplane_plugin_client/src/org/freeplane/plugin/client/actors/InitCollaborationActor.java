@@ -13,6 +13,7 @@ import org.freeplane.features.mapio.mindmapmode.MMapIO;
 import org.freeplane.n3.nanoxml.XMLException;
 import org.freeplane.plugin.client.ClientController;
 import org.freeplane.plugin.client.ClientController.CheckForChangesRunnable;
+import org.freeplane.plugin.client.User;
 import org.freeplane.plugin.client.actors.InitCollaborationActor.Messages.InitCollaborationMode;
 import org.freeplane.plugin.client.actors.ListenForUpdatesActor.Messages.SetMapAndRevision;
 import org.freeplane.plugin.client.services.WS;
@@ -37,16 +38,17 @@ public class InitCollaborationActor extends FreeplaneClientActor {
 			final InitCollaborationMode msg = (InitCollaborationMode) message;
 			this.mapId = msg.getMapId();
 			final WS ws = getClientController().webservice();
-			final Future<Boolean> loginFuture = ws.login(msg.getUsername(), msg.getPassword());
+			final Future<User> loginFuture = ws.login(msg.getUsername(), msg.getPassword());
 			Patterns.pipe(loginFuture, getContext().system().dispatcher()).to(getSelf());
 
 		}
 		// login response
-		else if (message instanceof Boolean) {
-			final Boolean loginSuccess = (Boolean) message;
-			if (loginSuccess) {
+		else if (message instanceof User) {
+			final User user = (User) message;
+			if (user != null) {
+				getClientController().setUser(user);
 				final WS ws = getClientController().webservice();
-				final Future<JsonNode> mindmapFuture = ws.getMapAsXml(mapId);
+				final Future<JsonNode> mindmapFuture = ws.getMapAsXml(user.getUsername(), user.getAccessToken(), mapId);
 				Patterns.pipe(mindmapFuture, getContext().system().dispatcher()).to(getSelf());
 			}
 		}

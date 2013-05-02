@@ -49,6 +49,7 @@ public class ClientController {
 	private final ActorRef initCollaborationactor;
 
 	private final WS webservice;
+	private User user = null;
 
 	private final String sourceString;
 	private boolean isUpdating = false;
@@ -125,9 +126,10 @@ public class ClientController {
 			final Map<NodeModel, NodeViewListener> selectedNodesMap = clientController.selectedNodesMap();
 			for (Map.Entry<NodeModel, NodeViewListener> nodePair : selectedNodesMap.entrySet()) {
 				final Map<String, Object> attributeValueMap = nodePair.getValue().getChangedAttributes();
+				final User user = clientController.getUser();
 
 				for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
-					clientController.webservice().changeNode("5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
+					clientController.webservice().changeNode(user.getUsername(), user.getAccessToken(), "5", nodePair.getKey().getID(), entry.getKey(), entry.getValue());
 				}
 
 				nodePair.getValue().updateCurrentState();
@@ -160,7 +162,7 @@ public class ClientController {
 					final Map<String, Object> attributeValueMap = listener.getChangedAttributes();
 
 					for (Map.Entry<String, Object> entry : attributeValueMap.entrySet()) {
-						webservice().changeNode("5", node.getID(), entry.getKey(), entry.getValue());
+						webservice().changeNode(user.getUsername(), user.getAccessToken(), "5", node.getID(), entry.getKey(), entry.getValue());
 
 					}
 
@@ -205,6 +207,14 @@ public class ClientController {
 
 	public void isUpdating(boolean value) {
 		isUpdating = value;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
 	}
 
 	public static String loggedInUserName() {

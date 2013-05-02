@@ -2,6 +2,7 @@ package org.freeplane.plugin.client.actors;
 
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.plugin.client.ClientController;
+import org.freeplane.plugin.client.User;
 import org.freeplane.plugin.client.services.GetUpdatesResponse;
 import org.freeplane.plugin.client.services.WS;
 import org.freeplane.plugin.remote.v10.model.updates.MapUpdate;
@@ -28,14 +29,15 @@ public class ListenForUpdatesActor extends FreeplaneClientActor {
 		} else if (message.equals("listen")) {
 			LogUtils.info("listening");
 			mapIdForThisExecution = currentMapId;
-
-			final Future<Boolean> future = webservice().listenIfUpdatesOccur(mapIdForThisExecution);
+			final User user = getClientController().getUser();
+			final Future<Boolean> future = webservice().listenIfUpdatesOccur(user.getUsername(), user.getAccessToken(), mapIdForThisExecution);
 			Patterns.pipe(future, getContext().system().dispatcher()).to(getSelf());
 		} else if (message instanceof Boolean) {
 			final Boolean updateOccured = (Boolean) message;
 			if (updateOccured && mapIdForThisExecution.equals(currentMapId)) {
 				LogUtils.info("updates occured");
-				final Future<GetUpdatesResponse> future = webservice().getUpdatesSinceRevision(mapIdForThisExecution, currentRevision);
+				final User user = getClientController().getUser();
+				final Future<GetUpdatesResponse> future = webservice().getUpdatesSinceRevision(user.getUsername(), user.getAccessToken(), mapIdForThisExecution, currentRevision);
 				Patterns.pipe(future, getContext().system().dispatcher()).to(getSelf());
 			} else {
 				getSelf().tell("listen", getSelf());

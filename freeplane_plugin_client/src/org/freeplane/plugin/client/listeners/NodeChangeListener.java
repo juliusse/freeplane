@@ -4,6 +4,7 @@ import org.freeplane.core.util.LogUtils;
 import org.freeplane.features.map.INodeChangeListener;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.plugin.client.ClientController;
+import org.freeplane.plugin.client.User;
 import org.freeplane.plugin.client.services.WS;
 
 public class NodeChangeListener implements INodeChangeListener {
@@ -24,7 +25,7 @@ public class NodeChangeListener implements INodeChangeListener {
 
 			if (event.getProperty() != null && event.getProperty().equals("node_text")) {
 				LogUtils.info("node_text");
-				webservice().changeNode("5", event.getNode().getID(), "nodeText", event.getNewValue());
+				webservice().changeNode(user().getUsername(), user().getAccessToken(), "5", event.getNode().getID(), "nodeText", event.getNewValue());
 				// final ListenableFuture<Boolean> future =
 				// webservice().changeNode("5", event.getNode().getID(),
 				// "nodeText", event.getNewValue());
@@ -59,5 +60,9 @@ public class NodeChangeListener implements INodeChangeListener {
 
 	public void isUpdating(boolean value) {
 		clientController.isUpdating(value);
+	}
+	
+	private User user() {
+		return clientController.getUser();
 	}
 }

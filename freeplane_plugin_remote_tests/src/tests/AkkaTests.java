@@ -126,7 +126,7 @@ public class AkkaTests {
 
 	@Before
 	public void setUp() throws Exception {
-
+		
 	}
 
 	@After

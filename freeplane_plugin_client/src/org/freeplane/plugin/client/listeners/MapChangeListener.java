@@ -5,6 +5,7 @@ import org.freeplane.features.map.IMapChangeListener;
 import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.client.ClientController;
+import org.freeplane.plugin.client.User;
 import org.freeplane.plugin.client.services.WS;
 
 import scala.concurrent.Await;
@@ -34,7 +35,7 @@ public class MapChangeListener implements IMapChangeListener {
 	public void onNodeMoved(NodeModel oldParent, int oldIndex, NodeModel newParent, NodeModel child, int newIndex) {
 		if (!isUpdating()) {
 			LogUtils.info("Node Moved. Sending to Webservice");
-			webservice().moveNodeTo("5", newParent.getID(), child.getID(), newIndex);
+			webservice().moveNodeTo(user().getUsername(), user().getAccessToken(), "5", newParent.getID(), child.getID(), newIndex);
 		}
 	}
 
@@ -43,7 +44,7 @@ public class MapChangeListener implements IMapChangeListener {
 		if (!isUpdating()) {
 			LogUtils.info("Node Added. Sending to Webservice");
 			try {
-				final String newNodeId = Await.result(webservice().createNode("5", parent.getID()), Duration.create("10 seconds"));
+				final String newNodeId = Await.result(webservice().createNode(user().getUsername(), user().getAccessToken(), "5", parent.getID()), Duration.create("10 seconds"));
 				child.setID(newNodeId);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -56,7 +57,7 @@ public class MapChangeListener implements IMapChangeListener {
 	public void onNodeDeleted(NodeModel parent, NodeModel child, int index) {
 		if (!isUpdating()) {
 			LogUtils.info("Node Deleted. Sending to Webservice");
-			webservice().removeNode("5", child.getID());
+			webservice().removeNode(user().getUsername(), user().getAccessToken(), "5", child.getID());
 		}
 
 	}
@@ -74,4 +75,7 @@ public class MapChangeListener implements IMapChangeListener {
 		return clientController.isUpdating();
 	}
 
+	private User user() {
+		return clientController.getUser();
+	}
 }

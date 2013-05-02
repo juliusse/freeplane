@@ -2,8 +2,6 @@ package org.freeplane.plugin.client.services;
 
 import java.io.PrintStream;
 import java.net.URI;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,12 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -25,6 +17,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.freeplane.core.util.LogUtils;
 import org.freeplane.plugin.client.ClientController;
+import org.freeplane.plugin.client.User;
 import org.freeplane.plugin.remote.v10.model.updates.AddNodeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.ChangeNodeAttributeUpdate;
 import org.freeplane.plugin.remote.v10.model.updates.DeleteNodeUpdate;
@@ -59,26 +52,26 @@ public class DocearOnlineWs implements WS {
 		// disableCertificateValidation();
 		restClient = ApacheHttpClient.create();
 		restClient.addFilter(new LoggingFilter(stream));
-		restClient.addFilter(new ClientFilter() {
-			private ArrayList<Object> cookies;
-
-			@Override
-			public ClientResponse handle(ClientRequest request) throws ClientHandlerException {
-				if (cookies != null) {
-					request.getHeaders().put("Cookie", cookies);
-				}
-				ClientResponse response = getNext().handle(request);
-				if (response.getCookies() != null) {
-					if (cookies == null) {
-						cookies = new ArrayList<Object>();
-					}
-					// simple addAll just for illustration (should probably
-					// check for duplicates and expired cookies)
-					cookies.addAll(response.getCookies());
-				}
-				return response;
-			}
-		});
+//		restClient.addFilter(new ClientFilter() {
+//			private ArrayList<Object> cookies;
+//
+//			@Override
+//			public ClientResponse handle(ClientRequest request) throws ClientHandlerException {
+//				if (cookies != null) {
+//					request.getHeaders().put("Cookie", cookies);
+//				}
+//				ClientResponse response = getNext().handle(request);
+//				if (response.getCookies() != null) {
+//					if (cookies == null) {
+//						cookies = new ArrayList<Object>();
+//					}
+//					// simple addAll just for illustration (should probably
+//					// check for duplicates and expired cookies)
+//					cookies.addAll(response.getCookies());
+//				}
+//				return response;
+//			}
+//		});
 
 		final String source = clientController.source();
 		restClient.addFilter(new ClientFilter() {
@@ -96,55 +89,29 @@ public class DocearOnlineWs implements WS {
 		});
 	}
 
-	public static void disableCertificateValidation() {
-		// Create a trust manager that does not validate certificate chains
-		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
-			public X509Certificate[] getAcceptedIssuers() {
-				return new X509Certificate[0];
-			}
-
-			public void checkClientTrusted(X509Certificate[] certs, String authType) {
-			}
-
-			public void checkServerTrusted(X509Certificate[] certs, String authType) {
-			}
-		} };
-
-		// Ignore differences between given hostname and certificate hostname
-		HostnameVerifier hv = new HostnameVerifier() {
-			public boolean verify(String hostname, SSLSession session) {
-				return true;
-			}
-		};
-
-		// Install the all-trusting trust manager
-		try {
-			SSLContext sc = SSLContext.getInstance("SSL");
-			sc.init(null, trustAllCerts, new SecureRandom());
-			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-			HttpsURLConnection.setDefaultHostnameVerifier(hv);
-		} catch (Exception e) {
-		}
-	}
-
 	@Override
-	public Future<Boolean> login(final String username, final String password) {
-		final WebResource loginResource = restClient.resource(serviceUrl).path("rest/login");
+	public Future<User> login(final String username, final String password) {
+		final WebResource loginResource = restClient.resource(serviceUrl).path("user/login");
 		MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("username", username);
 		formData.add("password", password);
 		final ClientResponse loginResponse = loginResource.type(MediaType.APPLICATION_FORM_URLENCODED_TYPE).post(ClientResponse.class, formData);
 
-		return Futures.successful(loginResponse.getStatus() == 200);
+		if(loginResponse.getStatus() == 200) {
+			final User user = new User(username, loginResponse.getEntity(String.class));
+			return Futures.successful(user);
+		} else {
+			return null;
+		}
 	}
 
 	@Override
-	public Future<Boolean> listenIfUpdatesOccur(final String mapId) {
+	public Future<Boolean> listenIfUpdatesOccur(final String username, final String accessToken, final String mapId) {
 		return Futures.future(new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
-				final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/listen");
+				final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/listen");
 
 				final ClientResponse loginResponse = resource.get(ClientResponse.class);
 				return loginResponse.getStatus() == 200;
@@ -154,10 +121,10 @@ public class DocearOnlineWs implements WS {
 	}
 
 	@Override
-	public Future<JsonNode> getMapAsXml(final String mapId) {
+	public Future<JsonNode> getMapAsXml(String username, String accessToken, final String mapId) {
 
 		try {
-			final WebResource mapAsXmlResource = restClient.resource(serviceUrl).path("map/" + mapId + "/xml");
+			final WebResource mapAsXmlResource = preparedResource(username, accessToken).path("map/" + mapId + "/xml");
 			final JsonNode response = new ObjectMapper().readTree(mapAsXmlResource.get(String.class));
 			return Futures.successful(response);
 		} catch (Exception e) {
@@ -168,11 +135,11 @@ public class DocearOnlineWs implements WS {
 	}
 
 	@Override
-	public Future<GetUpdatesResponse> getUpdatesSinceRevision(final String mapId, final int sinceRevision) {
+	public Future<GetUpdatesResponse> getUpdatesSinceRevision(String username, String accessToken, final String mapId, final int sinceRevision) {
 
 		int currentRevision = -1;
 		List<MapUpdate> updates = new ArrayList<MapUpdate>();
-		final WebResource fetchUpdates = restClient.resource(serviceUrl).path("map/" + mapId + "/updates/" + sinceRevision);
+		final WebResource fetchUpdates = preparedResource(username, accessToken).path("map/" + mapId + "/updates/" + sinceRevision);
 		final ClientResponse response = fetchUpdates.get(ClientResponse.class);
 		final ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -209,9 +176,9 @@ public class DocearOnlineWs implements WS {
 	}
 
 	@Override
-	public Future<String> createNode(final String mapId, final String parentNodeId) {
+	public Future<String> createNode(String username, String accessToken, final String mapId, final String parentNodeId) {
 
-		final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/node/create");
+		final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/node/create");
 		final MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("parentNodeId", parentNodeId);
 
@@ -226,8 +193,8 @@ public class DocearOnlineWs implements WS {
 	}
 
 	@Override
-	public Future<Boolean> moveNodeTo(final String mapId, final String newParentId, final String nodeToMoveId, final int newIndex) {
-		final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/node/move");
+	public Future<Boolean> moveNodeTo(String username, String accessToken, final String mapId, final String newParentId, final String nodeToMoveId, final int newIndex) {
+		final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/node/move");
 		final MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("newParentNodeId", newParentId);
 		formData.add("nodetoMoveId", nodeToMoveId);
@@ -240,9 +207,9 @@ public class DocearOnlineWs implements WS {
 	}
 
 	@Override
-	public Future<Boolean> removeNode(final String mapId, final String nodeId) {
+	public Future<Boolean> removeNode(String username, String accessToken, final String mapId, final String nodeId) {
 
-		final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/node/delete");
+		final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/node/delete");
 		final MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("nodeId", nodeId);
 
@@ -254,9 +221,9 @@ public class DocearOnlineWs implements WS {
 	}
 
 	@Override
-	public Future<Boolean> changeNode(final String mapId, final String nodeId, final String attribute, final Object value) {
+	public Future<Boolean> changeNode(String username, String accessToken, final String mapId, final String nodeId, final String attribute, final Object value) {
 		try {
-			final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/node/change");
+			final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/node/change");
 			final MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 			formData.add("nodeId", nodeId);
 			Map<String, Object> attributeValueMap = new HashMap<String, Object>();
@@ -265,13 +232,13 @@ public class DocearOnlineWs implements WS {
 
 			LogUtils.info("locking node");
 			// boolean isLocked =
-			boolean isLocked = Await.result(lockNode(mapId, nodeId), Duration.create("5 seconds"));
+			boolean isLocked = Await.result(lockNode(username, accessToken, mapId, nodeId), Duration.create("5 seconds"));
 			if (!isLocked)
 				return Futures.successful(false);
 			LogUtils.info("changing");
 			ClientResponse response = resource.post(ClientResponse.class, formData);
 			LogUtils.info("releasing node");
-			releaseNode(mapId, nodeId);
+			releaseNode(username, accessToken, mapId, nodeId);
 
 			LogUtils.info("Status: " + response.getStatus());
 			return Futures.successful(response.getStatus() == 200);
@@ -282,8 +249,8 @@ public class DocearOnlineWs implements WS {
 		}
 	}
 
-	private Future<Boolean> lockNode(final String mapId, final String nodeId) {
-		final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/node/requestLock");
+	private Future<Boolean> lockNode(String username, String accessToken, final String mapId, final String nodeId) {
+		final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/node/requestLock");
 		final MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("nodeId", nodeId);
 
@@ -292,8 +259,8 @@ public class DocearOnlineWs implements WS {
 		return Futures.successful(response.getStatus() == 200);
 	}
 
-	private Future<Boolean> releaseNode(final String mapId, final String nodeId) {
-		final WebResource resource = restClient.resource(serviceUrl).path("map/" + mapId + "/node/releaseLock");
+	private Future<Boolean> releaseNode(String username, String accessToken, final String mapId, final String nodeId) {
+		final WebResource resource = preparedResource(username, accessToken).path("map/" + mapId + "/node/releaseLock");
 		final MultivaluedMap<String, String> formData = new MultivaluedMapImpl();
 		formData.add("nodeId", nodeId);
 
@@ -301,5 +268,9 @@ public class DocearOnlineWs implements WS {
 
 		LogUtils.info("Status: " + response.getStatus());
 		return Futures.successful(response.getStatus() == 200);
+	}
+	
+	private WebResource preparedResource(String username, String accessToken) {
+		return restClient.resource(serviceUrl).queryParam("username", username).queryParam("accessToken", accessToken);
 	}
 }

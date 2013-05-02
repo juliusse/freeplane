@@ -1,23 +1,30 @@
 package org.freeplane.plugin.client.services;
 
 import org.codehaus.jackson.JsonNode;
+import org.freeplane.plugin.client.User;
 
 import scala.concurrent.Future;
 
-public interface WS {	
-	Future<Boolean> login(String username, String password);
+public interface WS {
+	/**
+	 * 
+	 * @param username
+	 * @param password
+	 * @return User or null on failure
+	 */
+	Future<User> login(String username, String password);
 	
-	Future<Boolean> listenIfUpdatesOccur(String mapId);
+	Future<Boolean> listenIfUpdatesOccur(String username, String accessToken, String mapId);
 	
-	Future<JsonNode> getMapAsXml(String mapId);
+	Future<JsonNode> getMapAsXml(String username, String accessToken, String mapId);
 	
-	Future<GetUpdatesResponse> getUpdatesSinceRevision(String mapId, int sinceRevision);
+	Future<GetUpdatesResponse> getUpdatesSinceRevision(String username, String accessToken, String mapId, int sinceRevision);
 	
-	Future<String> createNode(String mapId, String parentNodeId);
+	Future<String> createNode(String username, String accessToken, String mapId, String parentNodeId);
 	
-	Future<Boolean> moveNodeTo(String mapId, String newParentId, String nodeToMoveId, int newIndex);
-	Future<Boolean> removeNode(String mapId, String nodeId);
-	Future<Boolean> changeNode(String mapId, String nodeId, String attribute, Object value);
+	Future<Boolean> moveNodeTo(String username, String accessToken, String mapId, String newParentId, String nodeToMoveId, int newIndex);
+	Future<Boolean> removeNode(String username, String accessToken, String mapId, String nodeId);
+	Future<Boolean> changeNode(String username, String accessToken, String mapId, String nodeId, String attribute, Object value);
 	
 	
 }

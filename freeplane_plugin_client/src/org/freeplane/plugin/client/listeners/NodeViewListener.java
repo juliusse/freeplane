@@ -12,6 +12,7 @@ import org.freeplane.features.map.MapChangeEvent;
 import org.freeplane.features.map.NodeChangeEvent;
 import org.freeplane.features.map.NodeModel;
 import org.freeplane.plugin.client.ClientController;
+import org.freeplane.plugin.client.User;
 import org.freeplane.plugin.client.services.WS;
 import org.freeplane.plugin.remote.v10.model.NodeModelDefault;
 import org.freeplane.view.swing.features.filepreview.ExternalResource;
@@ -80,7 +81,7 @@ public class NodeViewListener extends NodeView implements INodeView {
 				final Object property = event.getProperty();
 				if (property.toString().contains("FOLDING")) {
 					LogUtils.info("folding");
-					webservice().changeNode("5", event.getNode().getID(), "folded", event.getNewValue());
+					webservice().changeNode(user().getUsername(), user().getAccessToken(), "5", event.getNode().getID(), "folded", event.getNewValue());
 //					final ListenableFuture<Boolean> future = webservice().changeNode("5", event.getNode().getID(), "folded", event.getNewValue());
 //					Futures.addCallback(future, new FutureCallback<Boolean>() {
 //
@@ -102,7 +103,7 @@ public class NodeViewListener extends NodeView implements INodeView {
 				// note
 				else if(property.equals("note_text")) {
 					LogUtils.info("note_text");
-					webservice().changeNode("5", event.getNode().getID(), "note", event.getNewValue());
+					webservice().changeNode(user().getUsername(), user().getAccessToken(), "5", event.getNode().getID(), "note", event.getNewValue());
 				}
 				// images
 				else if (property.equals(ExternalResource.class)) {
@@ -179,5 +180,9 @@ public class NodeViewListener extends NodeView implements INodeView {
 
 	private boolean isUpdating() {
 		return clientController.isUpdating();
+	}
+	
+	private User user() {
+		return clientController.getUser();
 	}
 }
